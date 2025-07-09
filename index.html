@@ -256,6 +256,7 @@
 
     .time-icon,
     .coords-icon {
+      font-size: 24px;
       width: var(--button-size);
       height: var(--button-size);
       border: none;
@@ -487,9 +488,9 @@
         <label id="greetingLabel" style="display: none;">Приветствие:</label>
         <input type="text" id="greetingInput" style="display: none;" placeholder="Введите приветствие">
         <label id="coordsLabel" style="display: none;">Координаты (широта,долгота или URL Google Карт):</label>
-        <input type="text" id="coordsInput" style="display: none;" placeholder="51.520000,6.887619 или https://maps.app.goo.gl/...">
-        <p id="coordsHelp" style="display: none;">Нажмите "Выбрать на карте", чтобы открыть Google Карты, выберите точку, скопируйте координаты (например, 51.520000,6.887619) или полный URL Google Карт (например, https://www.google.com/maps/place/...
-          /@51.520000,6.887619,15z). Если используете сокращённый URL (maps.app.goo.gl), откройте его в браузере, скопируйте полный URL и вставьте выше.</p>
+        <input type="text" id="coordsInput" style="display: none;" placeholder="51.452013,7.021455 или https://maps.app.goo.gl/...">
+        <p id="coordsHelp" style="display: none;">Нажмите "Выбрать на карте", чтобы открыть Google Карты, выберите точку, скопируйте координаты (например, 51.452013,7.021455) или полный URL Google Карт (например, https://www.google.com/maps/place/...
+          /@51.452013,7.021455,15z). Если используете сокращённый URL (maps.app.goo.gl), откройте его в браузере, скопируйте полный URL и вставьте выше.</p>
         <button class="map-button" id="openMap" style="display: none;">Выбрать на карте</button>
         <button class="save-button" id="saveCoords">Сохранить</button>
         <button class="delete-greeting-btn" id="deleteGreeting" style="display: none;">Удалить</button>
@@ -534,11 +535,18 @@
         };
         this.startPoint = 'Sergii';
         this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
+        this.participantOrders = {
+          'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
+          'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima'],
+          'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+          'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+          'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+        };
         this.participants = [
-          { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+          { name: 'Anatolii', time: 5, lat: 51.522694, lng: 6.858944, timeManuallyEdited: false },
+          { name: 'Andrii', time: 5, lat: 51.534558, lng: 6.861061, timeManuallyEdited: false },
+          { name: 'Sergio', time: 10, lat: 51.520000, lng: 6.887619, timeManuallyEdited: false },
+          { name: 'Dima', time: 25, lat: 51.551753, lng: 7.102285, timeManuallyEdited: false }
         ];
         this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
         this.sortable = null;
@@ -633,10 +641,10 @@
         this.startPoint = 'Sergii';
         this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
         this.participants = [
-          { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
-          { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+          { name: 'Anatolii', time: 5, lat: 51.522694, lng: 6.858944, timeManuallyEdited: false },
+          { name: 'Andrii', time: 5, lat: 51.534558, lng: 6.861061, timeManuallyEdited: false },
+          { name: 'Sergio', time: 10, lat: 51.520000, lng: 6.887619, timeManuallyEdited: false },
+          { name: 'Dima', time: 25, lat: 51.551753, lng: 7.102285, timeManuallyEdited: false }
         ];
         this.nameToCoordinates = {
           'Sergii': { lat: 51.530133, lng: 6.850858 },
@@ -693,20 +701,13 @@
                 ...p,
                 timeManuallyEdited: p.timeManuallyEdited || false
               }));
-              console.log("Загруженные участники из localStorage:", this.participants);
-              this.participants = this.participants.map(p => {
-                if (p.name === 'Dimon') {
-                  return { ...p, name: '', lat: null, lng: null, timeManuallyEdited: false };
-                }
-                return p;
-              });
             } catch (e) {
               console.error("Ошибка парсинга сохранённых участников:", e);
               this.participants = [
-                { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-                { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
-                { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
-                { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+                { name: 'Anatolii', time: 5, lat: 51.522694, lng: 6.858944, timeManuallyEdited: false },
+                { name: 'Andrii', time: 5, lat: 51.534558, lng: 6.861061, timeManuallyEdited: false },
+                { name: 'Sergio', time: 10, lat: 51.520000, lng: 6.887619, timeManuallyEdited: false },
+                { name: 'Dima', time: 25, lat: 51.551753, lng: 7.102285, timeManuallyEdited: false }
               ];
             }
           }
@@ -720,12 +721,7 @@
           }
           if (savedNameToCoordinates) {
             try {
-              const loadedCoords = JSON.parse(savedNameToCoordinates);
-              if (loadedCoords.Dimon) {
-                delete loadedCoords.Dimon;
-              }
-              this.nameToCoordinates = loadedCoords;
-              console.log("Загруженные координаты из localStorage:", this.nameToCoordinates);
+              this.nameToCoordinates = JSON.parse(savedNameToCoordinates);
             } catch (e) {
               console.error("Ошибка парсинга сохранённых имён и координат:", e);
               this.nameToCoordinates = {
@@ -749,9 +745,7 @@
           console.error("Общая ошибка загрузки данных:", e);
           this.resetToDefaults();
         }
-        this.syncCoordinates();
-        this.updateParticipantTimes();
-        this.saveData();
+        this.updateStartPoint(this.startPoint);
       }
 
       saveNameToCoordinates(name, lat, lng) {
@@ -788,25 +782,34 @@
         if (value === 'add-new') {
           this.openCoordsModal(null, false, true, true);
         } else {
-          if (value && this.participants.some(p => p.name === value)) {
-            this.showToast(`Имя "${value}" уже используется в списке участников. Выберите другое имя для начальной точки.`);
-            this.startPoint = '';
-            this.startPointCoords = { lat: null, lng: null };
-          } else {
-            this.startPoint = value;
-            const coords = this.nameToCoordinates[value];
-            this.startPointCoords = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
-          }
+          this.startPoint = value;
+          const startCoords = this.nameToCoordinates[value];
+          this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+          
+          // Automatically set participants based on start point
+          const order = this.participantOrders[value] || [];
+          this.participants = order.map((name, index) => {
+            const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
+            const previousPoint = index === 0 ? this.startPoint : order[index - 1];
+            const travelTime = this.getTravelTime(previousPoint, name);
+            return {
+              name,
+              time: travelTime,
+              lat: coords.lat,
+              lng: coords.lng,
+              timeManuallyEdited: false
+            };
+          });
+
           this.updateParticipantTimes();
           this.saveData();
           this.renderParticipants();
+          this.initSortable();
           this.calculate();
         }
       }
 
       renderParticipants() {
-        console.log("Рендеринг участников:", this.participants);
-        console.log("Рендеринг начальной точки:", this.startPoint, this.startPointCoords);
         const container = this.elements.participantsContainer;
         container.innerHTML = '';
         this.elements.greetingSelect.innerHTML = this.greetings
@@ -836,6 +839,7 @@
           this.showToast(`Начальная точка "${this.startPoint}" не может совпадать с именем участника.`);
           this.startPoint = '';
           this.startPointCoords = { lat: null, lng: null };
+          this.participants = [];
           this.saveData();
         }
         const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
@@ -843,7 +847,6 @@
           this.showToast(`Обнаружены дубликаты имен: ${duplicates.join(', ')}`);
         }
         this.participants.forEach((p, i) => {
-          console.log(`Рендеринг участника ${i}:`, p);
           const div = document.createElement('div');
           div.className = 'participant';
           div.setAttribute('data-index', i);
@@ -873,7 +876,6 @@
           div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
           div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
         });
-        console.log("Рендеринг machineStop:", this.machineStop);
         const machineDiv = document.createElement('div');
         machineDiv.className = 'participant machine';
         const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
@@ -1076,7 +1078,7 @@
           const coordsInput = this.elements.coordsInput.value;
           const coords = this.parseCoordinates(coordsInput);
           if (!coords) {
-            this.showToast("Пожалуйста, введите корректные координаты (например, 51.520000,6.887619 или URL Google Карт).");
+            this.showToast("Пожалуйста, введите корректные координаты (например, 51.452013,7.021455 или URL Google Карт).");
             return;
           }
           if (this.isAddingNewName) {
@@ -1093,6 +1095,7 @@
             if (this.isEditingStartPoint) {
               this.startPoint = name;
               this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+              this.participants = [];
             } else {
               this.participants[this.currentEditIndex].name = name;
               this.participants[this.currentEditIndex].lat = coords.lat;
@@ -1148,8 +1151,8 @@
       }
 
       openMapForSelection() {
-        let centerLat = 51.520000;
-        let centerLng = 6.887619;
+        let centerLat = 51.452013;
+        let centerLng = 7.021455;
         if (this.isEditingMachine && this.machineStop.lat && this.machineStop.lng) {
           centerLat = this.machineStop.lat;
           centerLng = this.machineStop.lng;
@@ -1355,7 +1358,7 @@
             totalTimeMinutes += participant.time;
           }
         }
-        stops.push({ name: `geht's los von ${this.startPoint || 'Startpunkt'}`, offset: totalTimeMinutes });
+        stops.push({ name: "geht's los", offset: totalTimeMinutes });
         stops.reverse();
         let result = `${this.greeting},\n`;
         stops.forEach(stop => {
@@ -1368,8 +1371,6 @@
       }
 
       openGoogleMaps() {
-        console.log("Participants:", this.participants);
-        console.log("Start Point:", this.startPoint, this.startPointCoords);
         if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
           this.showToast("Пожалуйста, укажите координаты начальной точки.");
           return;
@@ -1386,7 +1387,6 @@
         const destination = `${this.machineStop.lat},${this.machineStop.lng}`;
         const waypoints = this.participants.map(p => `${p.lat},${p.lng}`).join('|');
         const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
-        console.log("Google Maps URL:", url);
         window.open(url, '_blank');
       }
 
