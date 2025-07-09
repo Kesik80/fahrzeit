@@ -1,0 +1,1413 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fahrzeit Rechner</title>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #007bff;
+      --success-color: #28a745;
+      --info-color: #6c757d;
+      --danger-color: #dc3545;
+      --background-color: #f0f0f0;
+      --surface-color: white;
+      --text-color: #333;
+      --border-radius: 6px;
+      --spacing-unit: 10px;
+      --small-spacing: 6px;
+      --button-size: 22px;
+    }
+
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 500px;
+      margin: auto;
+      background: var(--background-color);
+      color: var(--text-color);
+    }
+
+    h2 {
+      text-align: center;
+    }
+
+    button {
+      padding: var(--spacing-unit);
+      margin-top: var(--spacing-unit);
+      width: 100%;
+      border: none;
+      border-radius: var(--border-radius);
+      color: white;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    button:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .calculate {
+      background: var(--primary-color);
+    }
+
+    .copy {
+      background: var(--success-color);
+    }
+
+    .add {
+      background: var(--info-color);
+    }
+
+    .clear {
+      background: var(--danger-color);
+    }
+
+    .greeting-container {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-unit);
+      margin-bottom: var(--spacing-unit);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      gap: var(--small-spacing);
+      flex-wrap: wrap;
+    }
+
+    .greeting-container select {
+      width: 40%;
+      padding: var(--small-spacing);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    .greeting-container .edit-greeting-btn,
+    .greeting-container .start-point-coords {
+      width: var(--button-size);
+      height: var(--button-size);
+      background: var(--info-color);
+      border: none;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .greeting-container .edit-greeting-btn svg,
+    .greeting-container .start-point-coords svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    #participants {
+      display: block;
+    }
+
+    .participant {
+      background: var(--surface-color);
+      border-radius: var(--border-radius);
+      padding: var(--spacing-unit);
+      margin-bottom: var(--spacing-unit);
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-unit);
+      flex-wrap: wrap;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .participant select,
+    .participant input[type="text"] {
+      flex: 1;
+      min-width: 40%;
+      max-width: 40%;
+      padding: var(--small-spacing);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    .participant input[type="number"] {
+      width: 40px;
+      padding: var(--small-spacing);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1em;
+      text-align: center;
+    }
+
+    .participant .right-section {
+      margin-left: auto;
+      display: flex;
+      gap: var(--small-spacing);
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .participant .right-section input[type="time"] {
+      margin-left: var(--small-spacing);
+      vertical-align: middle;
+      width: 100px;
+      padding: var(--small-spacing);
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1em;
+    }
+
+    .participant .remove-btn {
+      width: var(--button-size);
+      height: var(--button-size);
+      background: var(--danger-color);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+      padding: 0;
+      transform: translate(5px, -15px);
+    }
+
+    .time-remove {
+      width: var(--button-size);
+      height: var(--button-size);
+      background: transparent;
+      color: var(--danger-color);
+      border: none;
+      border-radius: 4px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+      padding: 0;
+      transform: translateY(-10px);
+    }
+
+    .arrival-time {
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 1em;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--small-spacing);
+      background: #e9e9e9;
+      border-radius: 4px;
+      line-height: 1;
+    }
+
+    .time-icon,
+    .coords-icon {
+      width: var(--button-size);
+      height: var(--button-size);
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+      transform: translateY(-5px);
+    }
+
+    .coords-icon svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .material-symbols-outlined {
+      font-variation-settings:
+        'FILL' 0,
+        'wght' 400,
+        'GRAD' 0,
+        'opsz' 24;
+      font-size: 24px;
+      color: var(--info-color);
+      transform: translate(-15px, 0px);
+      cursor: grab;
+    }
+
+    input,
+    select {
+      font-size: 1em;
+    }
+
+    pre {
+      background: var(--surface-color);
+      padding: var(--spacing-unit);
+      border-radius: var(--border-radius);
+      white-space: pre-wrap;
+      font-size: 1.1em;
+      margin-top: 15px;
+      min-height: 50px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--danger-color);
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1.2em;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+
+    .sortable-ghost {
+      opacity: 0.2;
+      background: #c8ebfb;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: var(--spacing-unit);
+      gap: var(--spacing-unit);
+    }
+
+    .button-container button {
+      width: auto;
+      flex-grow: 1;
+      margin-top: 0;
+      padding: var(--small-spacing) var(--spacing-unit);
+      font-size: 0.9em;
+    }
+
+    .button-container .add {
+      flex-grow: 2;
+      white-space: nowrap;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: var(--surface-color);
+      padding: 20px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      max-width: 300px;
+      width: 100%;
+      text-align: center;
+      transition: transform 0.2s ease;
+    }
+
+    .modal-content.add-new-name {
+      background: linear-gradient(135deg, #f0f8ff 0%, #e6f0fa 100%);
+      padding: 25px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      transform: scale(1.02);
+    }
+
+    .modal-content.add-new-name h3 {
+      font-size: 1.4em;
+      color: #1a3c6d;
+      margin-bottom: 15px;
+    }
+
+    .modal-content.add-new-name label {
+      font-size: 1.1em;
+      color: #1a3c6d;
+      font-weight: 500;
+    }
+
+    .modal-content input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      border: 1px solid #b0c4de;
+      border-radius: 4px;
+      font-size: 1em;
+      box-sizing: border-box;
+    }
+
+    .modal-content button {
+      width: auto;
+      padding: 10px 20px;
+      margin: 8px 4px;
+      border-radius: 4px;
+      font-size: 1em;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    .modal-content button:hover {
+      transform: translateY(-1px);
+    }
+
+    .modal-content .map-button {
+      background: var(--primary-color);
+    }
+
+    .modal-content .save-button {
+      background: var(--success-color);
+    }
+
+    .modal-content .cancel-button {
+      background: var(--info-color);
+    }
+
+    .modal-content .delete-greeting-btn {
+      background: var(--danger-color);
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>Fahrzeit Rechner</h2>
+    <div class="greeting-container">
+      <select id="greeting" aria-label="Выберите приветствие">
+        <option value="Moin zusammen" selected>Moin zusammen</option>
+        <option value="Hallo zusammen">Hallo zusammen</option>
+        <option value="Guten Morgen">Guten Morgen</option>
+        <option value="Guten Tag">Guten Tag</option>
+        <option value="Servus">Servus</option>
+        <option value="add-new-greeting">Добавить новое приветствие</option>
+      </select>
+      <button class="edit-greeting-btn" title="Редактировать или удалить приветствие">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 256 256" xml:space="preserve">
+          <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+            <path d="M 87.851 6.29 L 83.71 2.15 C 82.324 0.763 80.48 0 78.521 0 c -1.961 0 -3.804 0.763 -5.19 2.15 l -6.181 6.181 L 22.822 52.658 c -0.074 0.074 -0.134 0.156 -0.194 0.238 c -0.016 0.022 -0.036 0.04 -0.052 0.063 c -0.087 0.13 -0.155 0.268 -0.208 0.411 c -0.004 0.011 -0.012 0.019 -0.015 0.03 l -6.486 18.178 c -0.26 0.728 -0.077 1.54 0.47 2.086 c 0.381 0.382 0.893 0.586 1.415 0.586 c 0.225 0 0.452 -0.038 0.671 -0.116 l 18.177 -6.485 c 0.014 -0.005 0.025 -0.014 0.038 -0.019 c 0.142 -0.054 0.279 -0.12 0.406 -0.206 c 0.017 -0.012 0.031 -0.027 0.048 -0.039 c 0.088 -0.063 0.174 -0.128 0.251 -0.206 l 44.328 -44.328 l 6.182 -6.181 C 90.712 13.808 90.712 9.152 87.851 6.29 z M 21.051 68.948 l 4.006 -11.226 l 3.61 3.611 l 3.61 3.611 L 21.051 68.948 z M 35.927 62.936 l -1.445 -1.445 l -7.418 -7.419 l 41.499 -41.499 l 8.863 8.863 L 35.927 62.936 z M 85.022 13.841 l -4.768 4.767 l -8.863 -8.863 l 4.767 -4.767 c 1.26 -1.263 3.46 -1.263 4.724 0 l 4.141 4.14 C 86.324 10.42 86.324 12.539 85.022 13.841 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+            <path d="M 79.388 45.667 c -1.104 0 -2 0.896 -2 2 v 34.804 c 0 1.946 -1.584 3.529 -3.53 3.529 H 7.53 C 5.583 86 4 84.417 4 82.471 V 16.142 c 0 -1.946 1.583 -3.53 3.53 -3.53 h 34.803 c 1.104 0 2 -0.896 2 -2 s -0.896 -2 -2 -2 H 7.53 C 3.378 8.612 0 11.99 0 16.142 v 66.329 C 0 86.622 3.378 90 7.53 90 h 66.328 c 4.152 0 7.53 -3.378 7.53 -7.529 V 47.667 C 81.388 46.562 80.492 45.667 79.388 45.667 z" style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;" transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round"/>
+          </g>
+        </svg>
+      </button>
+      <select id="startPoint" aria-label="Выберите начальную точку">
+        <option value="" disabled>Выберите начальную точку</option>
+      </select>
+      <button class="start-point-coords" title="Редактировать координаты начальной точки"></button>
+    </div>
+    <div id="participants"></div>
+    <div class="button-container">
+      <button class="add" title="Teilnehmer hinzufügen">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+          <path
+            d="M480-80Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880h20q10 0 20 2v81q-10-2-19.5-2.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186q122-112 181-203.5T720-552v-8h80v8q0 100-79.5 217.5T480-80Zm0-400q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0-80Zm240-80h80v-120h120v-80H800v-120h-80v120H600v80h120v120Z" />
+        </svg>
+      </button>
+      <button class="calculate" title="Berechnen">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+          <path
+            d="m226-559 78 33q14-28 29-54t33-52l-56-11-84 84Zm142 83 114 113q42-16 90-49t90-75q70-70 109.5-155.5T806-800q-72-5-158 34.5T492-656q-42 42-75 90t-49 90Zm178-65q-23-23-23-56.5t23-56.5q23-23 57-23t57 23q23 23 23 56.5T660-541q-23 23-57 23t-57-23Zm19 321 84-84-11-56q-26 18-52 32.5T532-299l33 79Zm313-653q19 121-23.5 235.5T708-419l20 99q4 20-2 39t-20 33L538-80l-84-197-171-171-197-84 167-168q14-14 33.5-20t39.5-2l99 20q104-104 218-147t235-24ZM157-321q35-35 85.5-35.5T328-322q35 35 34.5 85.5T327-151q-25 25-83.5 43T82-76q14-103 32-161.5t43-83.5Zm57 56q-10 10-20 36.5T180-175q27-4 53.5-13.5T270-208q12-12 13-29t-11-29q-12-12-29-11.5T214-265Z" />
+        </svg>
+      </button>
+      <button class="copy" title="Kopieren">
+        <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
+          <path
+            d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+        </svg>
+      </button>
+      <button class="clear" title="Сбросить данные">Сбросить</button>
+    </div>
+    <pre id="output"></pre>
+    <div id="toast" class="toast"></div>
+    <div id="coordsModal" class="modal">
+      <div class="modal-content">
+        <h3 id="modalTitle">Редактировать координаты</h3>
+        <label id="nameLabel" style="display: none;">Имя:</label>
+        <input type="text" id="nameInput" style="display: none;" placeholder="Введите имя">
+        <label id="greetingLabel" style="display: none;">Приветствие:</label>
+        <input type="text" id="greetingInput" style="display: none;" placeholder="Введите приветствие">
+        <label id="coordsLabel" style="display: none;">Координаты (широта,долгота или URL Google Карт):</label>
+        <input type="text" id="coordsInput" style="display: none;" placeholder="51.520000,6.887619 или https://maps.app.goo.gl/...">
+        <p id="coordsHelp" style="display: none;">Нажмите "Выбрать на карте", чтобы открыть Google Карты, выберите точку, скопируйте координаты (например, 51.520000,6.887619) или полный URL Google Карт (например, https://www.google.com/maps/place/...
+          /@51.520000,6.887619,15z). Если используете сокращённый URL (maps.app.goo.gl), откройте его в браузере, скопируйте полный URL и вставьте выше.</p>
+        <button class="map-button" id="openMap" style="display: none;">Выбрать на карте</button>
+        <button class="save-button" id="saveCoords">Сохранить</button>
+        <button class="delete-greeting-btn" id="deleteGreeting" style="display: none;">Удалить</button>
+        <button class="cancel-button" id="cancelCoords">Отмена</button>
+      </div>
+    </div>
+  </main>
+  <script>
+    class FahrzeitRechner {
+      constructor() {
+        this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag', 'Servus'];
+        this.greetings = [...this.defaultGreetings];
+        this.greeting = 'Moin zusammen';
+        this.nameToCoordinates = {
+          'Sergii': { lat: 51.530133, lng: 6.850858 },
+          'Anatolii': { lat: 51.522694, lng: 6.858944 },
+          'Andrii': { lat: 51.534558, lng: 6.861061 },
+          'Sergio': { lat: 51.520000, lng: 6.887619 },
+          'Dima': { lat: 51.551753, lng: 7.102285 }
+        };
+        this.travelTimes = {
+          'Sergii-Anatolii': 5,
+          'Anatolii-Sergii': 5,
+          'Sergii-Andrii': 5,
+          'Andrii-Sergii': 5,
+          'Sergii-Sergio': 15,
+          'Sergio-Sergii': 15,
+          'Sergii-Dima': 30,
+          'Dima-Sergii': 30,
+          'Andrii-Anatolii': 5,
+          'Anatolii-Andrii': 5,
+          'Andrii-Sergio': 10,
+          'Sergio-Andrii': 10,
+          'Andrii-Dima': 25,
+          'Dima-Andrii': 25,
+          'Sergio-Anatolii': 15,
+          'Anatolii-Sergio': 15,
+          'Sergio-Dima': 25,
+          'Dima-Sergio': 25,
+          'Anatolii-Dima': 30,
+          'Dima-Anatolii': 30
+        };
+        this.startPoint = 'Sergii';
+        this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
+        this.participants = [
+          { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+        ];
+        this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+        this.sortable = null;
+        this.elements = {
+          greetingSelect: document.getElementById('greeting'),
+          editGreetingButton: document.querySelector('.edit-greeting-btn'),
+          startPointSelect: document.getElementById('startPoint'),
+          startPointCoordsButton: document.querySelector('.start-point-coords'),
+          participantsContainer: document.getElementById('participants'),
+          addButton: document.querySelector('.add'),
+          calculateButton: document.querySelector('.calculate'),
+          copyButton: document.querySelector('.copy'),
+          clearButton: document.querySelector('.clear'),
+          output: document.getElementById('output'),
+          toast: document.getElementById('toast'),
+          coordsModal: document.getElementById('coordsModal'),
+          modalContent: document.querySelector('.modal-content'),
+          coordsInput: document.getElementById('coordsInput'),
+          coordsLabel: document.getElementById('coordsLabel'),
+          coordsHelp: document.getElementById('coordsHelp'),
+          nameInput: document.getElementById('nameInput'),
+          nameLabel: document.getElementById('nameLabel'),
+          greetingInput: document.getElementById('greetingInput'),
+          greetingLabel: document.getElementById('greetingLabel'),
+          modalTitle: document.getElementById('modalTitle'),
+          saveCoordsButton: document.getElementById('saveCoords'),
+          deleteGreetingButton: document.getElementById('deleteGreeting'),
+          cancelCoordsButton: document.getElementById('cancelCoords'),
+          openMapButton: document.getElementById('openMap')
+        };
+        this.currentEditIndex = null;
+        this.isEditingMachine = false;
+        this.isAddingNewName = false;
+        this.isAddingNewGreeting = false;
+        this.isEditingGreeting = false;
+        this.isEditingStartPoint = false;
+        this.loadData();
+        this.syncCoordinates();
+        this.addEventListeners();
+        this.renderParticipants();
+        this.initSortable();
+        this.calculate();
+      }
+
+      getTravelTime(fromName, toName) {
+        const key1 = `${fromName}-${toName}`;
+        const key2 = `${toName}-${fromName}`;
+        return this.travelTimes[key1] || this.travelTimes[key2] || 5;
+      }
+
+      updateParticipantTimes() {
+        let previousPoint = this.startPoint;
+        this.participants.forEach((participant, index) => {
+          if (participant.name && !participant.timeManuallyEdited) {
+            const travelTime = this.getTravelTime(previousPoint, participant.name);
+            participant.time = travelTime;
+          }
+          if (participant.name) {
+            previousPoint = participant.name;
+          }
+        });
+      }
+
+      syncCoordinates() {
+        this.participants.forEach(participant => {
+          const coords = this.nameToCoordinates[participant.name];
+          if (coords) {
+            participant.lat = coords.lat;
+            participant.lng = coords.lng;
+          }
+        });
+        const startCoords = this.nameToCoordinates[this.startPoint];
+        if (startCoords) {
+          this.startPointCoords = { lat: startCoords.lat, lng: startCoords.lng };
+        } else {
+          this.startPointCoords = { lat: null, lng: null };
+        }
+      }
+
+      saveData() {
+        localStorage.setItem('fahrzeitRechnerGreeting', this.greeting);
+        localStorage.setItem('fahrzeitRechnerGreetings', JSON.stringify(this.greetings));
+        localStorage.setItem('fahrzeitRechnerParticipants', JSON.stringify(this.participants));
+        localStorage.setItem('fahrzeitRechnerMachineStop', JSON.stringify(this.machineStop));
+        localStorage.setItem('fahrzeitRechnerNameToCoordinates', JSON.stringify(this.nameToCoordinates));
+        localStorage.setItem('fahrzeitRechnerStartPoint', this.startPoint);
+      }
+
+      resetToDefaults() {
+        this.greeting = 'Moin zusammen';
+        this.greetings = [...this.defaultGreetings];
+        this.startPoint = 'Sergii';
+        this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
+        this.participants = [
+          { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
+          { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+        ];
+        this.nameToCoordinates = {
+          'Sergii': { lat: 51.530133, lng: 6.850858 },
+          'Anatolii': { lat: 51.522694, lng: 6.858944 },
+          'Andrii': { lat: 51.534558, lng: 6.861061 },
+          'Sergio': { lat: 51.520000, lng: 6.887619 },
+          'Dima': { lat: 51.551753, lng: 7.102285 }
+        };
+        this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+        this.updateParticipantTimes();
+        this.saveData();
+      }
+
+      clearLocalStorage() {
+        localStorage.removeItem('fahrzeitRechnerGreeting');
+        localStorage.removeItem('fahrzeitRechnerGreetings');
+        localStorage.removeItem('fahrzeitRechnerParticipants');
+        localStorage.removeItem('fahrzeitRechnerMachineStop');
+        localStorage.removeItem('fahrzeitRechnerNameToCoordinates');
+        localStorage.removeItem('fahrzeitRechnerStartPoint');
+        this.showToast("Данные сброшены.");
+        this.resetToDefaults();
+        this.renderParticipants();
+        this.initSortable();
+        this.calculate();
+      }
+
+      loadData() {
+        try {
+          const savedGreeting = localStorage.getItem('fahrzeitRechnerGreeting');
+          const savedGreetings = localStorage.getItem('fahrzeitRechnerGreetings');
+          const savedParticipants = localStorage.getItem('fahrzeitRechnerParticipants');
+          const savedMachineStop = localStorage.getItem('fahrzeitRechnerMachineStop');
+          const savedNameToCoordinates = localStorage.getItem('fahrzeitRechnerNameToCoordinates');
+          const savedStartPoint = localStorage.getItem('fahrzeitRechnerStartPoint');
+          if (savedGreeting) {
+            this.greeting = savedGreeting;
+          }
+          if (savedGreetings) {
+            try {
+              this.greetings = JSON.parse(savedGreetings);
+              if (!this.greetings.includes(this.greeting)) {
+                this.greeting = 'Moin zusammen';
+              }
+            } catch (e) {
+              console.error("Ошибка парсинга сохранённых приветствий:", e);
+              this.greetings = [...this.defaultGreetings];
+            }
+          }
+          if (savedParticipants) {
+            try {
+              this.participants = JSON.parse(savedParticipants);
+              this.participants = this.participants.map(p => ({
+                ...p,
+                timeManuallyEdited: p.timeManuallyEdited || false
+              }));
+              console.log("Загруженные участники из localStorage:", this.participants);
+              this.participants = this.participants.map(p => {
+                if (p.name === 'Dimon') {
+                  return { ...p, name: '', lat: null, lng: null, timeManuallyEdited: false };
+                }
+                return p;
+              });
+            } catch (e) {
+              console.error("Ошибка парсинга сохранённых участников:", e);
+              this.participants = [
+                { name: 'Anatolii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+                { name: 'Andrii', time: 5, lat: null, lng: null, timeManuallyEdited: false },
+                { name: 'Sergio', time: 10, lat: null, lng: null, timeManuallyEdited: false },
+                { name: 'Dima', time: 15, lat: null, lng: null, timeManuallyEdited: false }
+              ];
+            }
+          }
+          if (savedMachineStop) {
+            try {
+              this.machineStop = JSON.parse(savedMachineStop);
+            } catch (e) {
+              console.error("Ошибка парсинга сохранённой остановки машины:", e);
+              this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+            }
+          }
+          if (savedNameToCoordinates) {
+            try {
+              const loadedCoords = JSON.parse(savedNameToCoordinates);
+              if (loadedCoords.Dimon) {
+                delete loadedCoords.Dimon;
+              }
+              this.nameToCoordinates = loadedCoords;
+              console.log("Загруженные координаты из localStorage:", this.nameToCoordinates);
+            } catch (e) {
+              console.error("Ошибка парсинга сохранённых имён и координат:", e);
+              this.nameToCoordinates = {
+                'Sergii': { lat: 51.530133, lng: 6.850858 },
+                'Anatolii': { lat: 51.522694, lng: 6.858944 },
+                'Andrii': { lat: 51.534558, lng: 6.861061 },
+                'Sergio': { lat: 51.520000, lng: 6.887619 },
+                'Dima': { lat: 51.551753, lng: 7.102285 }
+              };
+            }
+          }
+          if (savedStartPoint) {
+            this.startPoint = savedStartPoint;
+            const startCoords = this.nameToCoordinates[this.startPoint];
+            this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+          } else {
+            this.startPoint = 'Sergii';
+            this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
+          }
+        } catch (e) {
+          console.error("Общая ошибка загрузки данных:", e);
+          this.resetToDefaults();
+        }
+        this.syncCoordinates();
+        this.updateParticipantTimes();
+        this.saveData();
+      }
+
+      saveNameToCoordinates(name, lat, lng) {
+        if (name && lat !== null && lng !== null) {
+          this.nameToCoordinates[name] = { lat, lng };
+          this.saveData();
+        }
+      }
+
+      addEventListeners() {
+        this.elements.greetingSelect.addEventListener('change', (e) => {
+          if (e.target.value === 'add-new-greeting') {
+            this.openGreetingModal(true);
+          } else {
+            this.greeting = e.target.value;
+            this.saveData();
+            this.calculate();
+          }
+        });
+        this.elements.editGreetingButton.addEventListener('click', () => this.openGreetingModal(false));
+        this.elements.startPointSelect.addEventListener('change', (e) => this.updateStartPoint(e.target.value));
+        this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
+        this.elements.addButton.addEventListener('click', () => this.addParticipant());
+        this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
+        this.elements.copyButton.addEventListener('click', () => this.copyResult());
+        this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage());
+        this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
+        this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
+        this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
+        this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
+      }
+
+      updateStartPoint(value) {
+        if (value === 'add-new') {
+          this.openCoordsModal(null, false, true, true);
+        } else {
+          if (value && this.participants.some(p => p.name === value)) {
+            this.showToast(`Имя "${value}" уже используется в списке участников. Выберите другое имя для начальной точки.`);
+            this.startPoint = '';
+            this.startPointCoords = { lat: null, lng: null };
+          } else {
+            this.startPoint = value;
+            const coords = this.nameToCoordinates[value];
+            this.startPointCoords = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
+          }
+          this.updateParticipantTimes();
+          this.saveData();
+          this.renderParticipants();
+          this.calculate();
+        }
+      }
+
+      renderParticipants() {
+        console.log("Рендеринг участников:", this.participants);
+        console.log("Рендеринг начальной точки:", this.startPoint, this.startPointCoords);
+        const container = this.elements.participantsContainer;
+        container.innerHTML = '';
+        this.elements.greetingSelect.innerHTML = this.greetings
+          .map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`)
+          .join('') + '<option value="add-new-greeting">Добавить новое приветствие</option>';
+        const nameOptions = Object.keys(this.nameToCoordinates)
+          .map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`)
+          .join('');
+        this.elements.startPointSelect.innerHTML = `
+          <option value="" ${!this.startPoint ? 'selected' : ''}>Выберите начальную точку</option>
+          ${nameOptions}
+          <option value="add-new">Добавить новое имя</option>
+        `;
+        const noCoordsSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        `;
+        const hasCoordsSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+        `;
+        this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? hasCoordsSvg : noCoordsSvg;
+        const names = this.participants.map(p => p.name).filter(name => name);
+        if (this.startPoint && names.includes(this.startPoint)) {
+          this.showToast(`Начальная точка "${this.startPoint}" не может совпадать с именем участника.`);
+          this.startPoint = '';
+          this.startPointCoords = { lat: null, lng: null };
+          this.saveData();
+        }
+        const duplicates = names.filter((name, index) => names.indexOf(name) !== index);
+        if (duplicates.length > 0) {
+          this.showToast(`Обнаружены дубликаты имен: ${duplicates.join(', ')}`);
+        }
+        this.participants.forEach((p, i) => {
+          console.log(`Рендеринг участника ${i}:`, p);
+          const div = document.createElement('div');
+          div.className = 'participant';
+          div.setAttribute('data-index', i);
+          const participantNameOptions = Object.keys(this.nameToCoordinates)
+            .filter(name => name !== this.startPoint)
+            .map(name => `<option value="${name}" ${p.name === name ? 'selected' : ''}>${name}</option>`)
+            .join('');
+          const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+          div.innerHTML = `
+            <select data-index="${i}" data-type="participant-name" aria-label="Имя участника">
+              <option value="" ${!p.name ? 'selected' : ''}>Выберите имя</option>
+              ${participantNameOptions}
+              <option value="add-new">Добавить новое имя</option>
+            </select>
+            <input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах">
+            <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
+            <div class="right-section">
+              <span class="material-symbols-outlined" aria-label="Переместить участника">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+              </span>
+              <button class="remove-btn" data-index="${i}" aria-label="Удалить участника">✖</button>
+            </div>
+          `;
+          container.appendChild(div);
+          div.querySelector('[data-type="participant-name"]').addEventListener('change', (e) => this.updateName(i, e.target.value));
+          div.querySelector('[data-type="participant-time"]').addEventListener('change', (e) => this.updateTime(i, e.target.value));
+          div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
+          div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
+        });
+        console.log("Рендеринг machineStop:", this.machineStop);
+        const machineDiv = document.createElement('div');
+        machineDiv.className = 'participant machine';
+        const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
+        machineDiv.innerHTML = `
+          <input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины">
+          <input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах">
+          <button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${machineCoordsSvg}</button>
+          <div class="right-section">
+            ${this.machineStop.arrivalTime
+            ? `<div class="arrival-time" tabindex="0" role="button" aria-label="Время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>`
+            : `<button class="time-icon" aria-label="Установить время прибытия">🕒</button>`
+          }
+          </div>
+        `;
+        container.appendChild(machineDiv);
+        machineDiv.querySelector('[data-type="machine-name"]').addEventListener('change', (e) => this.updateMachineName(e.target.value));
+        machineDiv.querySelector('[data-type="machine-time"]').addEventListener('change', (e) => this.updateMachineTime(e.target.value));
+        machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
+        const timeControl = machineDiv.querySelector('.arrival-time') || machineDiv.querySelector('.time-icon');
+        timeControl.addEventListener('click', () => this.startTimeEdit());
+        timeControl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.startTimeEdit();
+          }
+        });
+        const timeRemoveBtn = machineDiv.querySelector('.time-remove');
+        if (timeRemoveBtn) {
+          timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
+        }
+        this.saveData();
+        this.calculate();
+      }
+
+      parseCoordinates(input) {
+        if (input.includes(',')) {
+          const [latStr, lngStr] = input.split(',').map(str => str.trim());
+          const lat = parseFloat(latStr);
+          const lng = parseFloat(lngStr);
+          if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            return { lat, lng };
+          }
+        }
+        if (input.includes('google.com/maps') || input.includes('maps.app.goo.gl')) {
+          const atRegex = /@(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
+          const atMatch = input.match(atRegex);
+          if (atMatch) {
+            const lat = parseFloat(atMatch[1]);
+            const lng = parseFloat(atMatch[2]);
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+              return { lat, lng };
+            }
+          }
+          const llRegex = /[?&]ll=(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
+          const llMatch = input.match(llRegex);
+          if (llMatch) {
+            const lat = parseFloat(llMatch[1]);
+            const lng = parseFloat(llMatch[2]);
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+              return { lat, lng };
+            }
+          }
+          const placeRegex = /\/place\/[^\/]+\/(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
+          const placeMatch = input.match(placeRegex);
+          if (placeMatch) {
+            const lat = parseFloat(placeMatch[1]);
+            const lng = parseFloat(placeMatch[2]);
+            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+              return { lat, lng };
+            }
+          }
+        }
+        return null;
+      }
+
+      openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false) {
+        this.currentEditIndex = index;
+        this.isEditingMachine = isMachine;
+        this.isAddingNewName = isAddingNewName;
+        this.isEditingStartPoint = isEditingStartPoint;
+        this.isAddingNewGreeting = false;
+        this.isEditingGreeting = false;
+        const modal = this.elements.coordsModal;
+        const modalContent = this.elements.modalContent;
+        const coordsInput = this.elements.coordsInput;
+        const coordsLabel = this.elements.coordsLabel;
+        const coordsHelp = this.elements.coordsHelp;
+        const nameInput = this.elements.nameInput;
+        const nameLabel = this.elements.nameLabel;
+        const greetingInput = this.elements.greetingInput;
+        const greetingLabel = this.elements.greetingLabel;
+        const modalTitle = this.elements.modalTitle;
+        const openMapButton = this.elements.openMapButton;
+        const deleteGreetingButton = this.elements.deleteGreetingButton;
+        if (isAddingNewName) {
+          modalContent.classList.add('add-new-name');
+          modalTitle.textContent = 'Добавить новое имя';
+          nameLabel.style.display = 'block';
+          nameInput.style.display = 'block';
+          coordsLabel.style.display = 'block';
+          coordsHelp.style.display = 'block';
+          coordsInput.style.display = 'block';
+          openMapButton.style.display = 'inline-block';
+          nameInput.value = '';
+          coordsInput.value = '';
+        } else if (isEditingStartPoint) {
+          modalContent.classList.remove('add-new-name');
+          modalTitle.textContent = 'Редактировать координаты начальной точки';
+          nameLabel.style.display = 'none';
+          nameInput.style.display = 'none';
+          coordsLabel.style.display = 'block';
+          coordsHelp.style.display = 'block';
+          coordsInput.style.display = 'block';
+          openMapButton.style.display = 'inline-block';
+          coordsInput.value = this.startPointCoords.lat && this.startPointCoords.lng ? `${this.startPointCoords.lat},${this.startPointCoords.lng}` : '';
+        } else {
+          modalContent.classList.remove('add-new-name');
+          modalTitle.textContent = isMachine ? 'Редактировать координаты машины' : 'Редактировать координаты';
+          nameLabel.style.display = 'none';
+          nameInput.style.display = 'none';
+          coordsLabel.style.display = 'block';
+          coordsHelp.style.display = 'block';
+          coordsInput.style.display = 'block';
+          openMapButton.style.display = 'inline-block';
+          if (isMachine) {
+            coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
+          } else {
+            const participant = this.participants[index];
+            coordsInput.value = participant.lat && participant.lng ? `${participant.lat},${participant.lng}` : '';
+          }
+        }
+        greetingLabel.style.display = 'none';
+        greetingInput.style.display = 'none';
+        deleteGreetingButton.style.display = 'none';
+        modal.style.display = 'flex';
+        (isAddingNewName ? nameInput : coordsInput).focus();
+      }
+
+      openGreetingModal(isAddingNewGreeting) {
+        this.isAddingNewGreeting = isAddingNewGreeting;
+        this.isEditingGreeting = !isAddingNewGreeting;
+        this.isAddingNewName = false;
+        this.isEditingMachine = false;
+        this.isEditingStartPoint = false;
+        const modal = this.elements.coordsModal;
+        const modalContent = this.elements.modalContent;
+        const coordsInput = this.elements.coordsInput;
+        const coordsLabel = this.elements.coordsLabel;
+        const coordsHelp = this.elements.coordsHelp;
+        const nameInput = this.elements.nameInput;
+        const nameLabel = this.elements.nameLabel;
+        const greetingInput = this.elements.greetingInput;
+        const greetingLabel = this.elements.greetingLabel;
+        const modalTitle = this.elements.modalTitle;
+        const openMapButton = this.elements.openMapButton;
+        const deleteGreetingButton = this.elements.deleteGreetingButton;
+        modalContent.classList.remove('add-new-name');
+        coordsLabel.style.display = 'none';
+        coordsHelp.style.display = 'none';
+        coordsInput.style.display = 'none';
+        nameLabel.style.display = 'none';
+        nameInput.style.display = 'none';
+        openMapButton.style.display = 'none';
+        greetingLabel.style.display = 'block';
+        greetingInput.style.display = 'block';
+        modalTitle.textContent = isAddingNewGreeting ? 'Добавить новое приветствие' : 'Редактировать приветствие';
+        greetingInput.value = this.greeting;
+        deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
+        modal.style.display = 'flex';
+        greetingInput.focus();
+      }
+
+      saveCoordinates() {
+        if (this.isAddingNewGreeting || this.isEditingGreeting) {
+          const newGreeting = this.elements.greetingInput.value.trim();
+          if (!newGreeting) {
+            this.showToast("Пожалуйста, введите приветствие.");
+            return;
+          }
+          if (this.isAddingNewGreeting && this.greetings.includes(newGreeting)) {
+            this.showToast("Приветствие уже существует.");
+            return;
+          }
+          if (this.isEditingGreeting) {
+            const oldGreeting = this.greeting;
+            const index = this.greetings.indexOf(oldGreeting);
+            if (index !== -1 && !this.defaultGreetings.includes(oldGreeting)) {
+              this.greetings[index] = newGreeting;
+            }
+            this.greeting = newGreeting;
+          } else if (this.isAddingNewGreeting) {
+            this.greetings.push(newGreeting);
+            this.greeting = newGreeting;
+          }
+          this.closeModal();
+          this.saveData();
+          this.renderParticipants();
+          this.calculate();
+        } else {
+          const coordsInput = this.elements.coordsInput.value;
+          const coords = this.parseCoordinates(coordsInput);
+          if (!coords) {
+            this.showToast("Пожалуйста, введите корректные координаты (например, 51.520000,6.887619 или URL Google Карт).");
+            return;
+          }
+          if (this.isAddingNewName) {
+            const name = this.elements.nameInput.value.trim();
+            if (!name) {
+              this.showToast("Пожалуйста, введите имя.");
+              return;
+            }
+            if (this.nameToCoordinates[name]) {
+              this.showToast("Имя уже существует. Выберите другое имя.");
+              return;
+            }
+            this.saveNameToCoordinates(name, coords.lat, coords.lng);
+            if (this.isEditingStartPoint) {
+              this.startPoint = name;
+              this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+            } else {
+              this.participants[this.currentEditIndex].name = name;
+              this.participants[this.currentEditIndex].lat = coords.lat;
+              this.participants[this.currentEditIndex].lng = coords.lng;
+              this.participants[this.currentEditIndex].timeManuallyEdited = false;
+            }
+            this.updateParticipantTimes();
+          } else if (this.isEditingMachine) {
+            this.machineStop.lat = coords.lat;
+            this.machineStop.lng = coords.lng;
+          } else if (this.isEditingStartPoint) {
+            this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+            this.updateParticipantTimes();
+          } else {
+            this.participants[this.currentEditIndex].lat = coords.lat;
+            this.participants[this.currentEditIndex].lng = coords.lng;
+          }
+          this.closeModal();
+          this.saveData();
+          this.renderParticipants();
+          this.calculate();
+        }
+      }
+
+      deleteGreeting() {
+        if (!this.defaultGreetings.includes(this.greeting)) {
+          const index = this.greetings.indexOf(this.greeting);
+          if (index !== -1) {
+            this.greetings.splice(index, 1);
+            this.greeting = 'Moin zusammen';
+            this.closeModal();
+            this.saveData();
+            this.renderParticipants();
+            this.calculate();
+          }
+        } else {
+          this.showToast("Нельзя удалить стандартное приветствие.");
+        }
+      }
+
+      closeModal() {
+        this.elements.coordsModal.style.display = 'none';
+        this.elements.modalContent.classList.remove('add-new-name');
+        this.elements.coordsInput.value = '';
+        this.elements.nameInput.value = '';
+        this.elements.greetingInput.value = '';
+        this.currentEditIndex = null;
+        this.isEditingMachine = false;
+        this.isAddingNewName = false;
+        this.isAddingNewGreeting = false;
+        this.isEditingGreeting = false;
+        this.isEditingStartPoint = false;
+      }
+
+      openMapForSelection() {
+        let centerLat = 51.520000;
+        let centerLng = 6.887619;
+        if (this.isEditingMachine && this.machineStop.lat && this.machineStop.lng) {
+          centerLat = this.machineStop.lat;
+          centerLng = this.machineStop.lng;
+        } else if (this.isEditingStartPoint && this.startPointCoords.lat && this.startPointCoords.lng) {
+          centerLat = this.startPointCoords.lat;
+          centerLng = this.startPointCoords.lng;
+        } else if (!this.isEditingMachine && !this.isAddingNewName && !this.isEditingStartPoint && this.currentEditIndex !== null && this.participants[this.currentEditIndex].lat && this.participants[this.currentEditIndex].lng) {
+          centerLat = this.participants[this.currentEditIndex].lat;
+          centerLng = this.participants[this.currentEditIndex].lng;
+        }
+        const url = `https://www.google.com/maps/@${centerLat},${centerLng},15z`;
+        window.open(url, '_blank');
+      }
+
+      startTimeEdit() {
+        const container = document.querySelector('.machine .right-section');
+        const existingInput = container.querySelector('input[type="time"]');
+        if (existingInput) {
+          existingInput.remove();
+        }
+        const input = document.createElement('input');
+        input.type = 'time';
+        input.style.width = '100px';
+        input.style.padding = 'var(--small-spacing)';
+        input.style.border = '1px solid #ddd';
+        input.style.borderRadius = '4px';
+        input.style.fontSize = '1em';
+        input.value = this.machineStop.arrivalTime || '';
+        const timeControl = container.querySelector('.time-icon') || container.querySelector('.arrival-time');
+        container.insertBefore(input, timeControl);
+        timeControl.style.display = 'none';
+        const handleTimeChange = () => {
+          if (input.value) {
+            this.machineStop.arrivalTime = input.value;
+          }
+          container.removeChild(input);
+          timeControl.style.display = 'flex';
+          this.renderParticipants();
+          this.initSortable();
+          this.calculate();
+          input.removeEventListener('change', handleTimeChange);
+          input.removeEventListener('blur', handleBlur);
+        };
+        const handleBlur = () => {
+          setTimeout(() => {
+            if (document.body.contains(input)) {
+              container.removeChild(input);
+              timeControl.style.display = 'flex';
+              this.renderParticipants();
+              this.initSortable();
+              this.calculate();
+            }
+            input.removeEventListener('change', handleTimeChange);
+            input.removeEventListener('blur', handleBlur);
+          }, 50);
+        };
+        input.addEventListener('change', handleTimeChange);
+        input.addEventListener('blur', handleBlur);
+        input.focus();
+        try {
+          if (input.showPicker) {
+            input.showPicker();
+          }
+        } catch (e) {
+          console.warn('showPicker не поддерживается, используем фокус:', e);
+        }
+      }
+
+      clearArrivalTime() {
+        this.machineStop.arrivalTime = '';
+        this.renderParticipants();
+        this.initSortable();
+        this.calculate();
+      }
+
+      initSortable() {
+        if (this.sortable) this.sortable.destroy();
+        this.sortable = Sortable.create(this.elements.participantsContainer, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          handle: '.participant:not(.machine)',
+          filter: '.machine',
+          onMove: function (evt) {
+            return evt.related.className.indexOf('machine') === -1;
+          },
+          onEnd: (evt) => {
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+            if (oldIndex >= 0 && newIndex >= 0 && oldIndex < this.participants.length && newIndex < this.participants.length) {
+              const [movedItem] = this.participants.splice(oldIndex, 1);
+              this.participants.splice(newIndex, 0, movedItem);
+              this.updateParticipantTimes();
+              this.syncCoordinates();
+              this.renderParticipants();
+              this.initSortable();
+              this.calculate();
+            }
+          }
+        });
+      }
+
+      addParticipant() {
+        this.participants.push({ name: '', time: 5, lat: null, lng: null, timeManuallyEdited: false });
+        this.renderParticipants();
+        this.initSortable();
+        this.calculate();
+      }
+
+      removeParticipant(index) {
+        this.participants.splice(index, 1);
+        this.updateParticipantTimes();
+        this.renderParticipants();
+        this.initSortable();
+        this.calculate();
+      }
+
+      updateName(index, value) {
+        if (value === 'add-new') {
+          this.openCoordsModal(index, false, true);
+        } else {
+          if (value && (this.participants.some((p, i) => i !== index && p.name === value) || value === this.startPoint)) {
+            this.showToast(`Имя "${value}" уже используется. Выберите другое имя.`);
+            this.participants[index].name = '';
+            this.participants[index].lat = null;
+            this.participants[index].lng = null;
+            this.participants[index].timeManuallyEdited = false;
+          } else {
+            this.participants[index].name = value;
+            const coords = this.nameToCoordinates[value];
+            if (coords) {
+              this.participants[index].lat = coords.lat;
+              this.participants[index].lng = coords.lng;
+            } else {
+              this.participants[index].lat = null;
+              this.participants[index].lng = null;
+            }
+            this.participants[index].timeManuallyEdited = false;
+            this.updateParticipantTimes();
+          }
+          this.saveData();
+          this.renderParticipants();
+          this.calculate();
+        }
+      }
+
+      updateTime(index, value) {
+        const parsedValue = parseInt(value, 10);
+        if (!isNaN(parsedValue) && parsedValue >= 1 && parsedValue <= 60) {
+          this.participants[index].time = parsedValue;
+          this.participants[index].timeManuallyEdited = true;
+        } else {
+          this.showToast("Время должно быть от 1 до 60 минут.");
+        }
+        this.saveData();
+        this.renderParticipants();
+        this.calculate();
+      }
+
+      updateMachineName(value) {
+        this.machineStop.name = value;
+        this.saveData();
+        this.calculate();
+      }
+
+      updateMachineTime(value) {
+        const parsedValue = parseInt(value, 10);
+        if (!isNaN(parsedValue) && parsedValue >= 1 && parsedValue <= 60) {
+          this.machineStop.time = parsedValue;
+        } else {
+          this.showToast("Время должно быть от 1 до 60 минут.");
+        }
+        this.saveData();
+        this.calculate();
+      }
+
+      showToast(message) {
+        const toast = this.elements.toast;
+        toast.textContent = message;
+        toast.style.display = 'block';
+        setTimeout(() => {
+          toast.style.display = 'none';
+        }, 1500);
+      }
+
+      calculate() {
+        const output = this.elements.output;
+        output.textContent = '';
+        if (!this.machineStop.arrivalTime) {
+          this.showToast("Пожалуйста, введите время прибытия.");
+          return;
+        }
+        const [hour, minute] = this.machineStop.arrivalTime.split(':').map(Number);
+        let arrivalAtMachine = new Date();
+        arrivalAtMachine.setHours(hour, minute, 0, 0);
+        let totalTimeMinutes = 0;
+        const stops = [];
+        stops.push({ name: this.machineStop.name, offset: totalTimeMinutes });
+        totalTimeMinutes += this.machineStop.time;
+        for (let i = this.participants.length - 1; i >= 0; i--) {
+          const participant = this.participants[i];
+          if (participant.name) {
+            stops.push({ name: `bei ${participant.name}`, offset: totalTimeMinutes });
+            totalTimeMinutes += participant.time;
+          }
+        }
+        stops.push({ name: `geht's los von ${this.startPoint || 'Startpunkt'}`, offset: totalTimeMinutes });
+        stops.reverse();
+        let result = `${this.greeting},\n`;
+        stops.forEach(stop => {
+          const stopTime = new Date(arrivalAtMachine.getTime() - stop.offset * 60 * 1000);
+          const h = stopTime.getHours().toString().padStart(2, '0');
+          const m = stopTime.getMinutes().toString().padStart(2, '0');
+          result += `${h}:${m} Uhr ${stop.name}\n`;
+        });
+        output.textContent = result.trim();
+      }
+
+      openGoogleMaps() {
+        console.log("Participants:", this.participants);
+        console.log("Start Point:", this.startPoint, this.startPointCoords);
+        if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
+          this.showToast("Пожалуйста, укажите координаты начальной точки.");
+          return;
+        }
+        if (!this.machineStop.lat || !this.machineStop.lng) {
+          this.showToast("Пожалуйста, укажите координаты машины.");
+          return;
+        }
+        if (this.participants.some(p => !p.lat || !p.lng || !p.name)) {
+          this.showToast("Пожалуйста, укажите имена и координаты всех участников.");
+          return;
+        }
+        const origin = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+        const destination = `${this.machineStop.lat},${this.machineStop.lng}`;
+        const waypoints = this.participants.map(p => `${p.lat},${p.lng}`).join('|');
+        const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
+        console.log("Google Maps URL:", url);
+        window.open(url, '_blank');
+      }
+
+      copyResult() {
+        const text = this.elements.output.textContent;
+        if (!text) {
+          this.showToast("Нет результатов для копирования.");
+          return;
+        }
+        navigator.clipboard.writeText(text)
+          .then(() => this.showToast("Текст скопирован"))
+          .catch(err => {
+            console.error('Ошибка копирования текста: ', err);
+            this.showToast("Ошибка при копировании.");
+          });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      new FahrzeitRechner();
+    });
+  </script>
+</body>
+</html>
