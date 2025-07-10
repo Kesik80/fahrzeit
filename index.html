@@ -130,11 +130,29 @@
       box-sizing: border-box;
     }
 
-    .greeting-container .edit-greeting-btn,
+    .greeting-container .edit-greeting-btn {
+      width: 22px;
+      /* Соответствует новому размеру .coords-icon */
+      height: 22px;
+      /* Соответствует новому размеру .coords-icon */
+      background: transparent;
+      border: none;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      flex-shrink: 0;
+      line-height: 1;
+      padding: 0;
+    }
+
     .greeting-container .start-point-coords {
-      width: var(--button-size);
-      height: var(--button-size);
-      background: var(--info-color);
+      width: 28px;
+      /* Соответствует новому размеру .coords-icon */
+      height: 28px;
+      /* Соответствует новому размеру .coords-icon */
+      background: transparent;
       border: none;
       border-radius: 4px;
       display: flex;
@@ -840,12 +858,12 @@
           <option value="add-new">Добавить новое имя</option>
         `;
         const noCoordsSvg = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="rgb(209,43,47)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         `;
         const hasCoordsSvg = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="rgb(68,178,229)">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)">
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
           </svg>
         `;
