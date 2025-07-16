@@ -127,7 +127,7 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
       display: flex;
       align-items: center;
-      gap: var(--small-spacing);
+      gap: var(--spacing-unit);
       flex-wrap: wrap;
     }
 
@@ -141,8 +141,8 @@
     }
 
     .greeting-container .edit-greeting-btn {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       background: transparent;
       border: none;
       border-radius: 4px;
@@ -965,8 +965,9 @@
               ${participantNameOptions}
               <option value="add-new">Добавить новое имя</option>
             </select>
-            <input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах">
-            <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
+           <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
+<input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах">
+
             <div class="right-section">
               <span class="material-symbols-outlined" aria-label="Переместить участника">
                 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
@@ -985,8 +986,8 @@
         const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
         machineDiv.innerHTML = `
           <input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины">
-          <input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах">
           <button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${machineCoordsSvg}</button>
+          <input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах">
           <div class="right-section">
             ${this.machineStop.arrivalTime
             ? `<div class="arrival-time" tabindex="0" role="button" aria-label="Время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>`
