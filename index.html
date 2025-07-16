@@ -60,7 +60,8 @@
       --border-radius: 6px;
       --spacing-unit: 10px;
       --small-spacing: 6px;
-      --button-size: 22px;
+      --button-size: 44px;
+      --button-font-size: 0.9em;
     }
 
     body {
@@ -84,8 +85,13 @@
       border-radius: var(--border-radius);
       color: white;
       cursor: pointer;
-      font-size: 1em;
+      font-size: var(--button-font-size);
       transition: background-color 0.2s ease, transform 0.1s ease;
+      height: var(--button-size);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
     button:hover {
@@ -109,6 +115,10 @@
       background: var(--danger-color);
     }
 
+    .route-back {
+      background: #6f42c1;
+    }
+
     .greeting-container {
       background: var(--surface-color);
       border-radius: var(--border-radius);
@@ -122,7 +132,7 @@
     }
 
     .greeting-container select {
-      width: 40%;
+      width: 35%;
       padding: var(--small-spacing);
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -131,10 +141,8 @@
     }
 
     .greeting-container .edit-greeting-btn {
-      width: 22px;
-      /* Соответствует новому размеру .coords-icon */
-      height: 22px;
-      /* Соответствует новому размеру .coords-icon */
+      width: 28px;
+      height: 28px;
       background: transparent;
       border: none;
       border-radius: 4px;
@@ -145,13 +153,12 @@
       flex-shrink: 0;
       line-height: 1;
       padding: 0;
+
     }
 
     .greeting-container .start-point-coords {
       width: 28px;
-      /* Соответствует новому размеру .coords-icon */
       height: 28px;
-      /* Соответствует новому размеру .coords-icon */
       background: transparent;
       border: none;
       border-radius: 4px;
@@ -168,6 +175,7 @@
     .greeting-container .start-point-coords svg {
       width: 100%;
       height: 100%;
+
     }
 
     #participants {
@@ -189,8 +197,8 @@
     .participant select,
     .participant input[type="text"] {
       flex: 1;
-      min-width: 40%;
-      max-width: 40%;
+      min-width: 35%;
+      max-width: 35%;
       padding: var(--small-spacing);
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -199,7 +207,7 @@
     }
 
     .participant input[type="number"] {
-      width: 40px;
+      width: 50px;
       padding: var(--small-spacing);
       border: 1px solid #ddd;
       border-radius: 4px;
@@ -226,13 +234,16 @@
     }
 
     .participant .remove-btn {
-      width: var(--button-size);
-      height: var(--button-size);
+      width: 20px;
+      /* Уменьшено с var(--button-size) */
+      height: 20px;
+      /* Уменьшено с var(--button-size) */
       background: var(--danger-color);
       color: white;
       border: none;
       border-radius: 4px;
-      font-size: 16px;
+      font-size: 14px;
+      /* Уменьшено с 16px для пропорциональности */
       display: flex;
       align-items: center;
       justify-content: center;
@@ -278,9 +289,7 @@
     .coords-icon {
       font-size: 24px;
       width: 28px;
-      /* Изменено с var(--button-size) */
       height: 28px;
-      /* Изменено с var(--button-size) */
       border: none;
       background: transparent;
       display: flex;
@@ -348,23 +357,36 @@
 
     .button-container {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      flex-direction: row;
+      gap: 6px;
       margin-top: var(--spacing-unit);
-      gap: var(--spacing-unit);
+      flex-wrap: nowrap;
     }
 
     .button-container button {
-      width: auto;
-      flex-grow: 1;
+      flex: 1;
       margin-top: 0;
-      padding: var(--small-spacing) var(--spacing-unit);
-      font-size: 0.9em;
+      padding: var(--small-spacing) 8px;
+      font-size: 0.8em;
+      min-width: 60px;
+    }
+
+    @media (max-width: 500px) {
+      .button-container {
+        flex-wrap: nowrap;
+        gap: 4px;
+      }
+
+      .button-container button {
+        flex: 1;
+        padding: var(--small-spacing) 6px;
+        font-size: 0.75em;
+        min-width: 50px;
+      }
     }
 
     .button-container .add {
-      flex-grow: 2;
-      white-space: nowrap;
+      grid-column: span 2;
     }
 
     .modal {
@@ -420,10 +442,25 @@
       box-sizing: border-box;
     }
 
+    .modal-buttons {
+      display: flex;
+      flex-direction: row;
+      gap: var(--spacing-unit);
+      /* Отступ между кнопками */
+      justify-content: center;
+      /* Центрировать кнопки в контейнере */
+      margin-top: var(--spacing-unit);
+      /* Отступ сверху для отделения от других элементов */
+    }
+
     .modal-content button {
-      width: auto;
-      padding: 10px 20px;
-      margin: 8px 4px;
+      flex: 1;
+      /* Кнопки занимают равное пространство */
+      max-width: 120px;
+      /* Ограничение максимальной ширины для аккуратного вида */
+      padding: 10px;
+      margin: 0;
+      /* Убираем margin, так как gap управляет расстоянием */
       border-radius: 4px;
       font-size: 1em;
       color: white;
@@ -434,10 +471,6 @@
 
     .modal-content button:hover {
       transform: translateY(-1px);
-    }
-
-    .modal-content .map-button {
-      background: var(--primary-color);
     }
 
     .modal-content .save-button {
@@ -451,6 +484,10 @@
     .modal-content .delete-greeting-btn {
       background: var(--danger-color);
     }
+
+    .modal-content .map-button {
+      background: var(--primary-color);
+    }
   </style>
 </head>
 
@@ -458,6 +495,12 @@
   <main>
     <h2>Fahrzeit Rechner</h2>
     <div class="greeting-container">
+
+      <select id="startPoint" aria-label="Выберите начальную точку">
+        <option value="" disabled>Выберите начальную точку</option>
+      </select>
+      <button class="start-point-coords" title="Редактировать координаты начальной точки"></button>
+
       <select id="greeting" aria-label="Выберите приветствие">
         <option value="Moin zusammen" selected>Moin zusammen</option>
         <option value="Hallo zusammen">Hallo zusammen</option>
@@ -467,25 +510,18 @@
         <option value="add-new-greeting">Добавить новое приветствие</option>
       </select>
       <button class="edit-greeting-btn" title="Редактировать или удалить приветствие">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 256 256" xml:space="preserve">
-          <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
-            transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
-            <path
-              d="M 87.851 6.29 L 83.71 2.15 C 82.324 0.763 80.48 0 78.521 0 c -1.961 0 -3.804 0.763 -5.19 2.15 l -6.181 6.181 L 22.822 52.658 c -0.074 0.074 -0.134 0.156 -0.194 0.238 c -0.016 0.022 -0.036 0.04 -0.052 0.063 c -0.087 0.13 -0.155 0.268 -0.208 0.411 c -0.004 0.011 -0.012 0.019 -0.015 0.03 l -6.486 18.178 c -0.26 0.728 -0.077 1.54 0.47 2.086 c 0.381 0.382 0.893 0.586 1.415 0.586 c 0.225 0 0.452 -0.038 0.671 -0.116 l 18.177 -6.485 c 0.014 -0.005 0.025 -0.014 0.038 -0.019 c 0.142 -0.054 0.279 -0.12 0.406 -0.206 c 0.017 -0.012 0.031 -0.027 0.048 -0.039 c 0.088 -0.063 0.174 -0.128 0.251 -0.206 l 44.328 -44.328 l 6.182 -6.181 C 90.712 13.808 90.712 9.152 87.851 6.29 z M 21.051 68.948 l 4.006 -11.226 l 3.61 3.611 l 3.61 3.611 L 21.051 68.948 z M 35.927 62.936 l -1.445 -1.445 l -7.418 -7.419 l 41.499 -41.499 l 8.863 8.863 L 35.927 62.936 z M 85.022 13.841 l -4.768 4.767 l -8.863 -8.863 l 4.767 -4.767 c 1.26 -1.263 3.46 -1.263 4.724 0 l 4.141 4.14 C 86.324 10.42 86.324 12.539 85.022 13.841 z"
-              style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;"
-              transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
-            <path
-              d="M 79.388 45.667 c -1.104 0 -2 0.896 -2 2 v 34.804 c 0 1.946 -1.584 3.529 -3.53 3.529 H 7.53 C 5.583 86 4 84.417 4 82.471 V 16.142 c 0 -1.946 1.583 -3.53 3.53 -3.53 h 34.803 c 1.104 0 2 -0.896 2 -2 s -0.896 -2 -2 -2 H 7.53 C 3.378 8.612 0 11.99 0 16.142 v 66.329 C 0 86.622 3.378 90 7.53 90 h 66.328 c 4.152 0 7.53 -3.378 7.53 -7.529 V 47.667 C 81.388 46.562 80.492 45.667 79.388 45.667 z"
-              style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: rgb(0,0,0); fill-rule: nonzero; opacity: 1;"
-              transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
-          </g>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18px" height="18px">
+          <path
+            d="M 46.193359 6.8632812 C 44.526071 6.8841256 42.877087 7.5121253 41.476562 8.9921875 A 1.0001 1.0001 0 0 0 41.464844 9.0039062 C 35.797767 15.186541 15.433594 38.771484 15.433594 38.771484 A 1.0001 1.0001 0 0 0 15.212891 39.214844 L 13.724609 46.119141 C 13.444407 46.044741 13.282976 45.914448 12.982422 45.851562 A 1.0001 1.0001 0 1 0 12.572266 47.808594 C 12.877322 47.872424 13.024969 47.994747 13.302734 48.070312 L 11.798828 55.044922 A 1.0001 1.0001 0 0 0 13.179688 56.169922 L 20.552734 52.914062 A 1.0001 1.0001 0 0 0 21.105469 51.705078 C 21.105469 51.705078 20.707279 50.481577 19.503906 49.210938 C 18.693808 48.355556 17.312325 47.523161 15.621094 46.806641 L 17.113281 39.886719 C 17.372171 39.586964 37.386514 16.413649 42.927734 10.367188 L 42.931641 10.365234 C 47.763656 5.2669134 55.892683 14.151904 52.833984 17.423828 A 1.0001 1.0001 0 0 0 52.8125 17.447266 C 52.8125 17.447266 33.986172 38.918963 27.871094 46.265625 C 27.080453 44.910156 26.064838 43.707954 25.044922 42.832031 C 24.180836 42.089939 23.883263 41.946012 23.404297 41.630859 L 45.919922 16.087891 A 1.0001 1.0001 0 1 0 44.419922 14.765625 L 21.185547 41.125 A 1.0001 1.0001 0 0 0 21.425781 42.646484 C 21.425781 42.646484 22.510357 43.291691 23.742188 44.349609 C 24.974017 45.407528 26.291404 46.87853 26.763672 48.294922 A 1.0001 1.0001 0 0 0 28.486328 48.611328 C 33.662451 42.298911 54.261719 18.826896 54.294922 18.789062 C 58.175865 14.637575 52.62664 7.3970045 46.908203 6.890625 C 46.669935 6.8695259 46.431543 6.8603035 46.193359 6.8632812 z M 15.203125 48.751953 C 16.463038 49.330995 17.469117 49.97165 18.052734 50.587891 C 18.58138 51.146087 18.53841 51.243766 18.695312 51.548828 L 14.167969 53.546875 L 15.203125 48.751953 z"
+            style="stroke: #000000; stroke-width: 2; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;" />
         </svg>
       </button>
-      <select id="startPoint" aria-label="Выберите начальную точку">
-        <option value="" disabled>Выберите начальную точку</option>
-      </select>
-      <button class="start-point-coords" title="Редактировать координаты начальной точки"></button>
+
     </div>
+
+
+
+
     <div id="participants"></div>
     <div class="button-container">
       <button class="add" title="Teilnehmer hinzufügen">
@@ -500,13 +536,44 @@
             d="m226-559 78 33q14-28 29-54t33-52l-56-11-84 84Zm142 83 114 113q42-16 90-49t90-75q70-70 109.5-155.5T806-800q-72-5-158 34.5T492-656q-42 42-75 90t-49 90Zm178-65q-23-23-23-56.5t23-56.5q23-23 57-23t57 23q23 23 23 56.5T660-541q-23 23-57 23t-57-23Zm19 321 84-84-11-56q-26 18-52 32.5T532-299l33 79Zm313-653q19 121-23.5 235.5T708-419l20 99q4 20-2 39t-20 33L538-80l-84-197-171-171-197-84 167-168q14-14 33.5-20t39.5-2l99 20q104-104 218-147t235-24ZM157-321q35-35 85.5-35.5T328-322q35 35 34.5 85.5T327-151q-25 25-83.5 43T82-76q14-103 32-161.5t43-83.5Zm57 56q-10 10-20 36.5T180-175q27-4 53.5-13.5T270-208q12-12 13-29t-11-29q-12-12-29-11.5T214-265Z" />
         </svg>
       </button>
+      <button class="route-back" title="Маршрут назад">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24px"
+          height="24px" viewBox="0 0 256 256" xml:space="preserve">
+          <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
+            transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+            <path
+              d="M 77.612 90 H 12.388 c -0.829 0 -1.5 -0.672 -1.5 -1.5 V 36.637 H 1.5 c -0.642 0 -1.212 -0.408 -1.419 -1.015 c -0.208 -0.607 -0.006 -1.279 0.502 -1.671 l 43.5 -33.637 c 0.54 -0.418 1.295 -0.418 1.835 0 l 43.5 33.637 c 0.507 0.393 0.709 1.064 0.502 1.671 c -0.208 0.607 -0.778 1.015 -1.42 1.015 h -9.388 V 88.5 C 79.112 89.328 78.44 90 77.612 90 z M 13.888 87 h 62.225 V 35.137 c 0 -0.829 0.672 -1.5 1.5 -1.5 h 6.496 L 45 3.396 L 5.892 33.637 h 6.496 c 0.829 0 1.5 0.671 1.5 1.5 V 87 z"
+              style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
+              transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
+            <path
+              d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -16 7.177 -16 16 c 0 3.778 1.35 7.45 3.801 10.339 L 45 76.875 l 12.199 -14.367 C 59.65 59.619 61 55.948 61 52.169 C 61 43.347 53.822 36.169 45 36.169 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
+              style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
+              transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
+          </g>
+        </svg>
+      </button>
       <button class="copy" title="Kopieren">
         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
           <path
             d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
         </svg>
       </button>
-      <button class="clear" title="Сбросить данные">Сбросить</button>
+      <button class="clear" title="Сбросить данные">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24px"
+          height="24px" viewBox="0 0 256 256" xml:space="preserve">
+          <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
+            transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+            <path
+              d="M 7.288 48.34 c 0.061 0.04 0.129 0.068 0.193 0.105 c 0.18 0.105 0.363 0.201 0.559 0.277 c 0.093 0.036 0.19 0.06 0.286 0.089 c 0.175 0.053 0.351 0.098 0.535 0.127 c 0.049 0.008 0.094 0.028 0.144 0.034 C 9.164 48.99 9.322 49 9.481 49 c 0 0 0 0 0.001 0 c 0 0 0 0 0 0 c 0 0 0 0 0 0 c 0.267 0 0.531 -0.028 0.79 -0.08 c 0.154 -0.031 0.297 -0.086 0.443 -0.134 c 0.101 -0.033 0.206 -0.054 0.304 -0.094 c 0.162 -0.067 0.31 -0.158 0.46 -0.245 c 0.075 -0.043 0.156 -0.075 0.228 -0.124 c 0.217 -0.146 0.42 -0.311 0.604 -0.495 c 0 0 0 0 0 0 l 7.492 -7.492 c 1.562 -1.562 1.562 -4.095 0 -5.657 c -1.149 -1.149 -2.822 -1.445 -4.249 -0.903 c 4.535 -11.868 16.033 -20.322 29.475 -20.322 c 12.266 0 23.516 7.2 28.658 18.342 c 0.926 2.004 3.3 2.881 5.309 1.956 c 2.005 -0.926 2.881 -3.302 1.955 -5.308 C 74.503 14.478 60.403 5.455 45.027 5.455 c -17.837 0 -32.947 11.873 -37.859 28.129 c -1.224 -1.611 -3.48 -2.084 -5.247 -1.008 c -1.887 1.148 -2.486 3.609 -1.338 5.496 l 5.481 9.007 c 0.014 0.023 0.035 0.041 0.049 0.063 c 0.125 0.195 0.268 0.375 0.424 0.545 c 0.036 0.039 0.064 0.085 0.101 0.122 C 6.835 48.009 7.053 48.186 7.288 48.34 z"
+              style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
+              transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+            <path
+              d="M 89.416 51.929 l -5.48 -9.008 c -0.014 -0.023 -0.035 -0.04 -0.049 -0.063 c -0.125 -0.195 -0.268 -0.375 -0.424 -0.546 c -0.035 -0.039 -0.063 -0.084 -0.1 -0.121 c -0.197 -0.199 -0.415 -0.376 -0.65 -0.531 c -0.061 -0.04 -0.129 -0.067 -0.192 -0.104 c -0.18 -0.105 -0.364 -0.201 -0.56 -0.277 c -0.093 -0.036 -0.19 -0.06 -0.287 -0.089 c -0.174 -0.053 -0.35 -0.098 -0.534 -0.127 c -0.049 -0.008 -0.095 -0.028 -0.144 -0.034 c -0.07 -0.008 -0.138 0.003 -0.208 -0.001 C 80.697 41.021 80.611 41 80.519 41 c -0.082 0 -0.159 0.019 -0.239 0.024 c -0.121 0.007 -0.24 0.018 -0.36 0.036 c -0.172 0.026 -0.338 0.065 -0.503 0.113 c -0.105 0.03 -0.209 0.058 -0.312 0.097 c -0.178 0.067 -0.344 0.152 -0.509 0.243 c -0.082 0.045 -0.166 0.082 -0.245 0.133 c -0.237 0.153 -0.46 0.326 -0.659 0.524 c 0 0 -0.001 0.001 -0.001 0.001 l 0 0 l 0 0 l -7.492 7.492 c -1.562 1.562 -1.562 4.095 0 5.656 c 1.148 1.15 2.822 1.446 4.249 0.904 c -4.535 11.868 -16.033 20.321 -29.475 20.321 c -12.707 0 -24.117 -7.563 -29.068 -19.268 c -0.861 -2.034 -3.209 -2.988 -5.242 -2.125 c -2.035 0.86 -2.986 3.207 -2.126 5.242 c 6.206 14.671 20.508 24.151 36.436 24.151 c 17.831 0 32.937 -11.864 37.854 -28.111 c 0.774 1.015 1.96 1.574 3.176 1.574 c 0.708 0 1.426 -0.188 2.075 -0.584 C 89.966 56.276 90.565 53.816 89.416 51.929 z"
+              style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
+              transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+          </g>
+        </svg>
+      </button>
     </div>
     <pre id="output"></pre>
     <div id="toast" class="toast"></div>
@@ -522,13 +589,14 @@
           placeholder="51.452013,7.021455 или https://maps.app.goo.gl/...">
         <p id="coordsHelp" style="display: none;">Нажмите "Выбрать на карте", чтобы открыть Google Карты, выберите
           точку, скопируйте координаты (например, 51.452013,7.021455) или полный URL Google Карт (например,
-          https://www.google.com/maps/place/...
-          /@51.452013,7.021455,15z). Если используете сокращённый URL (maps.app.goo.gl), откройте его в браузере,
-          скопируйте полный URL и вставьте выше.</p>
+          https://www.google.com/maps/place/... /@51.452013,7.021455,15z). Если используете сокращённый URL
+          (maps.app.goo.gl), откройте его в браузере, скопируйте полный URL и вставьте выше.</p>
         <button class="map-button" id="openMap" style="display: none;">Выбрать на карте</button>
-        <button class="save-button" id="saveCoords">Сохранить</button>
-        <button class="delete-greeting-btn" id="deleteGreeting" style="display: none;">Удалить</button>
-        <button class="cancel-button" id="cancelCoords">Отмена</button>
+        <div class="modal-buttons">
+          <button class="save-button" id="saveCoords">Сохранить</button>
+          <button class="cancel-button" id="cancelCoords">Отмена</button>
+          <button class="delete-greeting-btn" id="deleteGreeting" style="display: none;">Удалить</button>
+        </div>
       </div>
     </div>
   </main>
@@ -592,6 +660,7 @@
           participantsContainer: document.getElementById('participants'),
           addButton: document.querySelector('.add'),
           calculateButton: document.querySelector('.calculate'),
+          routeBackButton: document.querySelector('.route-back'),
           copyButton: document.querySelector('.copy'),
           clearButton: document.querySelector('.clear'),
           output: document.getElementById('output'),
@@ -804,6 +873,7 @@
         this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
         this.elements.addButton.addEventListener('click', () => this.addParticipant());
         this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
+        this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
         this.elements.copyButton.addEventListener('click', () => this.copyResult());
         this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage());
         this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
@@ -928,7 +998,7 @@
         machineDiv.querySelector('[data-type="machine-name"]').addEventListener('change', (e) => this.updateMachineName(e.target.value));
         machineDiv.querySelector('[data-type="machine-time"]').addEventListener('change', (e) => this.updateMachineTime(e.target.value));
         machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
-        const timeControl = machineDiv.querySelector('.arrival-time') || machineDiv.querySelector('.time-icon');
+        const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
         timeControl.addEventListener('click', () => this.startTimeEdit());
         timeControl.addEventListener('keydown', (e) => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -1404,7 +1474,7 @@
         output.textContent = result.trim();
       }
 
-      openGoogleMaps() {
+      openGoogleMaps(isReturn = false) {
         if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
           this.showToast("Пожалуйста, укажите координаты начальной точки.");
           return;
@@ -1417,9 +1487,21 @@
           this.showToast("Пожалуйста, укажите имена и координаты всех участников.");
           return;
         }
-        const origin = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
-        const destination = `${this.machineStop.lat},${this.machineStop.lng}`;
-        const waypoints = this.participants.map(p => `${p.lat},${p.lng}`).join('|');
+
+        let origin, destination, waypoints;
+
+        if (isReturn) {
+          // Маршрут назад: от машины домой через участников
+          origin = `${this.machineStop.lat},${this.machineStop.lng}`;
+          destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+          waypoints = this.participants.map(p => `${p.lat},${p.lng}`).reverse().join('|');
+        } else {
+          // Обычный маршрут: от дома к машине через участников
+          origin = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+          destination = `${this.machineStop.lat},${this.machineStop.lng}`;
+          waypoints = this.participants.map(p => `${p.lat},${p.lng}`).join('|');
+        }
+
         const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}&waypoints=${waypoints}&travelmode=driving`;
         window.open(url, '_blank');
       }
