@@ -506,7 +506,6 @@
         <option value="Hallo zusammen">Hallo zusammen</option>
         <option value="Guten Morgen">Guten Morgen</option>
         <option value="Guten Tag">Guten Tag</option>
-        <option value="Servus">Servus</option>
         <option value="add-new-greeting">Добавить новое приветствие</option>
       </select>
       <button class="edit-greeting-btn" title="Редактировать или удалить приветствие">
@@ -548,7 +547,7 @@
             <path
               d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -16 7.177 -16 16 c 0 3.778 1.35 7.45 3.801 10.339 L 45 76.875 l 12.199 -14.367 C 59.65 59.619 61 55.948 61 52.169 C 61 43.347 53.822 36.169 45 36.169 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
               style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
-              transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
+              transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
           </g>
         </svg>
       </button>
@@ -611,15 +610,16 @@
           'Anatolii': { lat: 51.522694, lng: 6.858944 },
           'Andrii': { lat: 51.534558, lng: 6.861061 },
           'Sergio': { lat: 51.520000, lng: 6.887619 },
-          'Dima': { lat: 51.551753, lng: 7.102285 }
+          'Dima': { lat: 51.551753, lng: 7.102285 },
+          'Marvin': { lat: 51.556472, lng: 6.731424 }
         };
         this.travelTimes = {
           'Sergii-Anatolii': 5,
           'Anatolii-Sergii': 5,
           'Sergii-Andrii': 5,
           'Andrii-Sergii': 5,
-          'Sergii-Sergio': 15,
-          'Sergio-Sergii': 15,
+          'Sergii-Sergio': 10,
+          'Sergio-Sergii': 10,
           'Sergii-Dima': 30,
           'Dima-Sergii': 30,
           'Andrii-Anatolii': 5,
@@ -628,18 +628,28 @@
           'Sergio-Andrii': 10,
           'Andrii-Dima': 25,
           'Dima-Andrii': 25,
-          'Sergio-Anatolii': 15,
-          'Anatolii-Sergio': 15,
+          'Sergio-Anatolii': 10,
+          'Anatolii-Sergio': 10,
           'Sergio-Dima': 25,
           'Dima-Sergio': 25,
           'Anatolii-Dima': 30,
-          'Dima-Anatolii': 30
+          'Dima-Anatolii': 30,
+          'Marvin-Sergii': 20,
+          'Sergii-Marvin': 20,
+          'Marvin-Anatolii': 17,
+          'Anatolii-Marvin': 17,
+          'Marvin-Andrii': 20,
+          'Andrii-Marvin': 20,
+          'Marvin-Sergio': 25,
+          'Sergio-Marvin': 25,
+          'Marvin-Dima': 30,
+          'Dima-Marvin': 30
         };
         this.startPoint = 'Sergii';
         this.startPointCoords = { lat: 51.530133, lng: 6.850858 };
         this.participantOrders = {
           'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
-          'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima'],
+          'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
           'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
           'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
           'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
@@ -754,7 +764,8 @@
           'Anatolii': { lat: 51.522694, lng: 6.858944 },
           'Andrii': { lat: 51.534558, lng: 6.861061 },
           'Sergio': { lat: 51.520000, lng: 6.887619 },
-          'Dima': { lat: 51.551753, lng: 7.102285 }
+          'Dima': { lat: 51.551753, lng: 7.102285 },
+          'Marvin': { lat: 51.556472, lng: 6.731424 }
         };
         this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
         this.updateParticipantTimes();
@@ -832,7 +843,8 @@
                 'Anatolii': { lat: 51.522694, lng: 6.858944 },
                 'Andrii': { lat: 51.534558, lng: 6.861061 },
                 'Sergio': { lat: 51.520000, lng: 6.887619 },
-                'Dima': { lat: 51.551753, lng: 7.102285 }
+                'Dima': { lat: 51.551753, lng: 7.102285 },
+                'Marvin': { lat: 51.556472, lng: 6.731424 }
               };
             }
           }
