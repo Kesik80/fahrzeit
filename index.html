@@ -48,6 +48,8 @@
   <link rel="stylesheet"
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <!-- клиентский парсер координат -->
+  <script src="https://cdn.jsdelivr.net/npm/latlon-dms@2.0.0/latlon-dms.js"></script>
   <style>
     :root {
       --primary-color: #007bff;
@@ -371,20 +373,6 @@
       min-width: 60px;
     }
 
-    @media (max-width: 500px) {
-      .button-container {
-        flex-wrap: nowrap;
-        gap: 4px;
-      }
-
-      .button-container button {
-        flex: 1;
-        padding: var(--small-spacing) 6px;
-        font-size: 0.75em;
-        min-width: 50px;
-      }
-    }
-
     .button-container .add {
       grid-column: span 2;
     }
@@ -487,6 +475,27 @@
 
     .modal-content .map-button {
       background: var(--primary-color);
+      white-space: nowrap;
+      /* Запрещает перенос текста */
+      padding: 10px 15px;
+      /* Увеличиваем горизонтальный padding для лучшего вида */
+
+    }
+
+    #result {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      /* Сохраняет переносы строк и обрезает длинные строки */
+    }
+
+    #result sup {
+      font-size: 0.7em;
+      /* Уменьшаем размер верхнего индекса */
+      vertical-align: super;
+      /* Приподнимаем индекс */
     }
   </style>
 </head>
@@ -495,7 +504,6 @@
   <main>
     <h2>Fahrzeit Rechner</h2>
     <div class="greeting-container">
-
       <select id="startPoint" aria-label="Выберите начальную точку">
         <option value="" disabled>Выберите начальную точку</option>
       </select>
@@ -583,14 +591,45 @@
         <input type="text" id="nameInput" style="display: none;" placeholder="Введите имя">
         <label id="greetingLabel" style="display: none;">Приветствие:</label>
         <input type="text" id="greetingInput" style="display: none;" placeholder="Введите приветствие">
-        <label id="coordsLabel" style="display: none;">Координаты (широта,долгота или URL Google Карт):</label>
+        <label id="coordsLabel" style="display: none;">Введите координаты <br>(широта,долгота или URL Google
+          Карт):</label>
         <input type="text" id="coordsInput" style="display: none;"
           placeholder="51.452013,7.021455 или https://maps.app.goo.gl/...">
-        <p id="coordsHelp" style="display: none;">Нажмите "Выбрать на карте", чтобы открыть Google Карты, выберите
-          точку, скопируйте координаты (например, 51.452013,7.021455) или полный URL Google Карт (например,
-          https://www.google.com/maps/place/... /@51.452013,7.021455,15z). Если используете сокращённый URL
-          (maps.app.goo.gl), откройте его в браузере, скопируйте полный URL и вставьте выше.</p>
-        <button class="map-button" id="openMap" style="display: none;">Выбрать на карте</button>
+
+        <p id="coordsHelp" style="display: none; color: #d32f2f; font-weight: bold;">
+          Сокращённые ссылки обрабатываются пару секунд.
+        </p>
+
+        <button class="map-button" id="openMap" style="display: none;">
+          <svg width="24" height="24" viewBox="0 0 90 90" fill="none">
+            <g>
+              <path
+                d="M89 79.382H1c-0.355 0-0.683-0.188-0.863-0.494c-0.179-0.306-0.183-0.685-0.01-0.994l15.947-28.521c0.177-0.315 0.511-0.512 0.873-0.512h22.326c0.552 0 1 0.447 1 1s-0.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-0.553 0-1-0.447-1-1s0.447-1 1-1h22.325c0.362 0 0.696 0.196 0.873 0.512l15.947 28.521c0.173 0.31 0.169 0.688-0.011 0.994S89.354 79.382 89 79.382z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M45 60.554L45 60.554c-0.354 0-0.681-0.187-0.861-0.491l-1.784-3.019c-5.353-9.051-10.888-18.409-12.658-21.959c-1.138-2.336-1.713-4.84-1.713-7.45c0-9.383 7.633-17.016 17.016-17.016s17.016 7.633 17.016 17.016c0 2.593-0.566 5.08-1.685 7.393C58.532 38.636 52.994 48 47.639 57.056l-1.778 3.007C45.681 60.367 45.354 60.554 45 60.554zM45 12.619c-8.28 0-15.016 6.736-15.016 15.016c0 2.304 0.507 4.513 1.507 6.565c1.733 3.478 7.25 12.806 12.585 21.825L45 57.589l0.878-1.485c5.376-9.091 10.896-18.424 12.638-21.92c0.999-2.065 1.499-4.259 1.499-6.548C60.016 19.355 53.279 12.619 45 12.619z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649c0-4.769 3.88-8.649 8.649-8.649s8.649 3.88 8.649 8.649C53.673 32.118 49.793 35.998 45.024 35.998zM45.024 20.7c-3.666 0-6.649 2.983-6.649 6.649c0 3.667 2.983 6.649 6.649 6.649c3.667 0 6.649-2.983 6.649-6.649C51.673 23.683 48.69 20.7 45.024 20.7z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M1 79.382c-0.441 0-0.845-0.294-0.965-0.74c-0.143-0.533 0.173-1.082 0.706-1.226l76.501-20.565c0.531-0.145 1.082 0.172 1.226 0.706c0.144 0.533-0.173 1.082-0.706 1.226L1.26 79.348C1.173 79.371 1.085 79.382 1 79.382z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M63.521 73.279c-0.286 0-0.569-0.121-0.767-0.357l-7.332-8.733c-0.355-0.423-0.301-1.054 0.123-1.408c0.423-0.355 1.056-0.301 1.408 0.123l7.332 8.733c0.355 0.423 0.301 1.054-0.123 1.408C63.977 73.202 63.748 73.279 63.521 73.279z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M34.419 70.398c-0.285 0-0.568-0.121-0.766-0.357L23.606 58.075c-0.355-0.423-0.3-1.054 0.123-1.408c0.424-0.354 1.054-0.301 1.409 0.123l10.047 11.966c0.355 0.423 0.3 1.054-0.123 1.408C34.875 70.321 34.646 70.398 34.419 70.398z"
+                fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </g>
+          </svg>
+        </button>
         <div class="modal-buttons">
           <button class="save-button" id="saveCoords">Сохранить</button>
           <button class="cancel-button" id="cancelCoords">Отмена</button>
@@ -602,7 +641,7 @@
   <script>
     class FahrzeitRechner {
       constructor() {
-        this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag', 'Servus'];
+        this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag'];
         this.greetings = [...this.defaultGreetings];
         this.greeting = 'Moin zusammen';
         this.nameToCoordinates = {
@@ -977,8 +1016,8 @@
               ${participantNameOptions}
               <option value="add-new">Добавить новое имя</option>
             </select>
-           <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
-<input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах">
+            <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
+            <input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах">
 
             <div class="right-section">
               <span class="material-symbols-outlined" aria-label="Переместить участника">
@@ -1027,42 +1066,182 @@
         this.calculate();
       }
 
-      parseCoordinates(input) {
-        if (input.includes(',')) {
-          const [latStr, lngStr] = input.split(',').map(str => str.trim());
-          const lat = parseFloat(latStr);
-          const lng = parseFloat(lngStr);
-          if (!isNaN(lat) && !isNaN(lng) && lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+
+      //-------------Обработка сокращенных ссылок Google Maps ---------------------
+      async parseCoordinates(raw) {
+        const s = raw.trim();
+        if (!s) {
+          this.showToast("Пожалуйста, введите данные.");
+          return null;
+        }
+
+        // 1. Десятичные координаты: 51.123,7.123
+        if (/^-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(s)) {
+          const [lat, lng] = s.split(',').map(Number);
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
             return { lat, lng };
           }
         }
-        if (input.includes('google.com/maps') || input.includes('maps.app.goo.gl')) {
-          const atRegex = /@(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
-          const atMatch = input.match(atRegex);
-          if (atMatch) {
-            const lat = parseFloat(atMatch[1]);
-            const lng = parseFloat(atMatch[2]);
-            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-              return { lat, lng };
-            }
+
+        // 2. Полный URL Google Maps или @lat,lng
+        const m1 = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+          s.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/) ||
+          s.match(/place\/[^\/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (m1) {
+          const lat = parseFloat(m1[1]);
+          const lng = parseFloat(m1[2]);
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
           }
-          const llRegex = /[?&]ll=(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
-          const llMatch = input.match(llRegex);
-          if (llMatch) {
-            const lat = parseFloat(llMatch[1]);
-            const lng = parseFloat(llMatch[2]);
-            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+        }
+
+        // 3. DMS формат: 51°20'10.7"N 6°37'47.6"E
+        const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
+        if (dms.length === 2) {
+          try {
+            const toDec = ([, d, mi, s, dir]) => {
+              let dec = +d + mi / 60 + s / 3600;
+              if (/S|W/i.test(dir)) dec = -dec;
+              return dec;
+            };
+            const lat = toDec(dms[0]);
+            const lng = toDec(dms[1]);
+            if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
               return { lat, lng };
             }
+          } catch (e) {
+            console.error('Ошибка парсинга DMS:', e);
           }
-          const placeRegex = /\/place\/[^\/]+\/(-?\d+\.\d{1,10}),(-?\d+\.\d{1,10})/;
-          const placeMatch = input.match(placeRegex);
-          if (placeMatch) {
-            const lat = parseFloat(placeMatch[1]);
-            const lng = parseFloat(placeMatch[2]);
-            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-              return { lat, lng };
+        }
+
+        // 4. Сокращённые ссылки Google Maps
+        if (/^https?:\/\/(?:[^/]*\.)?goo\.gl\/|https?:\/\/maps\.app\.goo\.gl\//i.test(s)) {
+          try {
+            const url = await this.expand(s);
+            let coords = this.parseCoords(url);
+            if (!coords) {
+              coords = await this.coordsFromHTML(url);
             }
+            if (!coords) {
+              this.showToast("Не удалось извлечь координаты из ссылки.");
+              return null;
+            }
+            return coords;
+          } catch (e) {
+            console.error('Ошибка при разрешении сокращённой ссылки:', e);
+            this.showToast("Ошибка при обработке сокращённой ссылки.");
+            return null;
+          }
+        }
+
+        // 5. Попытка парсинга исходной строки как координат, если это не URL
+        if (!/^https?:\/\//.test(s)) {
+          const coords = this.parseCoords(s);
+          if (coords) {
+            return coords;
+          }
+        }
+
+        // 6. Если это URL, но не сокращённый, попробуем извлечь координаты из HTML
+        if (/^https?:\/\//.test(s)) {
+          try {
+            const coords = await this.coordsFromHTML(s);
+            if (coords) {
+              return coords;
+            }
+          } catch (e) {
+            console.error('Ошибка при обработке URL:', e);
+            this.showToast("Не удалось извлечь координаты из ссылки.");
+            return null;
+          }
+        }
+
+        this.showToast("Пожалуйста, введите корректные координаты или URL Google Карт.");
+        return null;
+      }
+
+      // Вспомогательные методы
+      async expand(shortUrl) {
+        const api = 'https://r.jina.ai/' + shortUrl.replace(/^https?:\/\//, '');
+        const response = await fetch(api);
+        if (!response.ok) throw new Error('Не удалось раскрыть ссылку');
+        const raw = await response.text();
+        try {
+          const json = JSON.parse(raw);
+          if (json.resolved_url) return json.resolved_url;
+        } catch { }
+        const match = raw.match(/https?:\/\/[^\s"']+/);
+        if (match) return match[0];
+        throw new Error('Сервис не вернул URL');
+      }
+
+      parseCoords(str) {
+        // Десятичные координаты
+        let m = str.match(/([-+]?\d{1,3}\.\d+)[ ,]+([-+]?\d{1,3}\.\d+)/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+
+        // URL-шаблоны
+        m = str.match(/@([-.\d]+),([-.\d]+),/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+        m = str.match(/\/place\/([-.\d]+),([-.\d]+)/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+        m = str.match(/(?:dest|query|center)=([-.\d]+),([-.\d]+)/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+
+        return null;
+      }
+
+      async coordsFromHTML(page) {
+        const api = 'https://r.jina.ai/' + page.replace(/^https?:\/\//, '');
+        const response = await fetch(api);
+        if (!response.ok) return null;
+        const text = await response.text();
+        let m = text.match(/"lat"\s*:\s*([-.\d]+)\s*,\s*"lng"\s*:\s*([-.\d]+)/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+        m = text.match(/https?:\/\/[^"' ]+\?q=([-.\d]+),([-.\d]+)/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
+          }
+        }
+        m = text.match(/([-+]?\d{1,3}\.\d{4,}),\s*([-+]?\d{1,3}\.\d{4,})/);
+        if (m) {
+          const lat = +m[1];
+          const lng = +m[2];
+          if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+            return { lat, lng };
           }
         }
         return null;
@@ -1165,75 +1344,85 @@
         greetingInput.focus();
       }
 
-      saveCoordinates() {
-        if (this.isAddingNewGreeting || this.isEditingGreeting) {
-          const newGreeting = this.elements.greetingInput.value.trim();
-          if (!newGreeting) {
-            this.showToast("Пожалуйста, введите приветствие.");
-            return;
-          }
-          if (this.isAddingNewGreeting && this.greetings.includes(newGreeting)) {
-            this.showToast("Приветствие уже существует.");
-            return;
-          }
-          if (this.isEditingGreeting) {
-            const oldGreeting = this.greeting;
-            const index = this.greetings.indexOf(oldGreeting);
-            if (index !== -1 && !this.defaultGreetings.includes(oldGreeting)) {
-              this.greetings[index] = newGreeting;
-            }
-            this.greeting = newGreeting;
-          } else if (this.isAddingNewGreeting) {
-            this.greetings.push(newGreeting);
-            this.greeting = newGreeting;
-          }
-          this.closeModal();
-          this.saveData();
-          this.renderParticipants();
-          this.calculate();
-        } else {
-          const coordsInput = this.elements.coordsInput.value;
-          const coords = this.parseCoordinates(coordsInput);
-          if (!coords) {
-            this.showToast("Пожалуйста, введите корректные координаты (например, 51.452013,7.021455 или URL Google Карт).");
-            return;
-          }
-          if (this.isAddingNewName) {
-            const name = this.elements.nameInput.value.trim();
-            if (!name) {
-              this.showToast("Пожалуйста, введите имя.");
+      async saveCoordinates() {
+        const saveButton = this.elements.saveCoordsButton;
+        const originalButtonText = saveButton.textContent;
+        saveButton.textContent = 'Загрузка...';
+        saveButton.disabled = true;
+
+        try {
+          if (this.isAddingNewGreeting || this.isEditingGreeting) {
+            const newGreeting = this.elements.greetingInput.value.trim();
+            if (!newGreeting) {
+              this.showToast("Пожалуйста, введите приветствие.");
               return;
             }
-            if (this.nameToCoordinates[name]) {
-              this.showToast("Имя уже существует. Выберите другое имя.");
+            if (this.isAddingNewGreeting && this.greetings.includes(newGreeting)) {
+              this.showToast("Приветствие уже существует.");
               return;
             }
-            this.saveNameToCoordinates(name, coords.lat, coords.lng);
-            if (this.isEditingStartPoint) {
-              this.startPoint = name;
+            if (this.isEditingGreeting) {
+              const oldGreeting = this.greeting;
+              const index = this.greetings.indexOf(oldGreeting);
+              if (index !== -1 && !this.defaultGreetings.includes(oldGreeting)) {
+                this.greetings[index] = newGreeting;
+              }
+              this.greeting = newGreeting;
+            } else if (this.isAddingNewGreeting) {
+              this.greetings.push(newGreeting);
+              this.greeting = newGreeting;
+            }
+            this.closeModal();
+            this.saveData();
+            this.renderParticipants();
+            this.calculate();
+          } else {
+            const raw = this.elements.coordsInput.value.trim();
+            const coords = await this.parseCoordinates(raw);
+            if (!coords) {
+              this.showToast("Пожалуйста, введите корректные координаты или URL Google Карт.");
+              return;
+            }
+            if (this.isAddingNewName) {
+              const name = this.elements.nameInput.value.trim();
+              if (!name) {
+                this.showToast("Пожалуйста, введите имя.");
+                return;
+              }
+              if (this.nameToCoordinates[name]) {
+                this.showToast("Имя уже существует. Выберите другое имя.");
+                return;
+              }
+              this.saveNameToCoordinates(name, coords.lat, coords.lng);
+              if (this.isEditingStartPoint) {
+                this.startPoint = name;
+                this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+                this.participants = [];
+              } else {
+                this.participants[this.currentEditIndex].name = name;
+                this.participants[this.currentEditIndex].lat = coords.lat;
+                this.participants[this.currentEditIndex].lng = coords.lng;
+                this.participants[this.currentEditIndex].timeManuallyEdited = false;
+              }
+              this.updateParticipantTimes();
+            } else if (this.isEditingMachine) {
+              this.machineStop.lat = coords.lat;
+              this.machineStop.lng = coords.lng;
+            } else if (this.isEditingStartPoint) {
               this.startPointCoords = { lat: coords.lat, lng: coords.lng };
-              this.participants = [];
+              this.updateParticipantTimes();
             } else {
-              this.participants[this.currentEditIndex].name = name;
               this.participants[this.currentEditIndex].lat = coords.lat;
               this.participants[this.currentEditIndex].lng = coords.lng;
-              this.participants[this.currentEditIndex].timeManuallyEdited = false;
             }
-            this.updateParticipantTimes();
-          } else if (this.isEditingMachine) {
-            this.machineStop.lat = coords.lat;
-            this.machineStop.lng = coords.lng;
-          } else if (this.isEditingStartPoint) {
-            this.startPointCoords = { lat: coords.lat, lng: coords.lng };
-            this.updateParticipantTimes();
-          } else {
-            this.participants[this.currentEditIndex].lat = coords.lat;
-            this.participants[this.currentEditIndex].lng = coords.lng;
+            this.closeModal();
+            this.saveData();
+            this.renderParticipants();
+            this.calculate();
           }
-          this.closeModal();
-          this.saveData();
-          this.renderParticipants();
-          this.calculate();
+        } finally {
+          saveButton.textContent = originalButtonText;
+          saveButton.disabled = false;
         }
       }
 
@@ -1454,9 +1643,11 @@
         }, 1500);
       }
 
+
+      //-----------Отображение времени ----------------------
       calculate() {
         const output = this.elements.output;
-        output.textContent = '';
+        output.textContent = ''; // Очищаем вывод
         if (!this.machineStop.arrivalTime) {
           this.showToast("Пожалуйста, введите время прибытия.");
           return;
@@ -1471,21 +1662,28 @@
         for (let i = this.participants.length - 1; i >= 0; i--) {
           const participant = this.participants[i];
           if (participant.name) {
-            stops.push({ name: `bei ${participant.name}`, offset: totalTimeMinutes });
+            stops.push({ name: `${participant.name}`, offset: totalTimeMinutes });
             totalTimeMinutes += participant.time;
           }
         }
         stops.push({ name: "geht's los", offset: totalTimeMinutes });
         stops.reverse();
-        let result = `${this.greeting},\n`;
+        let result = 'Moin zusammen,\n';
         stops.forEach(stop => {
           const stopTime = new Date(arrivalAtMachine.getTime() - stop.offset * 60 * 1000);
           const h = stopTime.getHours().toString().padStart(2, '0');
           const m = stopTime.getMinutes().toString().padStart(2, '0');
-          result += `${h}:${m} Uhr ${stop.name}\n`;
+          // Преобразуем минуты в верхние индексы
+          const superscriptMinutes = m
+            .split('')
+            .map(digit => '⁰¹²³⁴⁵⁶⁷⁸⁹'[parseInt(digit)])
+            .join('');
+          result += `${h}<sup>${superscriptMinutes}</sup> ${stop.name}\n`;
         });
-        output.textContent = result.trim();
+        output.innerHTML = result.trim();
       }
+      //---------------------------------------------------
+
 
       openGoogleMaps(isReturn = false) {
         if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
