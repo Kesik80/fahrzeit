@@ -1678,7 +1678,7 @@
             .split('')
             .map(digit => '⁰¹²³⁴⁵⁶⁷⁸⁹'[parseInt(digit)])
             .join('');
-          result += `${h}<sup>${superscriptMinutes}</sup> ${stop.name}\n`;
+          result += `${h}<sup>${superscriptMinutes}</sup>  ${stop.name}\n`;
         });
         output.innerHTML = result.trim();
       }
