@@ -3,7 +3,12 @@
 
 <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Fahrzeit Rechner</title>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/latlon-geohash@2.0.0/latlon-geohash.min.js"></script>
     <style>
         :root {
             --primary-color: #007bff;
@@ -17,7 +22,7 @@
             --spacing-unit: 10px;
             --small-spacing: 6px;
             --button-size: 44px;
-            --button-font-size: 0.9em
+            --button-font-size: 0.9em;
         }
 
         body {
@@ -151,7 +156,7 @@
             gap: var(--small-spacing);
             align-items: center;
             justify-content: flex-end;
-            min-height: 32px
+            min-height: 32px;
         }
 
         .participant .remove-btn {
@@ -169,8 +174,10 @@
             flex-shrink: 0;
             line-height: 1;
             padding: 0;
-            transform: translate(5px, -15px)
+            transform: translate(5px, -15px);
+
         }
+
 
         .time-remove {
             width: 24px;
@@ -188,7 +195,7 @@
             line-height: 1;
             transform: translateY(-5px);
             margin-top: -5px;
-            margin-right: -7px
+            margin-right: -7px;
         }
 
         .arrival-time {
@@ -201,7 +208,7 @@
             padding: var(--small-spacing);
             background: #e9e9e9;
             border-radius: 4px;
-            line-height: 1
+            line-height: 1;
         }
 
         .time-icon,
@@ -219,6 +226,11 @@
             line-height: 1;
             padding: 0;
             transform: translateY(-5px)
+        }
+
+        .coords-icon svg {
+            width: 100%;
+            height: 100%
         }
 
         .material-symbols-outlined {
@@ -282,6 +294,10 @@
             min-width: 60px
         }
 
+        .button-container .add {
+            grid-column: span 2
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -299,7 +315,7 @@
             background: var(--surface-color);
             padding: 20px;
             border-radius: var(--border-radius);
-            box-shadow: 0 2px 8px rgba(0, 0, .2);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
             max-width: 300px;
             width: 100%;
             text-align: center;
@@ -378,7 +394,7 @@
             margin-right: auto;
             margin-top: var(--spacing-unit);
             margin-bottom: var(--spacing-unit);
-            background: var(--primary-color)
+            background: var(--primary-color);
         }
 
         #result {
@@ -398,7 +414,7 @@
             display: flex;
             gap: var(--small-spacing);
             margin-top: var(--spacing-unit);
-            justify-content: flex-end
+            justify-content: flex-end;
         }
     </style>
 </head>
@@ -426,56 +442,68 @@
                 </svg>
             </button>
         </div>
+
         <div id="participants"></div>
+
         <div class="button-container">
-            <button class="add" title="Teilnehmer hinzufügen"><svg xmlns="http://www.w3.org/2000/svg" height="24"
-                    viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
+            <button class="add" title="Teilnehmer hinzufügen">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
                     <path
                         d="M480-80Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880h20q10 0 20 2v81q-10-2-19.5-2.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186q122-112 181-203.5T720-552v-8h80v8q0 100-79.5 217.5T480-80Zm0-400q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0-80Zm240-80h80v-120h120v-80H800v-120h-80v120H600v80h120v120Z" />
-                </svg></button>
-            <button class="calculate" title="Berechnen"><svg xmlns="http://www.w3.org/2000/svg" height="24"
-                    viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
+                </svg>
+            </button>
+            <button class="calculate" title="Berechnen">
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
                     <path
                         d="m226-559 78 33q14-28 29-54t33-52l-56-11-84 84Zm142 83 114 113q42-16 90-49t90-75q70-70 109.5-155.5T806-800q-72-5-158 34.5T492-656q-42 42-75 90t-49 90Zm178-65q-23-23-23-56.5t23-56.5q23-23 57-23t57 23q23 23 23 56.5T660-541q-23 23-57 23t-57-23Zm19 321 84-84-11-56q-26 18-52 32.5T532-299l33 79Zm313-653q19 121-23.5 235.5T708-419l20 99q4 20-2 39t-20 33L538-80l-84-197-171-171-197-84 167-168q14-14 33.5-20t39.5-2l99 20q104-104 218-147t235-24ZM157-321q35-35 85.5-35.5T328-322q35 35 34.5 85.5T327-151q-25 25-83.5 43T82-76q14-103 32-161.5t43-83.5Zm57 56q-10 10-20 36.5T180-175q27-4 53.5-13.5T270-208q12-12 13-29t-11-29q-12-12-29-11.5T214-265Z" />
-                </svg></button>
-            <button class="route-back" title="Маршрут назад"><svg xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24px" height="24px"
-                    viewBox="0 0 256 256" xml:space="preserve">
-                    <g style="stroke:none;stroke-width:0;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:none;fill-rule:nonzero;opacity:1"
+                </svg>
+            </button>
+            <button class="route-back" title="Маршрут назад">
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+                    width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
+                    <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
                         transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
                         <path
                             d="M 77.612 90 H 12.388 c -0.829 0 -1.5 -0.672 -1.5 -1.5 V 36.637 H 1.5 c -0.642 0 -1.212 -0.408 -1.419 -1.015 c -0.208 -0.607 -0.006 -1.279 0.502 -1.671 l 43.5 -33.637 c 0.54 -0.418 1.295 -0.418 1.835 0 l 43.5 33.637 c 0.507 0.393 0.709 1.064 0.502 1.671 c -0.208 0.607 -0.778 1.015 -1.42 1.015 h -9.388 V 88.5 C 79.112 89.328 78.44 90 77.612 90 z M 13.888 87 h 62.225 V 35.137 c 0 -0.829 0.672 -1.5 1.5 -1.5 h 6.496 L 45 3.396 L 5.892 33.637 h 6.496 c 0.829 0 1.5 0.671 1.5 1.5 V 87 z"
-                            style="stroke:#e3e3e3;stroke-width:3;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:#e3e3e3;fill-rule:nonzero;opacity:1"
+                            style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
                             transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
                         <path
-                            d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -8.697 15.016 -8.697 8.649 s 3.88 -8.649 8.697 -8.649 8.649 3.88 8.649 8.649 -3.88 8.649 -8.649 8.649 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
-                            style="stroke:#e3e3e3;stroke-width:3;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:#e3e3e3;fill-rule:nonzero;opacity:1"
+                            d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -16 7.177 -16 16 c 0 3.778 1.35 7.45 3.801 10.339 L 45 76.875 l 12.199 -14.367 C 59.65 59.619 61 55.948 61 52.169 C 61 43.347 53.822 36.169 45 36.169 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
+                            style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
                             transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
                     </g>
-                </svg></button>
-            <button class="copy" title="Kopieren" aria-label="Kopieren"><svg xmlns="http://www.w3.org/2000/svg"
-                    height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
+                </svg>
+            </button>
+          <button class="copy" title="Kopieren" aria-label="Kopieren">
+
+                <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3">
                     <path
                         d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
-                </svg></button>
-            <button class="clear" title="Сбросить данные"><svg xmlns="http://www.w3.org/2000/svg"
-                    xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="24px" height="24px"
-                    viewBox="0 0 256 256" xml:space="preserve">
-                    <g style="stroke:none;stroke-width:0;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:none;fill-rule:nonzero;opacity:1"
+                </svg>
+            </button>
+            <button class="clear" title="Сбросить данные">
+                <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+                    width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
+                    <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
                         transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
                         <path
                             d="M 7.288 48.34 c 0.061 0.04 0.129 0.068 0.193 0.105 c 0.18 0.105 0.363 0.201 0.559 0.277 c 0.093 0.036 0.19 0.06 0.286 0.089 c 0.175 0.053 0.351 0.098 0.535 0.127 c 0.049 0.008 0.094 0.028 0.144 0.034 C 9.164 48.99 9.322 49 9.481 49 c 0 0 0 0 0.001 0 c 0 0 0 0 0 0 c 0 0 0 0 0 0 c 0.267 0 0.531 -0.028 0.79 -0.08 c 0.154 -0.031 0.297 -0.086 0.443 -0.134 c 0.101 -0.033 0.206 -0.054 0.304 -0.094 c 0.162 -0.067 0.31 -0.158 0.46 -0.245 c 0.075 -0.043 0.156 -0.075 0.228 -0.124 c 0.217 -0.146 0.42 -0.311 0.604 -0.495 c 0 0 0 0 0 0 l 7.492 -7.492 c 1.562 -1.562 1.562 -4.095 0 -5.657 c -1.149 -1.149 -2.822 -1.445 -4.249 -0.903 c 4.535 -11.868 16.033 -20.322 29.475 -20.322 c 12.266 0 23.516 7.2 28.658 18.342 c 0.926 2.004 3.3 2.881 5.309 1.956 c 2.005 -0.926 2.881 -3.302 1.955 -5.308 C 74.503 14.478 60.403 5.455 45.027 5.455 c -17.837 0 -32.947 11.873 -37.859 28.129 c -1.224 -1.611 -3.48 -2.084 -5.247 -1.008 c -1.887 1.148 -2.486 3.609 -1.338 5.496 l 5.481 9.007 c 0.014 0.023 0.035 0.041 0.049 0.063 c 0.125 0.195 0.268 0.375 0.424 0.545 c 0.036 0.039 0.064 0.085 0.101 0.122 C 6.835 48.009 7.053 48.186 7.288 48.34 z"
-                            style="stroke:none;stroke-width:1;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:#e3e3e3;fill-rule:nonzero;opacity:1"
+                            style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
                             transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
                         <path
                             d="M 89.416 51.929 l -5.48 -9.008 c -0.014 -0.023 -0.035 -0.04 -0.049 -0.063 c -0.125 -0.195 -0.268 -0.375 -0.424 -0.546 c -0.035 -0.039 -0.063 -0.084 -0.1 -0.121 c -0.197 -0.199 -0.415 -0.376 -0.65 -0.531 c -0.061 -0.04 -0.129 -0.067 -0.192 -0.104 c -0.18 -0.105 -0.364 -0.201 -0.56 -0.277 c -0.093 -0.036 -0.19 -0.06 -0.287 -0.089 c -0.174 -0.053 -0.35 -0.098 -0.534 -0.127 c -0.049 -0.008 -0.095 -0.028 -0.144 -0.034 c -0.07 -0.008 -0.138 0.003 -0.208 -0.001 C 80.697 41.021 80.611 41 80.519 41 c -0.082 0 -0.159 0.019 -0.239 0.024 c -0.121 0.007 -0.24 0.018 -0.36 0.036 c -0.172 0.026 -0.338 0.065 -0.503 0.113 c -0.105 0.03 -0.209 0.058 -0.312 0.097 c -0.178 0.067 -0.344 0.152 -0.509 0.243 c -0.082 0.045 -0.166 0.082 -0.245 0.133 c -0.237 0.153 -0.46 0.326 -0.659 0.524 c 0 0 -0.001 0.001 -0.001 0.001 l 0 0 l 0 0 l -7.492 7.492 c -1.562 1.562 -1.562 4.095 0 5.656 c 1.148 1.15 2.822 1.446 4.249 0.904 c -4.535 11.868 -16.033 20.321 -29.475 20.321 c -12.707 0 -24.117 -7.563 -29.068 -19.268 c -0.861 -2.034 -3.209 -2.988 -5.242 -2.125 c -2.035 0.86 -2.986 3.207 -2.126 5.242 c 6.206 14.671 20.508 24.151 36.436 24.151 c 17.831 0 32.937 -11.864 37.854 -28.111 c 0.774 1.015 1.96 1.574 3.176 1.574 c 0.708 0 1.426 -0.188 2.075 -0.584 C 89.966 56.276 90.565 53.816 89.416 51.929 z"
-                            style="stroke:none;stroke-width:1;stroke-dasharray:none;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:10;fill:#e3e3e3;fill-rule:nonzero;opacity:1"
+                            style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
                             transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
                     </g>
-                </svg></button>
+                </svg>
+            </button>
         </div>
+
+
+
         <pre id="output"></pre>
         <div id="toast" class="toast"></div>
+
         <div id="coordsModal" class="modal">
             <div class="modal-content">
                 <h3 id="modalTitle">Редактировать координаты</h3>
@@ -521,16 +549,60 @@
                 this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag'];
                 this.greetings = [...this.defaultGreetings];
                 this.greeting = 'Moin zusammen';
-                this.nameToCoordinates = { 'Sergii': { lat: 51.530133, lng: 6.850858 }, 'Anatolii': { lat: 51.522694, lng: 6.858944 }, 'Andrii': { lat: 51.534558, lng: 6.861061 }, 'Sergio': { lat: 51.520000, lng: 6.887619 }, 'Dima': { lat: 51.551753, lng: 7.102285 }, 'Marvin': { lat: 51.556472, lng: 6.731424 } };
-                this.travelTimes = { 'Sergii-Anatolii': 5, 'Anatolii-Sergii': 5, 'Sergii-Andrii': 5, 'Andrii-Sergii': 5, 'Sergii-Sergio': 10, 'Sergio-Sergii': 10, 'Sergii-Dima': 30, 'Dima-Sergii': 30, 'Andrii-Anatolii': 5, 'Anatolii-Andrii': 5, 'Andrii-Sergio': 10, 'Sergio-Andrii': 10, 'Andrii-Dima': 25, 'Dima-Andrii': 25, 'Sergio-Anatolii': 10, 'Anatolii-Sergio': 10, 'Sergio-Dima': 25, 'Dima-Sergio': 25, 'Anatolii-Dima': 30, 'Dima-Anatolii': 30, 'Marvin-Sergii': 20, 'Sergii-Marvin': 20, 'Marvin-Anatolii': 17, 'Anatolii-Marvin': 17, 'Marvin-Andrii': 20, 'Andrii-Marvin': 20, 'Marvin-Sergio': 25, 'Sergio-Marvin': 25, 'Marvin-Dima': 30, 'Dima-Marvin': 30 };
+                const defaultCoords = {
+      'Sergii': { lat: 51.530133, lng: 6.850858 },
+      'Anatolii': { lat: 51.522694, lng: 6.858944 },
+      'Andrii': { lat: 51.534558, lng: 6.861061 },
+      'Sergio': { lat: 51.520000, lng: 6.887619 },
+      'Dima': { lat: 51.551753, lng: 7.102285 },
+      'René - Olga Park': { lat: 51.5004952, lng: 7.102285 },
+      'Marvin': { lat: 51.556472, lng: 6.731424 }
+    };
+
+    this.defaultCoordinates = defaultCoords;      // для сброса
+    this.nameToCoordinates = { ...defaultCoords }; 
+                this.travelTimes = {
+  // Время в пути между участниками
+  'Sergii-Anatolii': 5,
+  'Sergii-Andrii': 5,
+  'Sergii-Sergio': 10,
+  'Sergii-Dima': 30,
+  'Andrii-Anatolii': 5,
+  'Andrii-Sergio': 10,
+  'Andrii-Dima': 25,
+  'Anatolii-Sergio': 10,
+  'Anatolii-Dima': 30,
+  'Sergio-Dima': 25,
+  'Marvin-Sergii': 20,
+  'Marvin-Anatolii': 17,
+  'Marvin-Andrii': 20,
+  'Marvin-Sergio': 25,
+  'Marvin-Dima': 30,
+  'René - Olga Park-Sergii': 10,
+  'René - Olga Park-Andrii': 10,
+  'René - Olga Park-Anatolii': 8,
+  'René - Olga Park-Sergio': 8,
+  'René - Olga Park-Dima': 25,
+  'René - Olga Park-Marvin': 20,
+  'René - Olga Park-Maikel': 20
+
+};
+                
                 this.startPoint = '';
                 this.startPointCoords = { lat: null, lng: null };
-                this.participantOrders = { 'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'], 'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'], 'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'], 'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'], 'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio'] };
+                this.participantOrders = {
+                    'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
+                    'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
+                    'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+                    'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+                    'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+                };
                 this.participants = [];
                 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
                 this.useUhrBei = false;
                 this.useSuperscriptTime = false;
                 this.sortable = null;
+
                 this.elements = {
                     greetingSelect: document.getElementById('greeting'),
                     editGreetingButton: document.querySelector('.edit-greeting-btn'),
@@ -565,47 +637,730 @@
                 this.isAddingNewGreeting = false;
                 this.isEditingGreeting = false;
                 this.isEditingStartPoint = false;
+
                 this.loadData();
                 this.syncCoordinates();
                 this.addEventListeners();
                 this.renderParticipants();
                 this.elements.output.innerHTML = '';
             }
-            getTravelTime(fromName, toName) { const k = `${fromName}-${toName}`; const k2 = `${toName}-${fromName}`; return this.travelTimes[k] || this.travelTimes[k2] || 5 }
-            updateParticipantTimes() { let prev = this.startPoint; this.participants.forEach(p => { if (p.name && !p.timeManuallyEdited) p.time = this.getTravelTime(prev, p.name); if (p.name) prev = p.name }) }
-            syncCoordinates() { this.participants.forEach(p => { const c = this.nameToCoordinates[p.name]; if (c) { p.lat = c.lat; p.lng = c.lng } }); const sc = this.nameToCoordinates[this.startPoint]; this.startPointCoords = sc ? { lat: sc.lat, lng: sc.lng } : { lat: null, lng: null } }
-            saveData() { localStorage.setItem('fahrzeitRechnerGreeting', this.greeting); localStorage.setItem('fahrzeitRechnerGreetings', JSON.stringify(this.greetings)); localStorage.setItem('fahrzeitRechnerParticipants', JSON.stringify(this.participants)); localStorage.setItem('fahrzeitRechnerMachineStop', JSON.stringify(this.machineStop)); localStorage.setItem('fahrzeitRechnerNameToCoordinates', JSON.stringify(this.nameToCoordinates)); localStorage.setItem('fahrzeitRechnerStartPoint', this.startPoint); localStorage.setItem('fahrzeitRechnerUseUhrBei', this.useUhrBei); localStorage.setItem('fahrzeitRechnerUseSuperscript', this.useSuperscriptTime) }
-            resetToDefaults() { this.greeting = 'Moin zusammen'; this.greetings = [...this.defaultGreetings]; this.startPoint = ''; this.startPointCoords = { lat: null, lng: null }; this.participants = []; this.nameToCoordinates = { 'Sergii': { lat: 51.530133, lng: 6.850858 }, 'Anatolii': { lat: 51.522694, lng: 6.858944 }, 'Andrii': { lat: 51.534558, lng: 6.861061 }, 'Sergio': { lat: 51.520000, lng: 6.887619 }, 'Dima': { lat: 51.551753, lng: 7.102285 }, 'Marvin': { lat: 51.556472, lng: 6.731424 } }; this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; this.useUhrBei = false; this.useSuperscriptTime = false; this.saveData() }
-            clearLocalStorage() { ['fahrzeitRechnerGreeting', 'fahrzeitRechnerGreetings', 'fahrzeitRechnerParticipants', 'fahrzeitRechnerMachineStop', 'fahrzeitRechnerNameToCoordinates', 'fahrzeitRechnerStartPoint', 'fahrzeitRechnerUseSuperscript'].forEach(k => localStorage.removeItem(k)); this.showToast("Данные сброшены."); this.resetToDefaults(); this.elements.output.innerHTML = ''; this.renderParticipants(); this.initSortable() }
-            loadData() { try { const s = { greeting: localStorage.getItem('fahrzeitRechnerGreeting'), greetings: localStorage.getItem('fahrzeitRechnerGreetings'), participants: localStorage.getItem('fahrzeitRechnerParticipants'), machineStop: localStorage.getItem('fahrzeitRechnerMachineStop'), nameToCoordinates: localStorage.getItem('fahrzeitRechnerNameToCoordinates'), startPoint: localStorage.getItem('fahrzeitRechnerStartPoint'), useUhrBei: localStorage.getItem('fahrzeitRechnerUseUhrBei'), useSuperscript: localStorage.getItem('fahrzeitRechnerUseSuperscript') }; if (s.greeting) this.greeting = s.greeting; if (s.greetings) try { this.greetings = JSON.parse(s.greetings) } catch { this.greetings = [...this.defaultGreetings] } if (s.participants) try { this.participants = JSON.parse(s.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false })) } catch { this.participants = [] } if (s.machineStop) try { this.machineStop = JSON.parse(s.machineStop) } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null } } if (s.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(s.nameToCoordinates) } catch { } if (s.startPoint) { this.startPoint = s.startPoint; const sc = this.nameToCoordinates[this.startPoint]; this.startPointCoords = sc ? { lat: sc.lat, lng: sc.lng } : { lat: null, lng: null } } if (s.useUhrBei !== null) this.useUhrBei = s.useUhrBei === 'true'; if (s.useSuperscript !== null) this.useSuperscriptTime = s.useSuperscript === 'true' } catch { this.resetToDefaults() } this.updateStartPoint(this.startPoint) }
-            addEventListeners() { this.elements.greetingSelect.addEventListener('change', e => { if (e.target.value === 'add-new-greeting') this.openGreetingModal(true); else { this.greeting = e.target.value; this.saveData(); this.calculate() } }); this.elements.editGreetingButton.addEventListener('click', () => this.openGreetingModal(false)); this.elements.startPointSelect.addEventListener('change', e => this.updateStartPoint(e.target.value)); this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true)); this.elements.addButton.addEventListener('click', () => this.addParticipant()); this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps()); this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true)); this.elements.copyButton.addEventListener('click', () => this.copyResult()); this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage()); this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates()); this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting()); this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal()); this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection()) }
-            updateStartPoint(v) { if (v === 'add-new') { this.openCoordsModal(null, false, true, true) } else { this.startPoint = v; const sc = this.nameToCoordinates[v]; this.startPointCoords = sc ? { lat: sc.lat, lng: sc.lng } : { lat: null, lng: null }; const o = this.participantOrders[v] || []; this.participants = o.map((n, i) => { const c = this.nameToCoordinates[n] || { lat: null, lng: null }; const prev = i === 0 ? this.startPoint : o[i - 1]; return { name: n, time: this.getTravelTime(prev, n), lat: c.lat, lng: c.lng, timeManuallyEdited: false } }); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate() } }
-            renderParticipants() { const c = this.elements.participantsContainer; c.innerHTML = ''; this.elements.greetingSelect.innerHTML = this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') + '<option value="add-new-greeting">Добавить новое приветствие</option>'; const nopts = Object.keys(this.nameToCoordinates).map(n => `<option value="${n}" ${this.startPoint === n ? 'selected' : ''}>${n}</option>`).join(''); this.elements.startPointSelect.innerHTML = `<option value="" ${!this.startPoint ? 'selected' : ''}>Выберите начальную точку</option>${nopts}<option value="add-new">Добавить новое имя</option>`; const noSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>'; const yesSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>'; this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? yesSvg : noSvg; const valid = this.participants.map(p => p.name).filter(n => n); if (this.startPoint && valid.includes(this.startPoint)) { this.showToast(`Начальная точка "${this.startPoint}" не может совпадать с именем участника.`); this.startPoint = ''; this.startPointCoords = { lat: null, lng: null }; this.participants = []; this.saveData() } this.participants.forEach((p, i) => { const d = document.createElement('div'); d.className = 'participant'; d.setAttribute('data-index', i); const opts = Object.keys(this.nameToCoordinates).filter(n => n !== this.startPoint).map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join(''); const svg = (p.lat && p.lng) ? yesSvg : noSvg; d.innerHTML = `<select data-index="${i}" data-type="participant-name" aria-label="Имя участника"><option value="" ${!p.name ? 'selected' : ''}>Выберите имя</option>${opts}<option value="add-new">Добавить новое имя</option></select><button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${svg}</button><input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах"/><div class="right-section"><span class="material-symbols-outlined" aria-label="Переместить участника"><svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg></span><button class="remove-btn" data-index="${i}" aria-label="Удалить участника">✖</button></div>`; c.appendChild(d); d.querySelector('[data-type="participant-name"]').addEventListener('change', e => this.updateName(i, e.target.value)); d.querySelector('[data-type="participant-time"]').addEventListener('change', e => this.updateTime(i, e.target.value)); d.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i)); d.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i)) }); const m = document.createElement('div'); m.className = 'participant machine'; const msvg = (this.machineStop.lat && this.machineStop.lng) ? yesSvg : noSvg; m.innerHTML = `<input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины"/><button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${msvg}</button><input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах"/><div class="right-section">${this.machineStop.arrivalTime ? `<div class="arrival-time" tabindex="0" role="button" aria-label="Изменить время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>` : '<button class="time-icon" aria-label="Установить время прибытия">🕒</button>'}</div>`; c.appendChild(m); m.querySelector('[data-type="machine-name"]').addEventListener('change', e => this.updateMachineName(e.target.value)); m.querySelector('[data-type="machine-time"]').addEventListener('change', e => this.updateMachineTime(e.target.value)); m.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true)); const cc = document.createElement('div'); cc.className = 'checkbox-container'; cc.innerHTML = `<label><input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei</label><label><input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²</label>`; c.appendChild(cc); cc.querySelector('#useUhrBei').addEventListener('change', e => { this.useUhrBei = e.target.checked; this.saveData(); this.calculate() }); cc.querySelector('#useSuperscriptTime').addEventListener('change', e => { this.useSuperscriptTime = e.target.checked; this.saveData(); this.calculate() }); const tc = m.querySelector('.time-icon') || m.querySelector('.arrival-time'); tc.addEventListener('click', () => this.startTimeEdit()); tc.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.startTimeEdit() } }); const tr = m.querySelector('.time-remove'); if (tr) tr.addEventListener('click', () => this.clearArrivalTime()); this.saveData(); if (this.machineStop.arrivalTime) this.calculate(); else this.elements.output.innerHTML = '' }
-            async parseCoordinates(raw) { const s = raw.trim(); if (!s) { this.showToast("Пожалуйста, введите данные."); return null } if (/^-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(s)) { const [l, ln] = s.split(',').map(Number); if (Math.abs(l) <= 90 && Math.abs(ln) <= 180) return { lat: l, lng: ln } } const m1 = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/place\/[^\/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/); if (m1) { const lt = parseFloat(m1[1]), ln = parseFloat(m1[2]); if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)]; if (dms.length === 2) { try { const toDec = ([, d, m, s, dir]) => { let dec = +d + m / 60 + s / 3600; if (/S|W/i.test(dir)) dec = -dec; return dec }; const lt = toDec(dms[0]), ln = toDec(dms[1]); if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } catch { } } if (/^https?:\/\/(?:[^/]*\.)?goo\.gl\/|https?:\/\/maps\.app\.goo\.gl\/|https?:\/\/(?:www\.)?googleusercontent\.com\/maps\.google\.com\//i.test(s)) { try { const u = await this.expand(s); let c = this.parseCoords(u); if (!c) c = await this.coordsFromHTML(u); if (!c) { this.showToast("Не удалось извлечь координаты из ссылки."); return null } return c } catch { this.showToast("Ошибка при обработке сокращённой ссылки."); return null } } if (!/^https?:\/\//.test(s)) { const c = this.parseCoords(s); if (c) return c } if (/^https?:\/\//.test(s)) { try { const c = await this.coordsFromHTML(s); if (c) return c } catch { this.showToast("Не удалось извлечь координаты из ссылки."); return null } } this.showToast("Пожалуйста, введите корректные координаты или URL Google Карт."); return null }
-            async expand(shortUrl) { const api = 'https://r.jina.ai/' + shortUrl.replace(/^https?:\/\//, ''); const r = await fetch(api); if (!r.ok) throw new Error('Не удалось раскрыть ссылку'); const t = await r.text(); try { const j = JSON.parse(t); if (j.resolved_url) return j.resolved_url } catch { } const m = t.match(/https?:\/\/[^\s"']+/); if (m) return m[0]; throw new Error('Сервис не вернул URL') }
-            parseCoords(str) { let m = str.match(/([-+]?\d{1,3}\.\d+)[ ,]+([-+]?\d{1,3}\.\d+)/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } m = str.match(/@([-.\\d]+),([-.\\d]+),/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } m = str.match(/\/place\/([-.\\d]+),([-.\\d]+)/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } m = str.match(/(?:dest|query|center)=([-.\\d]+),([-.\\d]+)/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } return null }
-            async coordsFromHTML(page) { const api = 'https://r.jina.ai/' + page.replace(/^https?:\/\//, ''); const r = await fetch(api); if (!r.ok) return null; const t = await r.text(); let m = t.match(/"lat"\\s*:\\s*([-.\\d]+)\\s*,\\s*"lng"\\s*:\\s*([-.\\d]+)/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } m = t.match(/https?:\/\/[^"']+\\?q=([-.\\d]+),([-.\\d]+)/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } m = t.match(/([-+]?\\d{1,3}\\.\\d{4,}),\\s*([-+]?\\d{1,3}\\.\\d{4,})/); if (m) { const lt = +m[1], ln = +m[2]; if (Math.abs(lt) <= 90 && Math.abs(ln) <= 180) return { lat: lt, lng: ln } } return null }
-            openCoordsModal(i, isM = false, isAN = false, isESP = false) { this.currentEditIndex = i; this.isEditingMachine = isM; this.isAddingNewName = isAN; this.isEditingStartPoint = isESP; this.isAddingNewGreeting = false; this.isEditingGreeting = false; const m = this.elements.coordsModal; const mc = this.elements.modalContent; mc.classList.toggle('add-new-name', isAN); this.elements.modalTitle.textContent = isAN ? 'Добавить новое имя' : isESP ? 'Редактировать координаты начальной точки' : isM ? 'Редактировать координаты машины' : 'Редактировать координаты';['nameLabel', 'nameInput', 'greetingLabel', 'greetingInput', 'deleteGreetingButton'].forEach(l => this.elements[l].style.display = 'none');['coordsLabel', 'coordsHelp', 'coordsInput', 'openMapButton'].forEach(l => this.elements[l].style.display = 'block'); if (isAN) { this.elements.nameLabel.style.display = 'block'; this.elements.nameInput.style.display = 'block'; this.elements.nameInput.value = ''; this.elements.coordsInput.value = '' } else if (isESP) { this.elements.coordsInput.value = this.startPointCoords.lat && this.startPointCoords.lng ? `${this.startPointCoords.lat},${this.startPointCoords.lng}` : '' } else if (isM) { this.elements.coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '' } else { const p = this.participants[i]; this.elements.coordsInput.value = p.lat && p.lng ? `${p.lat},${p.lng}` : '' } m.style.display = 'flex'; (isAN ? this.elements.nameInput : this.elements.coordsInput).focus() }
-            openGreetingModal(isAN) { this.isAddingNewGreeting = isAN; this.isEditingGreeting = !isAN; this.isAddingNewName = false; this.isEditingMachine = false; this.isEditingStartPoint = false; const m = this.elements.coordsModal; const mc = this.elements.modalContent; mc.classList.remove('add-new-name'); this.elements.modalTitle.textContent = isAN ? 'Добавить новое приветствие' : 'Редактировать приветствие';['coordsLabel', 'coordsHelp', 'coordsInput', 'openMapButton', 'nameLabel', 'nameInput'].forEach(l => this.elements[l].style.display = 'none'); this.elements.greetingLabel.style.display = 'block'; this.elements.greetingInput.style.display = 'block'; this.elements.greetingInput.value = this.greeting; this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block'; m.style.display = 'flex'; this.elements.greetingInput.focus() }
-            async saveCoordinates() { const sb = this.elements.saveCoordsButton; const ot = sb.textContent; sb.textContent = 'Загрузка...'; sb.disabled = true; try { if (this.isAddingNewGreeting || this.isEditingGreeting) { const ng = this.elements.greetingInput.value.trim(); if (!ng) { this.showToast("Введите приветствие."); return } if (this.isAddingNewGreeting && this.greetings.includes(ng)) { this.showToast("Приветствие уже существует."); return } if (this.isEditingGreeting) { const o = this.greeting; const idx = this.greetings.indexOf(o); if (idx !== -1 && !this.defaultGreetings.includes(o)) this.greetings[idx] = ng; this.greeting = ng } else if (this.isAddingNewGreeting) { this.greetings.push(ng); this.greeting = ng } this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate() } else { const raw = this.elements.coordsInput.value.trim(); const coords = await this.parseCoordinates(raw); if (!coords) return; if (this.isAddingNewName) { const name = this.elements.nameInput.value.trim(); if (!name) { this.showToast("Введите имя."); return } if (this.nameToCoordinates[name]) { this.showToast("Имя уже существует."); return } this.nameToCoordinates[name] = { lat: coords.lat, lng: coords.lng }; if (this.isEditingStartPoint) { this.startPoint = name; this.startPointCoords = { lat: coords.lat, lng: coords.lng }; this.participants = [] } else { this.participants[this.currentEditIndex].name = name; this.participants[this.currentEditIndex].lat = coords.lat; this.participants[this.currentEditIndex].lng = coords.lng; this.participants[this.currentEditIndex].timeManuallyEdited = false } this.updateParticipantTimes() } else if (this.isEditingMachine) { this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng; const last = this.participants.filter(p => p.name).pop(); if (last && last.lat && last.lng) { const dur = await fetch(`/api/get-travel-time?fromLat=${last.lat}&fromLng=${last.lng}&toLat=${coords.lat}&toLng=${coords.lng}`).then(r => r.json()).then(d => d.duration).catch(() => 20); this.machineStop.time = dur } } else if (this.isEditingStartPoint) { this.startPointCoords = { lat: coords.lat, lng: coords.lng } } else { this.participants[this.currentEditIndex].lat = coords.lat; this.participants[this.currentEditIndex].lng = coords.lng; this.participants[this.currentEditIndex].timeManuallyEdited = false; this.updateParticipantTimes() } this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate() } } finally { sb.textContent = ot; sb.disabled = false } }
-            deleteGreeting() { if (!this.defaultGreetings.includes(this.greeting)) { this.greetings = this.greetings.filter(g => g !== this.greeting); this.greeting = this.defaultGreetings[0]; this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate() } }
-            closeModal() { this.elements.coordsModal.style.display = 'none'; this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = false; this.currentEditIndex = null }
-            openMapForSelection() { const v = this.elements.coordsInput.value.trim(); let url = 'https://www.google.com/maps'; if (v) { const c = this.parseCoords(v); if (c) url += `/place/${c.lat},${c.lng}`; else url += `/search/${encodeURIComponent(v)}` } window.open(url, '_blank') }
-            addParticipant() { this.participants.push({ name: '', time: 5, lat: null, lng: null, timeManuallyEdited: false }); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate() }
-            updateName(i, v) { if (v === 'add-new') this.openCoordsModal(i, false, true); else { this.participants[i].name = v; const c = this.nameToCoordinates[v] || { lat: null, lng: null }; this.participants[i].lat = c.lat; this.participants[i].lng = c.lng; this.participants[i].timeManuallyEdited = false; this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate() } }
-            updateTime(i, v) { const t = parseInt(v) || 5; this.participants[i].time = Math.max(1, Math.min(60, t)); this.participants[i].timeManuallyEdited = true; this.saveData(); this.renderParticipants(); this.calculate() }
-            updateMachineName(v) { this.machineStop.name = v.trim() || 'an der Maschine'; this.saveData(); this.calculate() }
-            updateMachineTime(v) { const t = parseInt(v) || 20; this.machineStop.time = Math.max(1, Math.min(60, t)); this.saveData(); this.calculate() }
-            clearArrivalTime() { this.machineStop.arrivalTime = ''; this.saveData(); this.elements.output.innerHTML = ''; this.renderParticipants() }
-            startTimeEdit() { const c = document.querySelector('.machine .right-section'); const ei = c.querySelector('input[type="time"]'); if (ei) ei.remove(); const i = document.createElement('input'); i.type = 'time'; i.style.width = '100px'; i.style.padding = 'var(--small-spacing)'; i.style.border = '1px solid #ddd'; i.style.borderRadius = '4px'; i.style.fontSize = '1em'; i.value = this.machineStop.arrivalTime || ''; const tc = c.querySelector('.time-icon') || c.querySelector('.arrival-time'); c.insertBefore(i, tc); tc.style.display = 'none'; const st = () => { this.machineStop.arrivalTime = i.value; c.removeChild(i); tc.style.display = 'flex'; this.renderParticipants(); this.initSortable(); this.calculate(); i.removeEventListener('change', st); i.removeEventListener('blur', st) }; i.addEventListener('change', st); i.addEventListener('blur', () => setTimeout(st, 50)); i.focus(); try { i.showPicker() } catch { } }
-            initSortable() { if (this.sortable) this.sortable.destroy(); this.sortable = new Sortable(this.elements.participantsContainer, { handle: '.material-symbols-outlined', animation: 150, onEnd: e => { if (e.oldIndex !== e.newIndex) { const [m] = this.participants.splice(e.oldIndex, 1); this.participants.splice(e.newIndex, 0, m); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.calculate() } } }) }
-            showToast(m) { this.elements.toast.textContent = m; this.elements.toast.classList.add('show'); setTimeout(() => this.elements.toast.classList.remove('show'), 3000) }
-            formatTime(d) { if (this.useSuperscriptTime) { const h = d.getHours().toString().padStart(2, '0'); const min = d.getMinutes().toString().padStart(2, '0'); const s = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹']; const sm = min.split('').map(c => s[parseInt(c)]).join(''); return `${h}${sm}` } return d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) }
-            calculate() { if (!this.machineStop.arrivalTime) { this.elements.output.innerHTML = ''; return } let out = `${this.greeting},\n`; const valid = this.participants.filter(p => p.name); let ct = new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`); const total = valid.reduce((s, p) => s + p.time, 0) + this.machineStop.time; const st = new Date(ct); st.setMinutes(st.getMinutes() - total); out += this.useUhrBei ? `um ${this.formatTime(st)} Uhr geht's los\n` : `${this.formatTime(st)}  geht's los\n`; valid.forEach((p, idx) => { ct = new Date(ct); ct.setMinutes(ct.getMinutes() - (idx === 0 ? this.machineStop.time : p.time)); out += this.useUhrBei ? `um ${this.formatTime(ct)} Uhr bei ${p.name}\n` : `${this.formatTime(ct)}  ${p.name}\n` }); out += this.useUhrBei ? `um ${this.formatTime(new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`))} Uhr ${this.machineStop.name}\n` : `${this.formatTime(new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`))}  ${this.machineStop.name}\n`; this.elements.output.innerHTML = out }
-            openGoogleMaps(rt = false) { const valid = this.participants.filter(p => p.name && p.lat && p.lng); if (!this.startPointCoords.lat || !this.startPointCoords.lng || valid.length === 0) { this.showToast("Добавьте начальную точку и хотя бы одного участника с координатами."); return } let url = 'https://www.google.com/maps/dir/'; if (!rt) { url += `${this.startPointCoords.lat},${this.startPointCoords.lng}/`; valid.forEach(p => url += `${p.lat},${p.lng}/`); if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}` } else { if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}/`; for (let i = valid.length - 1; i >= 0; i--)url += `${valid[i].lat},${valid[i].lng}/`; url += `${this.startPointCoords.lat},${this.startPointCoords.lng}` } window.open(url, '_blank') }
-            copyResult() { const t = this.elements.output.textContent.trim(); if (!t) { this.showToast("Нечего копировать — сначала рассчитайте маршрут."); return } navigator.clipboard.writeText(t).then(() => this.showToast("Результат скопирован в буфер обмена!")).catch(() => this.showToast("Не удалось скопировать — разрешите доступ к буферу обмена.")) }
-            removeParticipant(i) {
-                this.participants.splice(i, 1);
+
+            getTravelTime(fromName, toName) {
+  if (fromName === toName) return 0;
+  const key = `${fromName}-${toName}`;
+  const rev = `${toName}-${fromName}`;
+  return this.travelTimes[key] ?? this.travelTimes[rev] ?? 5; // 5 – fallback
+}
+
+
+            updateParticipantTimes() {
+                let previousPoint = this.startPoint;
+                this.participants.forEach(participant => {
+                    if (participant.name && !participant.timeManuallyEdited) {
+                        participant.time = this.getTravelTime(previousPoint, participant.name);
+                    }
+                    if (participant.name) previousPoint = participant.name;
+                });
+            }
+
+            syncCoordinates() {
+                this.participants.forEach(p => {
+                    const coords = this.nameToCoordinates[p.name];
+                    if (coords) { p.lat = coords.lat; p.lng = coords.lng; }
+                });
+                const startCoords = this.nameToCoordinates[this.startPoint];
+                this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+            }
+
+            saveData() {
+                localStorage.setItem('fahrzeitRechnerGreeting', this.greeting);
+                localStorage.setItem('fahrzeitRechnerGreetings', JSON.stringify(this.greetings));
+                localStorage.setItem('fahrzeitRechnerParticipants', JSON.stringify(this.participants));
+                localStorage.setItem('fahrzeitRechnerMachineStop', JSON.stringify(this.machineStop));
+                localStorage.setItem('fahrzeitRechnerNameToCoordinates', JSON.stringify(this.nameToCoordinates));
+                localStorage.setItem('fahrzeitRechnerStartPoint', this.startPoint);
+                localStorage.setItem('fahrzeitRechnerUseUhrBei', this.useUhrBei);
+                localStorage.setItem('fahrzeitRechnerUseSuperscript', this.useSuperscriptTime);
+            }
+
+            resetToDefaults() {
+  this.greeting = 'Moin zusammen';
+  this.greetings = [...this.defaultGreetings];
+  this.startPoint = '';
+  this.startPointCoords = { lat: null, lng: null };
+  this.participants = [];
+  this.nameToCoordinates = { ...this.defaultCoordinates }; 
+  this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+  this.useUhrBei = false;
+  this.useSuperscriptTime = false;
+  this.saveData();
+}
+
+
+            clearLocalStorage() {
+                ['fahrzeitRechnerGreeting', 'fahrzeitRechnerGreetings', 'fahrzeitRechnerParticipants',
+                    'fahrzeitRechnerMachineStop', 'fahrzeitRechnerNameToCoordinates', 'fahrzeitRechnerStartPoint',
+                    'fahrzeitRechnerUseSuperscript'].forEach(k => localStorage.removeItem(k));
+                this.showToast("Данные сброшены.");
+                this.resetToDefaults();
+                this.elements.output.innerHTML = '';
+                this.renderParticipants();
+                this.initSortable();
+            }
+
+            loadData() {
+                try {
+                    const saved = {
+                        greeting: localStorage.getItem('fahrzeitRechnerGreeting'),
+                        greetings: localStorage.getItem('fahrzeitRechnerGreetings'),
+                        participants: localStorage.getItem('fahrzeitRechnerParticipants'),
+                        machineStop: localStorage.getItem('fahrzeitRechnerMachineStop'),
+                        nameToCoordinates: localStorage.getItem('fahrzeitRechnerNameToCoordinates'),
+                        startPoint: localStorage.getItem('fahrzeitRechnerStartPoint'),
+                        useUhrBei: localStorage.getItem('fahrzeitRechnerUseUhrBei'),
+                        useSuperscript: localStorage.getItem('fahrzeitRechnerUseSuperscript')
+                    };
+                    if (saved.greeting) this.greeting = saved.greeting;
+                    if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
+                    if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false })); } catch { this.participants = []; }
+                    if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; }
+                    if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
+                    if (saved.startPoint) {
+                        this.startPoint = saved.startPoint;
+                        const startCoords = this.nameToCoordinates[this.startPoint];
+                        this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+                    }
+                    if (saved.useUhrBei !== null) this.useUhrBei = saved.useUhrBei === 'true';
+                    if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
+                } catch {
+                    this.resetToDefaults();
+                }
+                this.updateStartPoint(this.startPoint);
+            }
+
+            addEventListeners() {
+                this.elements.greetingSelect.addEventListener('change', e => {
+                    if (e.target.value === 'add-new-greeting') this.openGreetingModal(true);
+                    else { this.greeting = e.target.value; this.saveData(); this.calculate(); }
+                });
+                this.elements.editGreetingButton.addEventListener('click', () => this.openGreetingModal(false));
+                this.elements.startPointSelect.addEventListener('change', e => this.updateStartPoint(e.target.value));
+                this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
+                this.elements.addButton.addEventListener('click', () => this.addParticipant());
+                this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
+                this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
+                this.elements.copyButton.addEventListener('click', () => this.copyResult());
+                this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage());
+                this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
+                this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
+                this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
+                this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
+            }
+
+            updateStartPoint(value) {
+                if (value === 'add-new') {
+                    this.openCoordsModal(null, false, true, true);
+                } else {
+                    this.startPoint = value;
+                    const startCoords = this.nameToCoordinates[value];
+                    this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+                    const order = this.participantOrders[value] || [];
+                    this.participants = order.map((name, idx) => {
+                        const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
+                        const prev = idx === 0 ? this.startPoint : order[idx - 1];
+                        return {
+                            name,
+                            time: this.getTravelTime(prev, name),
+                            lat: coords.lat,
+                            lng: coords.lng,
+                            timeManuallyEdited: false
+                        };
+                    });
+                    this.updateParticipantTimes();
+                    this.saveData();
+                    this.renderParticipants();
+                    this.initSortable();
+                    this.calculate();
+                }
+            }
+
+            renderParticipants() {
+                const container = this.elements.participantsContainer;
+                container.innerHTML = '';
+                this.elements.greetingSelect.innerHTML = this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') + '<option value="add-new-greeting">Добавить новое приветствие</option>';
+                const nameOptions = Object.keys(this.nameToCoordinates).map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`).join('');
+                this.elements.startPointSelect.innerHTML = `
+            <option value="" ${!this.startPoint ? 'selected' : ''}>Выберите начальную точку</option>
+            ${nameOptions}
+            <option value="add-new">Добавить новое имя</option>
+        `;
+                const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+                const hasCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+                this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? hasCoordsSvg : noCoordsSvg;
+
+                const validNames = this.participants.map(p => p.name).filter(n => n);
+                if (this.startPoint && validNames.includes(this.startPoint)) {
+                    this.showToast(`Начальная точка "${this.startPoint}" не может совпадать с именем участника.`);
+                    this.startPoint = ''; this.startPointCoords = { lat: null, lng: null };
+                    this.participants = []; this.saveData();
+                }
+
+                this.participants.forEach((p, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'participant';
+                    div.setAttribute('data-index', i);
+                    const participantNameOptions = Object.keys(this.nameToCoordinates).filter(n => n !== this.startPoint)
+                        .map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join('');
+                    const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+                    div.innerHTML = `
+                <select data-index="${i}" data-type="participant-name" aria-label="Имя участника">
+                    <option value="" ${!p.name ? 'selected' : ''}>Выберите имя</option>
+                    ${participantNameOptions}
+                    <option value="add-new">Добавить новое имя</option>
+                </select>
+                <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
+                <input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах"/>
+                <div class="right-section">
+                    <span class="material-symbols-outlined" aria-label="Переместить участника">
+                        <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+                    </span>
+                    <button class="remove-btn" data-index="${i}" aria-label="Удалить участника">✖</button>
+                </div>
+            `;
+                    container.appendChild(div);
+                    div.querySelector('[data-type="participant-name"]').addEventListener('change', e => this.updateName(i, e.target.value));
+                    div.querySelector('[data-type="participant-time"]').addEventListener('change', e => this.updateTime(i, e.target.value));
+                    div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
+                    div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
+                });
+
+                const machineDiv = document.createElement('div');
+                machineDiv.className = 'participant machine';
+                const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
+
+                machineDiv.innerHTML = `
+    <input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины"/>
+    <button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${machineCoordsSvg}</button>
+    <input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах"/>
+    <div class="right-section">
+        ${this.machineStop.arrivalTime
+                        ? `<div class="arrival-time" tabindex="0" role="button" aria-label="Изменить время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>`
+                        : '<button class="time-icon" aria-label="Установить время прибытия">🕒</button>'
+                    }
+    </div>
+`;
+
+                container.appendChild(machineDiv);
+                machineDiv.querySelector('[data-type="machine-name"]').addEventListener('change', e => this.updateMachineName(e.target.value));
+                machineDiv.querySelector('[data-type="machine-time"]').addEventListener('change', e => this.updateMachineTime(e.target.value));
+                machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
+
+                container.appendChild(machineDiv);
+
+                // Добавляем новый контейнер для чекбоксов
+                const checkboxContainer = document.createElement('div');
+                checkboxContainer.className = 'checkbox-container';
+                checkboxContainer.innerHTML = `
+    <label>
+        <input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei
+    </label>
+    <label>
+        <input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²
+    </label>
+`;
+                container.appendChild(checkboxContainer);
+
+                // Обработчики событий для чекбоксов
+                const uhrBeiCheckbox = checkboxContainer.querySelector('#useUhrBei');
+                uhrBeiCheckbox.addEventListener('change', () => {
+                    this.useUhrBei = uhrBeiCheckbox.checked;
+                    this.saveData();
+                    this.calculate();
+                });
+                const superscriptCheckbox = checkboxContainer.querySelector('#useSuperscriptTime');
+                superscriptCheckbox.addEventListener('change', () => {
+                    this.useSuperscriptTime = superscriptCheckbox.checked;
+                    this.saveData();
+                    this.calculate();
+                });
+
+                const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
+                timeControl.addEventListener('click', () => this.startTimeEdit());
+                timeControl.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        this.startTimeEdit();
+                    }
+                });
+                const timeRemoveBtn = machineDiv.querySelector('.time-remove');
+                if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
+                this.saveData();
+                if (this.machineStop.arrivalTime) this.calculate(); else this.elements.output.innerHTML = '';
+            }
+
+            async parseCoordinates(raw) {
+                const s = raw.trim();
+                if (!s) { this.showToast("Пожалуйста, введите данные."); return null; }
+                
+                
+                // 1. «51,123456, 7,123456» — дробь через ЗАПЯТУЮ
+if (/^-?\d{1,2},\d+\s*,\s*-?\d{1,3},\d+$/.test(s)) {
+  const parts = s.split(',').map(p => p.trim());
+  const lat = parseFloat(parts[0] + '.' + parts[1]);
+  const lng = parseFloat(parts[2] + '.' + parts[3]);
+  if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+}
+
+// 2. «51.123456, 7.123456» — дробь через ТОЧКУ 
+if (/^-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(s)) {
+  const [l, ln] = s.split(',').map(Number);
+  if (Math.abs(l) <= 90 && Math.abs(ln) <= 180) return { lat: l, lng: ln };
+}
+
+                const m1 = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/place\/[^\/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+                if (m1) {
+                    const lat = parseFloat(m1[1]), lng = parseFloat(m1[2]);
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
+                if (dms.length === 2) {
+                    try {
+                        const toDec = ([, d, mi, s, dir]) => {
+                            let dec = +d + mi / 60 + s / 3600;
+                            if (/S|W/i.test(dir)) dec = -dec;
+                            return dec;
+                        };
+                        const lat = toDec(dms[0]), lng = toDec(dms[1]);
+                        if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                    } catch { }
+                }
+                if (/^https?:\/\/(?:[^/]*\.)?goo\.gl\/|https?:\/\/maps\.app\.goo\.gl\/|https?:\/\/(?:www\.)?googleusercontent\.com\/maps\.google\.com\//i.test(s)) {
+
+                    try {
+                        const url = await this.expand(s);
+                        let coords = this.parseCoords(url);
+                        if (!coords) coords = await this.coordsFromHTML(url);
+                        if (!coords) { this.showToast("Не удалось извлечь координаты из ссылки."); return null; }
+                        return coords;
+                    } catch {
+                        this.showToast("Ошибка при обработке сокращённой ссылки.");
+                        return null;
+                    }
+                }
+                if (!/^https?:\/\//.test(s)) {
+                    const coords = this.parseCoords(s);
+                    if (coords) return coords;
+                }
+                if (/^https?:\/\//.test(s)) {
+                    try {
+                        const coords = await this.coordsFromHTML(s);
+                        if (coords) return coords;
+                    } catch {
+                        this.showToast("Не удалось извлечь координаты из ссылки.");
+                        return null;
+                    }
+                }
+                this.showToast("Пожалуйста, введите корректные координаты или URL Google Карт.");
+                return null;
+            }
+
+            async expand(shortUrl) {
+                const api = 'https://r.jina.ai/' + shortUrl.replace(/^https?:\/\//, '');
+                const response = await fetch(api);
+                if (!response.ok) throw new Error('Не удалось раскрыть ссылку');
+                const raw = await response.text();
+                try {
+                    const json = JSON.parse(raw);
+                    if (json.resolved_url) return json.resolved_url;
+                } catch { }
+                const match = raw.match(/https?:\/\/[^\s"']+/);
+                if (match) return match[0];
+                throw new Error('Сервис не вернул URL');
+            }
+
+            parseCoords(str) {
+                let m = str.match(/([-+]?\d{1,3}\.\d+)[ ,]+([-+]?\d{1,3}\.\d+)/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                m = str.match(/@([-.\d]+),([-.\d]+),/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                m = str.match(/\/place\/([-.\d]+),([-.\d]+)/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                m = str.match(/(?:dest|query|center)=([-.\d]+),([-.\d]+)/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                return null;
+            }
+
+            async coordsFromHTML(page) {
+                const api = 'https://r.jina.ai/' + page.replace(/^https?:\/\//, '');
+                const response = await fetch(api);
+                if (!response.ok) return null;
+                const text = await response.text();
+                let m = text.match(/"lat"\s*:\s*([-.\d]+)\s*,\s*"lng"\s*:\s*([-.\d]+)/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                m = text.match(/https?:\/\/[^"' ]+\?q=([-.\d]+),([-.\d]+)/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                m = text.match(/([-+]?\d{1,3}\.\d{4,}),\s*([-+]?\d{1,3}\.\d{4,})/);
+                if (m) {
+                    const lat = +m[1], lng = +m[2];
+                    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+                }
+                return null;
+            }
+
+            openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false) {
+                this.currentEditIndex = index;
+                this.isEditingMachine = isMachine;
+                this.isAddingNewName = isAddingNewName;
+                this.isEditingStartPoint = isEditingStartPoint;
+                this.isAddingNewGreeting = false;
+                this.isEditingGreeting = false;
+                const modal = this.elements.coordsModal;
+                const modalContent = this.elements.modalContent;
+                const coordsInput = this.elements.coordsInput;
+                const coordsLabel = this.elements.coordsLabel;
+                const coordsHelp = this.elements.coordsHelp;
+                const nameInput = this.elements.nameInput;
+                const nameLabel = this.elements.nameLabel;
+                const greetingInput = this.elements.greetingInput;
+                const greetingLabel = this.elements.greetingLabel;
+                const modalTitle = this.elements.modalTitle;
+                const openMapButton = this.elements.openMapButton;
+                const deleteGreetingButton = this.elements.deleteGreetingButton;
+
+                modalContent.classList.toggle('add-new-name', isAddingNewName);
+                modalTitle.textContent = isAddingNewName ? 'Добавить новое имя' :
+                    isEditingStartPoint ? 'Редактировать координаты начальной точки' :
+                        isMachine ? 'Редактировать координаты машины' : 'Редактировать координаты';
+
+                [nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
+                [coordsLabel, coordsHelp, coordsInput, openMapButton].forEach(el => el.style.display = 'block');
+
+                if (isAddingNewName) {
+                    nameLabel.style.display = 'block';
+                    nameInput.style.display = 'block';
+                    nameInput.value = '';
+                    coordsInput.value = '';
+                } else if (isEditingStartPoint) {
+                    coordsInput.value = this.startPointCoords.lat && this.startPointCoords.lng ? `${this.startPointCoords.lat},${this.startPointCoords.lng}` : '';
+                } else if (isMachine) {
+                    coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
+                } else {
+                    const participant = this.participants[index];
+                    coordsInput.value = participant.lat && participant.lng ? `${participant.lat},${participant.lng}` : '';
+                }
+                modal.style.display = 'flex';
+                (isAddingNewName ? nameInput : coordsInput).focus();
+            }
+
+            openGreetingModal(isAddingNewGreeting) {
+                this.isAddingNewGreeting = isAddingNewGreeting;
+                this.isEditingGreeting = !isAddingNewGreeting;
+                this.isAddingNewName = false;
+                this.isEditingMachine = false;
+                this.isEditingStartPoint = false;
+                const modal = this.elements.coordsModal;
+                const modalContent = this.elements.modalContent;
+                modalContent.classList.remove('add-new-name');
+                this.elements.modalTitle.textContent = isAddingNewGreeting ? 'Добавить новое приветствие' : 'Редактировать приветствие';
+                ['coordsLabel', 'coordsHelp', 'coordsInput', 'openMapButton', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
+                this.elements.greetingLabel.style.display = 'block';
+                this.elements.greetingInput.style.display = 'block';
+                this.elements.greetingInput.value = this.greeting;
+                this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
+                modal.style.display = 'flex';
+                this.elements.greetingInput.focus();
+            }
+
+            async saveCoordinates() {
+                const saveButton = this.elements.saveCoordsButton;
+                const original = saveButton.textContent;
+                saveButton.textContent = 'Загрузка...';
+                saveButton.disabled = true;
+                try {
+                    if (this.isAddingNewGreeting || this.isEditingGreeting) {
+                        const newGreeting = this.elements.greetingInput.value.trim();
+                        if (!newGreeting) { this.showToast("Введите приветствие."); return; }
+                        if (this.isAddingNewGreeting && this.greetings.includes(newGreeting)) { this.showToast("Приветствие уже существует."); return; }
+                        if (this.isEditingGreeting) {
+                            const old = this.greeting;
+                            const idx = this.greetings.indexOf(old);
+                            if (idx !== -1 && !this.defaultGreetings.includes(old)) this.greetings[idx] = newGreeting;
+                            this.greeting = newGreeting;
+                        } else if (this.isAddingNewGreeting) {
+                            this.greetings.push(newGreeting);
+                            this.greeting = newGreeting;
+                        }
+                        this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+                    } else {
+                        const raw = this.elements.coordsInput.value.trim();
+                        const coords = await this.parseCoordinates(raw);
+                        if (!coords) return;
+                        if (this.isAddingNewName) {
+                            const name = this.elements.nameInput.value.trim();
+                            if (!name) { this.showToast("Введите имя."); return; }
+                            if (this.nameToCoordinates[name]) { this.showToast("Имя уже существует."); return; }
+                            this.nameToCoordinates[name] = { lat: coords.lat, lng: coords.lng };
+                            if (this.isEditingStartPoint) {
+                                this.startPoint = name;
+                                this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+                                this.participants = [];
+                            } else {
+                                this.participants[this.currentEditIndex].name = name;
+                                this.participants[this.currentEditIndex].lat = coords.lat;
+                                this.participants[this.currentEditIndex].lng = coords.lng;
+                                this.participants[this.currentEditIndex].timeManuallyEdited = false;
+                            }
+                            this.updateParticipantTimes();
+                        } else if (this.isEditingMachine) {
+                            this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
+                        } else if (this.isEditingStartPoint) {
+                            this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+                            this.updateParticipantTimes();
+                        } else {
+                            this.participants[this.currentEditIndex].lat = coords.lat;
+                            this.participants[this.currentEditIndex].lng = coords.lng;
+                            this.participants[this.currentEditIndex].timeManuallyEdited = false;
+                            this.updateParticipantTimes();
+                        }
+                        this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+                    }
+                } finally {
+                    saveButton.textContent = original;
+                    saveButton.disabled = false;
+                }
+            }
+
+            deleteGreeting() {
+                if (!this.defaultGreetings.includes(this.greeting)) {
+                    this.greetings = this.greetings.filter(g => g !== this.greeting);
+                    this.greeting = this.defaultGreetings[0];
+                    this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+                }
+            }
+
+            closeModal() {
+                this.elements.coordsModal.style.display = 'none';
+                this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = false;
+                this.currentEditIndex = null;
+            }
+
+            openMapForSelection() {
+                const coords = this.elements.coordsInput.value.trim();
+                let url = 'https://www.google.com/maps';
+                if (coords) {
+                    const parsed = this.parseCoords(coords);
+                    if (parsed) url += `/place/${parsed.lat},${parsed.lng}`;
+                    else url += `/search/${encodeURIComponent(coords)}`;
+                }
+                window.open(url, '_blank');
+            }
+
+            addParticipant() {
+                this.participants.push({ name: '', time: 5, lat: null, lng: null, timeManuallyEdited: false });
+                this.updateParticipantTimes();
+                this.saveData();
+                this.renderParticipants();
+                this.initSortable();
+                this.calculate();
+            }
+
+            updateName(index, value) {
+                if (value === 'add-new') this.openCoordsModal(index, false, true);
+                else {
+                    this.participants[index].name = value;
+                    const coords = this.nameToCoordinates[value] || { lat: null, lng: null };
+                    this.participants[index].lat = coords.lat;
+                    this.participants[index].lng = coords.lng;
+                    this.participants[index].timeManuallyEdited = false;
+                    this.updateParticipantTimes();
+                    this.saveData();
+                    this.renderParticipants();
+                    this.initSortable();
+                    this.calculate();
+                }
+            }
+
+            updateTime(index, value) {
+                const time = parseInt(value) || 5;
+                this.participants[index].time = Math.max(1, Math.min(60, time));
+                this.participants[index].timeManuallyEdited = true;
+                this.saveData();
+                this.renderParticipants();
+                this.calculate();
+            }
+
+            updateMachineName(value) {
+                this.machineStop.name = value.trim() || 'an der Maschine';
+                this.saveData();
+                this.calculate();
+            }
+
+            updateMachineTime(value) {
+                const time = parseInt(value) || 20;
+                this.machineStop.time = Math.max(1, Math.min(60, time));
+                this.saveData();
+                this.calculate();
+            }
+
+            clearArrivalTime() {
+                this.machineStop.arrivalTime = "";
+                this.saveData();
+                this.elements.output.innerHTML = '';
+                this.renderParticipants();
+            }
+
+            startTimeEdit() {
+                const container = document.querySelector('.machine .right-section');
+                const existingInput = container.querySelector('input[type="time"]');
+                if (existingInput) existingInput.remove();
+
+                const input = document.createElement('input');
+                input.type = 'time';
+                input.style.width = '100px';
+                input.style.padding = 'var(--small-spacing)';
+                input.style.border = '1px solid #ddd';
+                input.style.borderRadius = '4px';
+                input.style.fontSize = '1em';
+                input.value = this.machineStop.arrivalTime || '';
+                const timeControl = container.querySelector('.time-icon') || container.querySelector('.arrival-time');
+                container.insertBefore(input, timeControl);
+                timeControl.style.display = 'none';
+
+                const saveTime = () => {
+                    this.machineStop.arrivalTime = input.value;
+                    container.removeChild(input);
+                    timeControl.style.display = 'flex';
+                    this.renderParticipants();
+                    this.initSortable();
+                    this.calculate();
+                    input.removeEventListener('change', saveTime);
+                    input.removeEventListener('blur', saveTime);
+                };
+                input.addEventListener('change', saveTime);
+                input.addEventListener('blur', () => setTimeout(saveTime, 50));
+                input.focus();
+                try { input.showPicker(); } catch { }
+            }
+
+            initSortable() {
+                if (this.sortable) this.sortable.destroy();
+                this.sortable = new Sortable(this.elements.participantsContainer, {
+                    handle: '.material-symbols-outlined',
+                    animation: 150,
+                    onEnd: evt => {
+                        if (evt.oldIndex !== evt.newIndex) {
+                            const [moved] = this.participants.splice(evt.oldIndex, 1);
+                            this.participants.splice(evt.newIndex, 0, moved);
+                            this.updateParticipantTimes();
+                            this.saveData();
+                            this.renderParticipants();
+                            this.calculate();
+                        }
+                    }
+                });
+            }
+
+            showToast(message) {
+                this.elements.toast.textContent = message;
+                this.elements.toast.classList.add('show');
+                setTimeout(() => this.elements.toast.classList.remove('show'), 3000);
+            }
+
+            formatTime(date) {
+                if (this.useSuperscriptTime) {
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const superscriptDigits = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+                    const superscriptMinutes = minutes.split('').map(d => superscriptDigits[parseInt(d)]).join('');
+                    return `${hours}${superscriptMinutes}`;
+                }
+                return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            calculate(){
+  if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';return}
+  let out=`${this.greeting},\n`;
+
+  const valid=this.participants.filter(p=>p.name);
+  const total=valid.reduce((s,p)=>s+p.time,0)+this.machineStop.time;
+
+  // 1. ВЫЧИСЛЯЕМ ВРЕМЯ СТАРТА
+  const startTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
+  startTime.setMinutes(startTime.getMinutes()-total);
+
+  // 2. ФОРМИРУЕМ ВЫВОД
+  out+=this.useUhrBei
+    ? `um ${this.formatTime(startTime)} Uhr geht's los\n`
+    : `${this.formatTime(startTime)}  geht's los\n`;
+
+  let current=new Date(startTime);
+  valid.forEach(p=>{
+    current.setMinutes(current.getMinutes()+p.time);
+    out+=this.useUhrBei
+      ? `um ${this.formatTime(current)} Uhr bei ${p.name}\n`
+      : `${this.formatTime(current)}  ${p.name}\n`;
+  });
+
+  // Время прибытия к машине
+  const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
+  out+=this.useUhrBei
+    ? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}\n`
+    : `${this.formatTime(machineTime)}  ${this.machineStop.name}\n`;
+
+  this.elements.output.innerHTML=out;
+}
+
+
+            openGoogleMaps(returnTrip = false) {
+                const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
+                if (!this.startPointCoords.lat || !this.startPointCoords.lng || validParticipants.length === 0) {
+                    this.showToast("Добавьте начальную точку и хотя бы одного участника с координатами.");
+                    return;
+                }
+                let url = 'https://www.google.com/maps/dir/';
+                if (!returnTrip) {
+                    url += `${this.startPointCoords.lat},${this.startPointCoords.lng}/`;
+                    validParticipants.forEach(p => url += `${p.lat},${p.lng}/`);
+                    if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}`;
+                } else {
+                    if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}/`;
+                    for (let i = validParticipants.length - 1; i >= 0; i--) url += `${validParticipants[i].lat},${validParticipants[i].lng}/`;
+                    url += `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+                }
+                window.open(url, '_blank');
+            }
+
+            copyResult() {
+                const text = this.elements.output.textContent.trim();
+                if (!text) {
+                    this.showToast("Нечего копировать — сначала рассчитайте маршрут.");
+                    return;
+                }
+                navigator.clipboard.writeText(text)
+                    .then(() => this.showToast("Результат скопирован в буфер обмена!"))
+                    .catch(() => this.showToast("Не удалось скопировать — разрешите доступ к буферу обмена."));
+            }
+
+            removeParticipant(index) {
+                this.participants.splice(index, 1);
                 this.updateParticipantTimes();
                 this.saveData();
                 this.renderParticipants();
