@@ -1,6 +1,11 @@
-// api/defaults.js
-export default function handler(req, res) {
+// api/defaults.js  ← лежит в корне проекта, рядом с index.html
+export default async function handler(req, res) {
+  // разрешаем CORS, если вдруг фронт на другом домене
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  // один JSON = всё статическое
   res.status(200).json({
     names: {
       'Sergii': { lat: 51.530133, lng: 6.850858 },
@@ -36,11 +41,11 @@ export default function handler(req, res) {
       'Marvin-Dima': 30,
       'René - Olga Park-Sergii': 10,
       'René - Olga Park-Andrii': 10,
-      'René - Olga Park-Anatolii': 10,
-      'René - Olga Park-Sergio': 10,
+      'René - Olga Park-Anatolii': 8,
+      'René - Olga Park-Sergio': 8,
       'René - Olga Park-Dima': 25,
       'René - Olga Park-Marvin': 20,
       'René - Olga Park-Maikel': 20
     }
   });
-      }
+                 }
