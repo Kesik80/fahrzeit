@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       'Andrii': { lat: 51.534558, lng: 6.861061 },
       'Sergio': { lat: 51.520000, lng: 6.887619 },
       'Dima': { lat: 51.551753, lng: 7.102285 },
-      'René - Olga Park': { lat: 51.5004952, lng: 7.102285 },
+      'René - Olga Park': { lat: 51.5004952, lng: 6.8685049 },
       'Marvin': { lat: 51.556472, lng: 6.731424 }
     },
     participantOrders: {
