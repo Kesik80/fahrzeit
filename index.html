@@ -549,15 +549,54 @@
                 this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag'];
                 this.greetings = [...this.defaultGreetings];
                 this.greeting = 'Moin zusammen';
-                const defaultCoords = {};
+                const defaultCoords = {
+      'Sergii': { lat: 51.530133, lng: 6.850858 },
+      'Anatolii': { lat: 51.522694, lng: 6.858944 },
+      'Andrii': { lat: 51.534558, lng: 6.861061 },
+      'Sergio': { lat: 51.520000, lng: 6.887619 },
+      'Dima': { lat: 51.551753, lng: 7.102285 },
+      'René - Olga Park': { lat: 51.5004952, lng: 7.102285 },
+      'Marvin': { lat: 51.556472, lng: 6.731424 }
+    };
 
     this.defaultCoordinates = defaultCoords;      // для сброса
-    this.nameToCoordinates = {}; 
-                this.travelTimes = {};
+    this.nameToCoordinates = { ...defaultCoords }; 
+                this.travelTimes = {
+  // Время в пути между участниками
+  'Sergii-Anatolii': 5,
+  'Sergii-Andrii': 5,
+  'Sergii-Sergio': 10,
+  'Sergii-Dima': 30,
+  'Andrii-Anatolii': 5,
+  'Andrii-Sergio': 10,
+  'Andrii-Dima': 25,
+  'Anatolii-Sergio': 10,
+  'Anatolii-Dima': 30,
+  'Sergio-Dima': 25,
+  'Marvin-Sergii': 20,
+  'Marvin-Anatolii': 17,
+  'Marvin-Andrii': 20,
+  'Marvin-Sergio': 25,
+  'Marvin-Dima': 30,
+  'René - Olga Park-Sergii': 10,
+  'René - Olga Park-Andrii': 10,
+  'René - Olga Park-Anatolii': 10,
+  'René - Olga Park-Sergio': 10,
+  'René - Olga Park-Dima': 25,
+  'René - Olga Park-Marvin': 20,
+  'René - Olga Park-Maikel': 20
+
+};
                 
                 this.startPoint = '';
                 this.startPointCoords = { lat: null, lng: null };
-                this.participantOrders = {};
+                this.participantOrders = {
+                    'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
+                    'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
+                    'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+                    'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+                    'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+                };
                 this.participants = [];
                 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
                 this.useUhrBei = false;
@@ -599,10 +638,11 @@
                 this.isEditingGreeting = false;
                 this.isEditingStartPoint = false;
 
-                this.loadDefaults().then(() => {
-  this.loadData();          // восстанавливает пользовательские данные
-  this.addEventListeners();
-});
+                this.loadData();
+                this.syncCoordinates();
+                this.addEventListeners();
+                this.renderParticipants();
+                this.elements.output.innerHTML = '';
             }
 
             getTravelTime(fromName, toName) {
@@ -697,37 +737,6 @@
                 }
                 this.updateStartPoint(this.startPoint);
             }
-            
-            // Загружаем настройки при старте из api/default.js
-            async loadDefaults() {
-  try {
-    const res = await fetch('/api/defaults');
-    const data = await res.json();
-
-    this.nameToCoordinates = data.names;
-    this.participantOrders = data.participantOrders;
-    this.travelTimes = data.travelTimes;
-
-    // если в localStorage уже были сохранённые координаты — подмешиваем
-    const saved = localStorage.getItem('fahrzeitRechnerNameToCoordinates');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        Object.assign(this.nameToCoordinates, parsed);
-      } catch {}
-    }
-
-    this.syncCoordinates();
-    this.renderParticipants();
-    this.initSortable();
-    this.calculate();
-  } catch (err) {
-    console.error('Не удалось загрузить defaults', err);
-    // fallback: оставляем пустые объекты, чтобы страница не падала
-  }
-}
-
-            
 
             addEventListeners() {
                 this.elements.greetingSelect.addEventListener('change', e => {
