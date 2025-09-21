@@ -6,12 +6,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     
-    <script>
-  // мгновенно ставим цвет статус-бара до загрузки DOM
-  document.documentElement.style.setProperty('background', (localStorage.theme === 'dark') ? '#121212' : '#f0f0f0');
-  document.querySelector('meta[name="theme-color"]').content = (localStorage.theme === 'dark') ? '#121212' : '#f0f0f0';
-</script>
-
+    
     
     <!-- иконка для iOS -->
 <link rel="apple-touch-icon" href="/icons/icon-192.png">
@@ -540,7 +535,6 @@ body.dark pre#output {
   padding: 10px !important;
   margin: 0 !important;
 }
-
 
 
 
