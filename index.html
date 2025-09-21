@@ -17,7 +17,7 @@
 <link rel="manifest" href="/icons/manifest.json">
 
 <!-- цвет статус-бара (опционально) -->
-<meta name="theme-color" content="#007bff">
+<meta name="theme-color" content="#007bff" id="theme-meta">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     
@@ -50,8 +50,8 @@
             padding: 10px;
             max-width: 500px;
             margin: auto;
-            background: var(--background-color);
-            color: var(--text-color)
+            background: var(--bg) !important;
+            color: var(--text) !important;
         }
 
         h2 {
@@ -1496,10 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- тема ----------
   const switcher = document.getElementById('themeSwitch');
-  if (!switcher) {
-    // если переключателя нет — просто выходим, не падаем
-    return;
-  }
+  if (!switcher) return;
 
   // восстанавливаем сохранённую тему
   if (localStorage.theme === 'dark') document.body.classList.add('dark');
@@ -1509,8 +1506,13 @@ document.addEventListener('DOMContentLoaded', () => {
   switcher.addEventListener('change', e => {
     document.body.classList.toggle('dark', e.target.checked);
     localStorage.theme = e.target.checked ? 'dark' : 'light';
+
+    // меняем цвет статус-бара
+    const meta = document.getElementById('theme-meta');
+    meta.content = e.target.checked ? '#121212' : '#f0f0f0';
   });
 });
+
 
 
         
