@@ -136,7 +136,8 @@
             cursor: pointer;
             flex-shrink: 0;
             line-height: 1;
-            padding: 0
+            padding: 0;
+            color: var(--text) !important;
         }
 
         .participant {
@@ -222,9 +223,9 @@
 /* красные крестики ВСЕГДА */
 .time-remove,
 .remove-btn {
-  
-  color: #dc3545 !important;
-  border: none;
+  background: transparent !important;   /* фон прозрачный */
+  color: #dc3545 !important;            /* красный крестик */
+  border: none !important;
   border-radius: 4px;
   cursor: pointer;
 }
@@ -475,6 +476,10 @@ body.dark {
   --info-color: #6c757d;
   --danger-color: #dc3545;
   --route-back-color: #6f42c1;
+      /* модальное окно*/
+  --modal-bg: #121212;   /* тёмно-серый ночью */
+  --modal-text: #fff;
+  
   
 }
 
@@ -494,11 +499,9 @@ body {
 /* контейнеры, карточки, модалки, поля ввода */
 .greeting-container,
 .participant,
-.modal-content,
 pre,
 input,
-select,
-button {
+select {
   background: var(--surface) !important;
   color: var(--text) !important;
   border-color: var(--text) !important;
@@ -536,6 +539,27 @@ body.dark pre#output {
   margin: 0 !important;
 }
 
+/* цветные кнопки модалки – всегда свои */
+.modal-btn                       { color: #fff !important; border: none !important; }
+.modal-btn.save-button           { background: var(--success-color) !important; }
+.modal-btn.cancel-button         { background: var(--info-color)    !important; }
+.modal-btn.map-button            { background: var(--primary-color) !important; }
+.modal-btn.delete-greeting-btn   { background: var(--danger-color)  !important; }
+
+/* фон модалки – переключается вместе с темой */
+.modal-content                   { background: #aaaaaa !important; color: #000 !important; }
+body.dark .modal-content        { background: #444444 !important; color: #fff !important
+; 
+    border: 1px solid #666 !important;
+}
+./* цвет карандаша – вместе с темой */
+.pencil-icon {
+  width: 18px;
+  height: 18px;
+  fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
+}
+
+
 
 
         
@@ -565,13 +589,14 @@ body.dark pre#output {
                 <option value="Guten Tag">Guten Tag</option>
                 <option value="add-new-greeting">Добавить новое приветствие</option>
             </select>
-            <button class="edit-greeting-btn" title="Редактировать или удалить приветствие">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
-                    <path
-                        d="M46.193 6.863a7.48 7.48 0 0 0-4.717 2.13L15.434 38.771S15.213 39.215 13.725 46.12c-.28-.074-.44-.204-.74-.267a1 1 0 0 0-.41 1.957c.305.064.452.186.73.262L11.799 55.045a1 1 0 0 0 1.38 1.125L20.553 52.9a1 1 0 0 0 .552-1.21s-.398-1.223-1.601-2.494c-.81-.855-2.192-1.688-3.883-2.404L17.113 39.9c.259-.3 20.274-23.473 25.815-29.52C47.764 5.267 55.893 14.152 52.834 17.424l-.022.023S33.986 38.92 27.871 46.266c-.79-1.355-1.806-2.557-2.826-3.433-.864-.742-1.162-.886-1.641-1.201L45.92 16.09a1 1 0 0 0-1.5-1.323L21.186 41.125a1 1 0 0 0 .24 1.521s1.084.645 2.316 1.703c1.232 1.058 2.549 2.529 3.022 3.945a1 1 0 0 0 1.722.317C33.662 42.3 54.262 18.827 54.295 18.79c3.881-4.151-1.668-11.392-7.387-11.9a7.55 7.55 0 0 0-1.715-.027zM15.203 48.752l1.035-4.795-4.527 1.998 4.492 2.797z"
-                        stroke="currentColor" stroke-width="2" fill="currentColor" />
-                </svg>
-            </button>
+       <button class="edit-greeting-btn pencil-icon" title="Редактировать или удалить приветствие">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
+    <path
+      d="M46.193 6.863a7.48 7.48 0 0 0-4.717 2.13L15.434 38.771S15.213 39.215 13.725 46.12c-.28-.074-.44-.204-.74-.267a1 1 0 0 0-.41 1.957c.305.064.452.186.73.262L11.799 55.045a1 1 0 0 0 1.38 1.125L20.553 52.9a1 1 0 0 0 .552-1.21s-.398-1.223-1.601-2.494c-.81-.855-2.192-1.688-3.883-2.404L17.113 39.9c.259-.3 20.274-23.473 25.815-29.52C47.764 5.267 55.893 14.152 52.834 17.424l-.022.023S33.986 38.92 27.871 46.266c-.79-1.355-1.806-2.557-2.826-3.433-.864-.742-1.162-.886-1.641-1.201L45.92 16.09a1 1 0 0 0-1.5-1.323L21.186 41.125a1 1 0 0 0 .24 1.521s1.084.645 2.316 1.703c1.232 1.058 2.549 2.529 3.022 3.945a1 1 0 0 0 1.722.317C33.662 42.3 54.262 18.827 54.295 18.79c3.881-4.151-1.668-11.392-7.387-11.9a7.55 7.55 0 0 0-1.715-.027zM15.203 48.752l1.035-4.795-4.527 1.998 4.492 2.797z"
+      stroke="currentColor" stroke-width="2" fill="currentColor" />
+  </svg>
+</button>
+
         </div>
 
         <div id="participants"></div>
@@ -636,7 +661,9 @@ body.dark pre#output {
         <div id="toast" class="toast"></div>
 
         <div id="coordsModal" class="modal">
-            <div class="modal-content">
+          <div class="modal-content" id="modalContent"
+     style="background: var(--modal-bg, #fff) !important; color: var(--modal-text, #000) !important;">
+
                 <h3 id="modalTitle">Редактировать координаты</h3>
                 <label id="nameLabel" style="display:none">Имя:</label>
                 <input type="text" id="nameInput" style="display:none" placeholder="Введите имя" />
@@ -665,9 +692,10 @@ body.dark pre#output {
                     </svg>
                 </button>
                 <div class="modal-buttons">
-                    <button class="save-button" id="saveCoords">Сохранить</button>
-                    <button class="cancel-button" id="cancelCoords">Отмена</button>
-                    <button class="delete-greeting-btn" id="deleteGreeting" style="display:none">Удалить</button>
+                <button class="modal-btn save-button"   id="saveCoords">Сохранить</button>
+<button class="modal-btn cancel-button" id="cancelCoords">Отмена</button>
+<button class="modal-btn delete-greeting-btn" id="deleteGreeting">Удалить</button>
+
                 </div>
             </div>
         </div>
@@ -686,7 +714,7 @@ body.dark pre#output {
       'Andrii': { lat: 51.534558, lng: 6.861061 },
       'Sergio': { lat: 51.520000, lng: 6.887619 },
       'Dima': { lat: 51.551753, lng: 7.102285 },
-      'René - Olga Park': { lat: 51.5007065, lng: 6.8683808 },
+      'René - Olga Park': { lat: 51.5004335, lng: 6.8686337 },
       'Marvin': { lat: 51.556472, lng: 6.731424 }
     };
 
