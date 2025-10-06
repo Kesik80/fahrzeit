@@ -564,6 +564,23 @@ body.dark .modal-content        { background: #444444 !important; color: #fff !i
   fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
 }
 
+/* кнопка «режим Бога» */
+.god-mode{
+  position: fixed;   /* фиксируем в окне браузера */
+  top: 10px;         /* отступ сверху */
+  left: 10px;        /* отступ слева */
+  z-index: 999;      /* выше всех элементов */
+  color: var(--text); /* цвет как у текущей темы */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: transform .2s;
+}
+.god-mode:hover{
+  transform: scale(1.15);
+}
 
 
 
@@ -574,6 +591,15 @@ body.dark .modal-content        { background: #444444 !important; color: #fff !i
 <body>
     <main>
         <h2>Fahrzeit Rechner</h2>
+        
+<!-- РЕЖИМ БОГА -->
+<a href="redaktor.html" class="god-mode" title="Режим Бога">
+  <!-- пример иконки «короны» (можно заменить на любую другую) -->
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2.86-2h10.28l.57-4.36L12 8.5l-5.43 1.14.57 4.36z"/>
+  </svg>
+</a>
+
         
         <!-- ПЕРЕКЛЮЧАТЕЛЬ ВНЕ participants -->
 <label class="theme-toggle">
