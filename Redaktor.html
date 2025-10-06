@@ -1,0 +1,652 @@
+<!--
+закоментировано         //.sort()                                   // красота: по алфавиту
+-->
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Редактор групп координат</title>
+<style>
+  *{box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+  body{margin:0;padding:.4rem 4px 60px;background:#f4f4f4;font-size:1.05rem;display:flex;flex-direction:column;min-height:100vh}
+  h1{font-size:1.3rem;margin:.4rem 0;text-align:center}
+  #cards{flex:1 1 auto;margin-bottom:.4rem}
+  .card{background:#fff;border-radius:6px;padding:.4rem 2rem .4rem .5rem;margin-bottom:.4rem;box-shadow:0 1px 3px rgba(0,0,0,.1);position:relative;display:flex;align-items:center;gap:.4rem}
+  .card-title{flex:1 1 0;font-weight:bold;word-break:break-word;cursor:pointer;padding:.2rem .3rem;border:1px solid transparent;border-radius:4px}
+  .card-title:hover{border-color:#bbb}
+  .card-title input{width:100%;font-size:1rem;padding:.2rem;border:1px solid #007bff;border-radius:4px}
+  .card-coord{flex:0 0 45%}
+  .card-coord input{width:100%;padding:.3rem;font-size:1rem;border:1px solid #bbb;border-radius:4px}
+  .delX{position:absolute;top:.25rem;right:.4rem;font-size:.95rem;font-weight:700;color:#dc3545;cursor:pointer;line-height:1}
+  .delX:hover{color:#a71d2a}
+  textarea{width:100%;min-height:400px;font-size:.95rem;font-family:monospace;padding:.4rem;border:1px solid #bbb;border-radius:4px;resize:vertical}
+  .rawBlock{margin:.5rem 0}
+  .bottomBar{position:fixed;left:0;right:0;bottom:0;display:flex;height:52px;background:#fff;border-top:1px solid #ccc}
+  .bottomBar button{flex:1 1 20%;border:none;background:#fff;font-size:1.5rem;cursor:pointer;padding:0}
+  .bottomBar button:hover{background:#f0f0f0}
+  #fileInput{display:none}
+  #groupSel{width:100%;margin-bottom:.5rem;padding:.4rem;font-size:1rem;border:1px solid #bbb;border-radius:4px}
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;align-items:flex-start;justify-content:center;padding-top:15vh}
+  .modal-content{background:#fff;width:86%;max-width:320px;border-radius:8px;padding:1rem .8rem;text-align:center}
+  .modal-content h3{margin:.3rem 0 .8rem;font-size:1.15rem}
+  .modal-content input,.modal-content select{width:100%;margin:.4rem 0;padding:.5rem;font-size:1rem;border:1px solid #bbb;border-radius:4px}
+  .modal-buttons{display:flex;gap:.5rem;margin-top:.6rem}
+  .modal-buttons button{flex:1;padding:.5rem;font-size:1rem;border:none;border-radius:5px;cursor:pointer}
+  .add-confirm{background:#007bff;color:#fff}
+  .add-cancel{background:#6c757d;color:#fff}
+  #msgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:flex-start;justify-content:center;padding-top:15vh}
+  #msgContent{background:#fff;width:86%;max-width:320px;border-radius:8px;padding:1rem;text-align:center;font-size:1.1rem}
+  /* новые мелкие кнопки */
+  #addRiderBtn{font-size:1.2rem;padding:0 .4rem;margin-left:4px;border:1px solid #bbb;border-radius:4px;background:#fff;cursor:pointer}
+  #addRiderBtn:hover{background:#f0f0f0}
+  #ghUploadBtn:disabled{ opacity:.4; cursor:not-allowed }
+</style>
+</head>
+<body>
+
+<h1>Редактор групп координат</h1>
+
+<select id="groupSel">
+  <option value="defaultCoords">defaultCoords</option>
+  <option value="stations">stations</option>
+  <option value="travelTimes">travelTimes</option>
+  <option value="participantOrders">participantOrders</option>
+</select>
+
+<div id="cards"></div>
+<div class="rawBlock"><textarea id="rawJson"></textarea></div>
+
+<div class="bottomBar">
+  <button id="loadBtn" title="Загрузить">📂</button>
+  <button id="copyBtn" title="Копировать">📋</button>
+  <button id="addBtn" title="Добавить">➕</button>
+  <button id="saveBtn" title="Сохранить">💾</button>
+  <button id="applyRaw" title="Применить">✔️</button>
+  <button id="ghUploadBtn" title="Upload stations.js">⬆️</button>
+
+  
+</div>
+
+<input type="file" id="fileInput">
+
+
+
+
+<!-- модалка добавления точки -->
+<div id="addModal" class="modal">
+  <div class="modal-content">
+    <h3>Новая точка</h3>
+    <select id="modalGroupSel">
+      <option value="defaultCoords">defaultCoords</option>
+      <option value="stations">stations</option>
+    </select>
+    <input id="newName" type="text" placeholder="Название точки">
+    <input id="newCoord" type="text" placeholder="Координаты (lat,lng), например 51.538627,7.108037">
+    <div class="modal-buttons">
+      <button id="addConfirm" class="add-confirm">Добавить</button>
+      <button id="addCancel" class="add-cancel">Отмена</button>
+    </div>
+  </div>
+</div>
+
+<!-- модалка загрузки на GitHub -->
+<div id="ghModal" class="modal">
+  <div class="modal-content">
+    <h3>Upload to GitHub</h3>
+    
+    <input id="ghTokenInp" type="password" placeholder="GitHub token (classic)" autocomplete="off">
+
+    <!-- 1. Отправка stations.js (как было) -->
+    <div style="margin-bottom:1rem">
+        <div class="modal-buttons">
+      <button id="ghSendStationsBtn" class="add-confirm">⬆️ stations.js</button>
+    </div>
+
+<!-- 2. Отправка произвольного файла (новое) -->
+<hr style="margin:.8rem 0">
+<div style="font-weight:bold;margin-bottom:.4rem">Загрузить другой файл</div>
+<input id="ghAnyFile" type="file" style="margin-bottom:.5rem">
+<input id="ghAnyName" type="text" placeholder="Название на GitHub (например data.json)">
+<div class="modal-buttons">
+  <button id="ghSendAnyBtn"  class="add-confirm">📤 Отправить</button>
+  <button id="ghCancelBtn"   class="add-cancel">Отмена</button>
+</div>
+
+  </div>
+</div>
+
+
+
+<!-- тост -->
+<div id="msgModal" class="modal">
+  <div id="msgContent">Сообщение</div>
+</div>
+
+<!-- Sortable -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
+
+<script>
+// ==========  ДАННЫЕ ПО УМОЛЧАНИЮ  ==========
+let data = {
+  defaultCoords: {
+    'Sergii':      { lat: 51.530133, lng: 6.850858 },
+    'Anatolii':    { lat: 51.522694, lng: 6.858944 },
+    'Andrii':      { lat: 51.534558, lng: 6.861061 },
+    'Sergio':      { lat: 51.520000, lng: 6.887619 },
+    'Dima':        { lat: 51.551753, lng: 7.102285 },
+    'René':        { lat: 51.476281, lng: 6.861856 },
+    'OLGA-Park':   { lat: 51.5004335, lng: 6.8686337 },
+    'Marvin':      { lat: 51.556472, lng: 6.731424 },
+    'Vasyl':       { lat: 51.515355, lng: 6.893655 }
+  },
+  stations: {
+    'Gelsenkirchen-Bismarck': { lat: 51.538627, lng: 7.108037 },
+    'Hagen':                  { lat: 51.373517, lng: 7.461144 },
+    'Essen West':             { lat: 51.4539273, lng: 6.9794622 }
+  }
+};
+const DEFAULT_TRAVEL_TIME = 5;   // минуты
+let travelTimes = {
+  'Sergii-Anatolii': 5, 'Sergii-Andrii': 5, 'Sergii-Sergio': 10, 'Sergii-Dima': 30,
+  'Andrii-Anatolii': 5, 'Andrii-Sergio': 10, 'Andrii-Dima': 25,
+  'Anatolii-Sergio': 10, 'Anatolii-Dima': 30,
+  'Sergio-Dima': 25,
+  'Marvin-Sergii': 20, 'Marvin-Anatolii': 17, 'Marvin-Andrii': 20, 'Marvin-Sergio': 25, 'Marvin-Dima': 30,
+  'Maikel-Sergii': 20, 'Maikel-Andrii': 20, 'Maikel-Anatolii': 15, 'Maikel-Sergio': 20, 'Maikel-Dima': 30, 'Maikel-Marvin': 5,
+  'René-Sergii': 15, 'René-Andrii': 15, 'René-Anatolii': 15, 'René-Sergio': 15, 'René-Dima': 25, 'René-Marvin': 25, 'René-Maikel': 25,
+  'Vasyl-Sergii': 10, 'Vasyl-Andrii': 10, 'Vasyl-Anatolii': 10, 'Vasyl-Sergio': 5, 'Vasyl-Dima': 20, 'Vasyl-Marvin': 25, 'Vasyl-Maikel': 25, 'Vasyl-René': 25,
+  'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10, 'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20, 'OLGA-Park-Marvin': 20, 'OLGA-Park-Maikel': 20, 'OLGA-Park-René': 5, 'OLGA-Park-Vasyl': 10
+};
+let participantOrders = {
+  'Sergii':   ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
+  'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
+  'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+  'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+  'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+};
+
+// ==========  УТИЛИТЫ  ==========
+function addTravelLinks(newName) {
+  Object.keys(data.defaultCoords).forEach(oldName => {
+    if (oldName === newName) return;
+    const key = `${newName}-${oldName}`;
+    if (travelTimes[key] === undefined) travelTimes[key] = DEFAULT_TRAVEL_TIME;
+  });
+}
+function removeTravelLinks(delName) {
+  Object.keys(travelTimes).forEach(key => {
+    if (key.startsWith(delName + '-')) delete travelTimes[key];
+  });
+}
+function showMsg(text, ms = 500) {
+  const msgContent = document.getElementById('msgContent');
+  const msgModal   = document.getElementById('msgModal');
+  msgContent.textContent = text;
+  msgModal.style.display = 'flex';
+  setTimeout(() => msgModal.style.display = 'none', ms);
+}
+
+// ==========  РЕНДЕР  ==========
+const groupSel = document.getElementById('groupSel');
+groupSel.addEventListener('change', render);
+
+function currentGroup() { return groupSel.value; }
+
+function render() {
+  const grp = currentGroup();
+  const box = document.getElementById('cards');
+  box.innerHTML = '';
+
+  // -----  participantOrders  -----
+  if (grp === 'participantOrders') {
+    const drivers = Object.keys(data.defaultCoords).sort();
+
+    // 1. выбор водителя
+    const driverSel = document.createElement('select');
+    driverSel.id = 'driverSel';
+    drivers.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = opt.textContent = d;
+      if (d === (participantOrders._lastDriver || drivers[0])) opt.selected = true;
+      driverSel.appendChild(opt);
+    });
+    box.appendChild(driverSel);
+
+
+
+    // 2. выбор пассажира
+    const riderSel = document.createElement('select');
+    riderSel.id = 'riderSel';
+    riderSel.style.marginLeft = '8px';
+    function refillRiders() {
+      riderSel.innerHTML = '';
+      const currentDriver = driverSel.value;
+      const already = participantOrders[currentDriver] || [];
+      drivers
+        .filter(n => n !== currentDriver && !already.includes(n))
+        .forEach(n => {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = n;
+          riderSel.appendChild(opt);
+        });
+    }
+    refillRiders();
+
+    // 3. кнопка добавить
+    const addBtn = document.createElement('button');
+    addBtn.id = 'addRiderBtn';
+    addBtn.textContent = '➕';
+    addBtn.onclick = () => {
+      const driver = driverSel.value;
+      const rider  = riderSel.value;
+      if (!rider) return;
+      if (!participantOrders[driver]) participantOrders[driver] = [];
+      participantOrders[driver].push(rider);
+      participantOrders._lastDriver = driver;
+      render();               // обновим всё
+      showMsg('Добавлено');
+    };
+    box.appendChild(riderSel);
+    box.appendChild(addBtn);
+
+    // 4. Sortable-список
+    const listBox = document.createElement('div');
+    listBox.id = 'orderList';
+    listBox.style.marginTop = '10px';
+    box.appendChild(listBox);
+    function rebuildList() {
+      const driver = driverSel.value;
+      participantOrders._lastDriver = driver;
+      listBox.innerHTML = '';
+      const order = participantOrders[driver] || [];
+      order.forEach((name, idx) => {
+        const div = document.createElement('div');
+        div.className = 'card'; div.draggable = true; div.dataset.index = idx;
+        div.innerHTML = `<span style="margin-right:auto;">${idx + 1}. ${name}</span>
+                         <button class="delX" style="position:static;" data-name="${name}">✖</button>`;
+        listBox.appendChild(div);
+      });
+      listBox.querySelectorAll('.delX').forEach(btn => {
+        btn.onclick = e => {
+          e.stopPropagation();
+          const name = btn.dataset.name;
+          const arr  = participantOrders[driverSel.value];
+          const i    = arr.indexOf(name);
+          if (i > -1) arr.splice(i, 1);
+          rebuildList();
+          showMsg('Удалено');
+        };
+      });
+      if (listBox._sortable) listBox._sortable.destroy();
+      listBox._sortable = new Sortable(listBox, {
+        animation: 150,
+        onEnd: () => {
+          const driver   = driverSel.value;
+          const newOrder = Array.from(listBox.children)
+            .map(div => div.querySelector('span').textContent.split('. ')[1]);
+          participantOrders[driver] = newOrder;
+          rebuildList();
+          showMsg('Порядок изменён');
+        }
+      });
+    }
+    driverSel.onchange = () => { refillRiders(); rebuildList(); };
+    rebuildList();
+
+    // 5. чистый JSON без служебных полей
+const clean = {};
+  Object.keys(participantOrders)
+        .filter(k => !k.startsWith('_'))          // служебные поля
+        //.sort()                                   // красота: по алфавиту
+        .forEach(k => clean[k] = participantOrders[k]);
+
+  document.getElementById('rawJson').value =
+    'let participantOrders = ' + JSON.stringify(clean, null, 2) + ';';
+  return;   // важно – не трогать box дальше
+}
+
+  // -----  travelTimes  -----
+  if (grp === 'travelTimes') {
+    const keys = Object.keys(travelTimes).sort();
+    for (const key of keys) {
+      const card = document.createElement('div'); card.className = 'card';
+      const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
+      x.onclick = () => { delete travelTimes[key]; render(); showMsg('Удалено'); };
+      card.appendChild(x);
+      const title = document.createElement('div'); title.className = 'card-title'; title.textContent = key; title.style.cursor = 'default';
+      const timeInp = document.createElement('input'); timeInp.type = 'number'; timeInp.min = '1'; timeInp.max = '999';
+      timeInp.value = travelTimes[key]; timeInp.style.width = '60px';
+      timeInp.addEventListener('change', () => {
+        travelTimes[key] = Math.max(1, parseInt(timeInp.value) || 1);
+        showMsg('Сохранено');
+      });
+      card.appendChild(title); card.appendChild(timeInp);
+      box.appendChild(card);
+    }
+    document.getElementById('rawJson').value = JSON.stringify(travelTimes, null, 2);
+    return;
+  }
+
+  // -----  defaultCoords / stations  -----
+  for (const [name, coord] of Object.entries(data[grp])) {
+    const card = document.createElement('div'); card.className = 'card';
+    const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
+    x.onclick = () => {
+      if (grp === 'defaultCoords') removeTravelLinks(name);
+      delete data[grp][name];
+      // удаляем из всех маршрутов
+      Object.keys(participantOrders).forEach(start => {
+        if (!start.startsWith('_'))
+          participantOrders[start] = participantOrders[start].filter(n => n !== name);
+      });
+      render(); showMsg('Удалено');
+    };
+    card.appendChild(x);
+    const title = document.createElement('div'); title.className = 'card-title'; title.textContent = name;
+    title.onclick = () => makeTitleEditable(title, name, grp);
+    const coordDiv = document.createElement('div'); coordDiv.className = 'card-coord';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.value = `${coord.lat},${coord.lng}`;
+    inp.addEventListener('change', async () => {
+      const coords = await parseAnyCoords(inp.value.trim());
+      if (coords) {
+        inp.value = `${coords.lat},${coords.lng}`; data[grp][name] = coords; render(); showMsg('Скопировано');
+      } else { showMsg('Координаты не распознаны'); inp.value = `${coord.lat},${coord.lng}`; }
+    });
+    coordDiv.appendChild(inp); card.appendChild(title); card.appendChild(coordDiv); box.appendChild(card);
+  }
+  // синхронизируем raw
+  if (grp === 'stations') document.getElementById('rawJson').value = JSON.stringify(data.stations, null, 2);
+  else                    document.getElementById('rawJson').value = JSON.stringify(data.defaultCoords, null, 2);
+}
+
+// ==========  РЕДАКТИРОВАНИЕ НАЗВАНИЙ  ==========
+function makeTitleEditable(titleDiv, oldName, grp) {
+  const input = document.createElement('input'); input.value = oldName;
+  input.addEventListener('blur', () => finishTitleEdit(input, oldName, grp));
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+  titleDiv.innerHTML = ''; titleDiv.appendChild(input); input.focus(); input.select();
+}
+function finishTitleEdit(input, oldName, grp) {
+  const newName = input.value.trim(); const titleDiv = input.parentElement;
+  if (!newName || newName === oldName) { titleDiv.textContent = oldName; return; }
+  if (data[grp][newName]) { showMsg('Такая точка уже есть'); titleDiv.textContent = oldName; return; }
+  data[grp][newName] = data[grp][oldName]; delete data[grp][oldName];
+  if (grp === 'defaultCoords') {
+    removeTravelLinks(oldName); addTravelLinks(newName);
+    // обновляем маршруты
+    Object.keys(participantOrders).forEach(start => {
+      if (!start.startsWith('_'))
+        participantOrders[start] = participantOrders[start].map(n => n === oldName ? newName : n);
+    });
+  }
+  render(); showMsg('Переименовано');
+}
+
+// ==========  КНОПКИ НИЖНЕЙ ПАНЕЛИ  ==========
+document.getElementById('addBtn').onclick = () => {
+  document.getElementById('addModal').style.display = 'flex';
+  document.getElementById('newName').focus();
+};
+document.getElementById('addCancel').onclick = () => document.getElementById('addModal').style.display = 'none';
+document.getElementById('addConfirm').onclick = () => {
+  const grp  = document.getElementById('modalGroupSel').value;
+  const name = document.getElementById('newName').value.trim();
+  if (!name) { showMsg('Введите название'); return; }
+  if (data[grp][name]) { showMsg('Точка уже есть'); return; }
+  const m = document.getElementById('newCoord').value.trim().match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
+  const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
+  data[grp][name] = { lat, lng };
+  if (grp === 'defaultCoords') addTravelLinks(name);
+  render();
+  document.getElementById('addModal').style.display = 'none';
+  showMsg('Добавлено');
+};
+
+document.getElementById('copyBtn').onclick = () => {
+  const ta = document.getElementById('rawJson'); ta.readOnly = true; ta.select();
+  document.execCommand('copy'); window.getSelection().removeAllRanges(); ta.readOnly = false;
+  showMsg('Скопировано');
+};
+document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
+document.getElementById('fileInput').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const text = evt.target.result;
+      const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
+      const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
+      const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
+      const ordM = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+      if (!defM || !stM) throw new Error('Не найдены блоки');
+      data = {
+        defaultCoords: Function('"use strict";return (' + defM[1] + ')')(),
+        stations:      Function('"use strict";return (' + stM[1]  + ')')()
+      };
+      if (tmM) travelTimes = Function('"use strict";return (' + tmM[1] + ')')();
+      if (ordM) participantOrders = Function('"use strict";return (' + ordM[1] + ')')();
+      render(); showMsg('Загружено');
+    } catch { showMsg('Ошибка чтения файла'); }
+  };
+  reader.readAsText(file, 'utf-8');
+});
+document.getElementById('saveBtn').onclick = exportAsJS;
+document.getElementById('applyRaw').onclick = () => {
+  try {
+    if (currentGroup() === 'travelTimes') travelTimes = JSON.parse(document.getElementById('rawJson').value);
+    else data = JSON.parse(document.getElementById('rawJson').value);
+    render(); showMsg('Применено');
+  } catch { showMsg('Ошибка JSON'); }
+};
+
+// ==========  ЭКСПОРТ  ==========
+function exportAsJS() {
+  const defLines = []; for (const [n, c] of Object.entries(data.defaultCoords)) defLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+  const stLines  = []; for (const [n, c] of Object.entries(data.stations))      stLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+  const tmLines  = []; for (const [p, t] of Object.entries(travelTimes))        tmLines.push(`  '${p}': ${t}`);
+  const ordLines = []; 
+  Object.keys(participantOrders).filter(k => !k.startsWith('_'))
+        .forEach(start => ordLines.push(`  '${start}': [${participantOrders[start].map(n=>`'${n}'`).join(', ')}]`));
+  const text = `
+// реестр имен
+const defaultCoords = {
+${defLines.join(',\n')}
+};
+
+// реестр станций
+this.stations = {
+${stLines.join(',\n')}
+};
+
+// Время в пути между участниками
+this.travelTimes = {
+${tmLines.join(',\n')}
+};
+
+// Приоритетные списки остановок
+this.participantOrders = {
+${ordLines.join(',\n')}
+};`;
+  const blob = new Blob([text], {type:'application/javascript;charset=utf-8'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'stations.js'; a.click();
+  URL.revokeObjectURL(a.href);
+  showMsg('Сохранено');
+}
+
+// ==========  ПАРСЕР КООРДИНАТ  ==========
+async function parseAnyCoords(s) {
+  if (!s) return null; s = s.trim();
+  if (/^-?\d{1,2},\d+\s*,\s*-?\d{1,3},\d+$/.test(s)) {
+    const p = s.split(',').map(t => t.trim());
+    const lat = parseFloat(p[0] + '.' + p[1]), lng = parseFloat(p[2] + '.' + p[3]);
+    if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+  }
+  if (/^-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(s)) {
+    const [l, ln] = s.split(',').map(Number);
+    if (Math.abs(l) <= 90 && Math.abs(ln) <= 180) return { lat: l, lng: ln };
+  }
+  const m1 = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/place\/[^\/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m1) { const lat = +m1[1], lng = +m1[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng }; }
+  const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
+  if (dms.length === 2) {
+    try {
+      const toDec = ([, d, mi, s, dir]) => { let dec = +d + mi / 60 + s / 3600; if (/S|W/i.test(dir)) dec = -dec; return dec; };
+      const lat = toDec(dms[0]), lng = toDec(dms[1]);
+      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+    } catch {}
+  }
+  if (/^https?:\/\//i.test(s)) {
+    try {
+      const expanded = await expandShortUrl(s);
+      const coords = parseAnyCoords(expanded);
+      if (coords) return coords;
+    } catch {}
+  }
+  const coords = parseCoordsFromUrl(s);
+  if (coords) return coords;
+  alert('Координаты не распознаны'); return null;
+}
+function parseCoordsFromUrl(url) {
+  const m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || url.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) { const lat = +m[1], lng = +m[2]; if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng }; }
+  return null;
+}
+async function expandShortUrl(url) {
+  const r = await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+  return r.url || url;
+}
+
+// ==========  СТАРТ  ==========
+render();
+
+// ======  УПРОЩЁННЫЙ ЭКСПОРТ (как у тебя в exportAsJS)  ======
+function buildStationsText() {
+  const defLines = [];
+  for (const [n, c] of Object.entries(data.defaultCoords))
+    defLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+
+  const stLines = [];
+  for (const [n, c] of Object.entries(data.stations))
+    stLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+
+  const tmLines = [];
+  for (const [pair, t] of Object.entries(travelTimes))
+    tmLines.push(`  '${pair}': ${t}`);
+
+  const ordLines = [];
+  Object.keys(participantOrders)
+        .filter(k => !k.startsWith('_'))
+        .forEach(start =>
+          ordLines.push(`  '${start}': [${participantOrders[start].map(n=>`'${n}'`).join(', ')}]`)
+        );
+
+  return `// реестр имен
+const defaultCoords = {
+${defLines.join(',\n')}
+};
+
+// реестр станций
+this.stations = {
+${stLines.join(',\n')}
+};
+
+// Время в пути между участниками
+this.travelTimes = {
+${tmLines.join(',\n')}
+};
+
+// Приоритетные списки остановок
+this.participantOrders = {
+${ordLines.join(',\n')}
+};`;
+}
+
+// ======  ЗАГРУЗКА stations.js НА GITHUB  ======
+// ----------  показ модалки  ----------
+// ----------  Открытие модалки (уже есть) ----------
+document.getElementById('ghUploadBtn').onclick = () => {
+  document.getElementById('ghTokenInp').value = localStorage.ghToken || '';
+  document.getElementById('ghModal').style.display = 'flex';
+  document.getElementById('ghTokenInp').focus();
+};
+
+// ----------  Закрытие (уже есть) ----------
+document.getElementById('ghCancelBtn').onclick = () =>
+  document.getElementById('ghModal').style.display = 'none';
+
+// ----------  1. Отправка stations.js (коротко) ----------
+document.getElementById('ghSendStationsBtn').onclick = async () => {
+  const token = document.getElementById('ghTokenInp').value.trim();
+  if (!token) { alert('Введите токен'); return; }
+  await uploadToGitHub(token, 'stations.js', buildStationsText());
+};
+
+// ----------  2. Отправка произвольного файла ----------
+document.getElementById('ghSendAnyBtn').onclick = async () => {
+  const token = document.getElementById('ghTokenInp').value.trim();
+  if (!token) { alert('Введите токен'); return; }
+
+  const fileInput = document.getElementById('ghAnyFile');
+  const nameInput = document.getElementById('ghAnyName');
+  if (!fileInput.files.length) { alert('Выберите файл'); return; }
+  const file = fileInput.files[0];
+  const path = nameInput.value.trim() || file.name;
+
+  const content = await file.text();          // читаем как текст
+  await uploadToGitHub(token, path, content);
+};
+
+// ----------  Универсальный аплоад ----------
+async function uploadToGitHub(token, path, text) {
+  localStorage.ghToken = token;
+  const owner = 'Kesik80';
+  const repo  = 'fahrzeit';
+
+  const base64 = btoa(unescape(encodeURIComponent(text)));
+
+  let sha;
+  try {
+    const head = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+      headers: { Authorization: `token ${token}` }
+    });
+    if (head.ok) sha = (await head.json()).sha;
+  } catch (e) {}
+
+  const body = JSON.stringify({
+    message: `web-update ${path}`,
+    content: base64,
+    sha
+  });
+
+  const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body
+  });
+
+  document.getElementById('ghModal').style.display = 'none';
+  if (resp.ok) {
+    showMsg(`${path} uploaded ✔`);
+  } else {
+    const err = await resp.json();
+    alert('Upload error:\n' + err.message);
+  }
+
+
+};
+
+// сохранить
+document.getElementById('ghToken').value = localStorage.ghToken || '';
+document.getElementById('ghToken').addEventListener('change', e => localStorage.ghToken = e.target.value);
+
+
+</script>
+<a id="downLink" style="display:none"></a>
+
+</body>
+</html>
