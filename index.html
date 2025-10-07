@@ -32,7 +32,7 @@
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/latlon-geohash@2.0.0/latlon-geohash.min.js"></script>
-    
+
 
     
     
@@ -1669,6 +1669,9 @@ if (raw) {                                  // пользователь что-�
                 this.calculate();
             }
         }
+        
+</script>
+<script>
 document.addEventListener('DOMContentLoaded', () => {
   new FahrzeitRechner();
 
@@ -1692,30 +1695,37 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-    </script>
-    
-<!-- подключаем bcrypt ДО нашего кода -->
-<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+</script>
+    <!-- подключаем bcrypt -->
+<script src="
+https://cdn.jsdelivr.net/npm/bcryptjs@3.0.2/umd/index.min.js
+"></script>
+
 <script>
-const GOD_HASH = '$2a$10$6L8o8LHHMfsH.CoKfGjkfO7k1.PpfgTZZtFNNXf3z1yLQ0yh5K0Oi';
+// хэш пароля '266214' (10 раундов)
+const GOD_HASH = '$2a$12$O3Syhnm4rRn55bdKSmkZ5e9ptITFc23gshbj2NugI2N/khhcZlwOm';
+
 
 document.addEventListener('DOMContentLoaded', () => {
   const link = document.getElementById('godL');
-  if (!link) return;
+  if (!link) { console.error('godL не найден'); return; }
 
   link.addEventListener('click', async (e) => {
-    e.preventDefault();                       // отменяем стандартный переход
+    e.preventDefault();
     const pwd = prompt('Введите пароль:');
-    if (!pwd) return;                         // отмена
+    if (!pwd) return;
     const ok = await bcrypt.compare(pwd, GOD_HASH);
     if (ok) {
-      window.location.href = link.href;       // ✅ ПЕРЕХОДИМ
+      window.location.href = link.href;   // перенаправляем
     } else {
       alert('Неверный пароль');
     }
   });
 });
 </script>
+
+
+
 </body>
 
 
