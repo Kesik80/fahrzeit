@@ -1696,27 +1696,27 @@ document.addEventListener('DOMContentLoaded', () => {
     
 <!-- подключаем bcrypt ДО нашего кода -->
 <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
-
 <script>
-/* хэш пароля '1234' (10 раундов) */
 const GOD_HASH = '$2a$10$6L8o8LHHMfsH.CoKfGjkfO7k1.PpfgTZZtFNNXf3z1yLQ0yh5K0Oi';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const link = document.getElementById('godL');   // у вас id="godL"
+  const link = document.getElementById('godL');
   if (!link) return;
 
   link.addEventListener('click', async (e) => {
-    e.preventDefault();
+    e.preventDefault();                       // отменяем стандартный переход
     const pwd = prompt('Введите пароль:');
-    if (!pwd) return;
+    if (!pwd) return;                         // отмена
     const ok = await bcrypt.compare(pwd, GOD_HASH);
-    if (ok) location.href = link.href;
-    else alert('Неверный пароль');
+    if (ok) {
+      window.location.href = link.href;       // ✅ ПЕРЕХОДИМ
+    } else {
+      alert('Неверный пароль');
+    }
   });
 });
 </script>
-
-
 </body>
+
 
 </html>
