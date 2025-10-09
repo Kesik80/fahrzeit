@@ -5,7 +5,7 @@
 + 07.10.2025 23:00 переход по паролю на страницу настройки
 + 08.10.2025 22:30 добавлена консоль
 + 09.10.25 7:00 в github добавлен // /api/expand.js для обработок сокращенных ссылок google
-
++ 09.10.25 16:00 исправлена проблема старт в Google Maps
 -->
 
 <!DOCTYPE html>
@@ -1638,26 +1638,28 @@ if (raw) {                                  // пользователь что-�
 
 
             openGoogleMaps(returnTrip = false) {
-                const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
-                if (!this.startPointCoords.lat || !this.startPointCoords.lng || validParticipants.length === 0) {
-                    this.showToast("Добавьте начальную точку и хотя бы одного участника с координатами.");
-                    return;
-                }
-                let url = 'https://www.google.com/maps/dir/';
-                if (!returnTrip) {
-                    url += `${this.startPointCoords.lat},${this.startPointCoords.lng}/`;
-                    validParticipants.forEach(p => url += `${p.lat},${p.lng}/`);
-                    if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}`;
-                }
-                
-                else {
-                    if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}/`;
-                    for (let i = validParticipants.length - 1; i >= 0; i--) url += `${validParticipants[i].lat},${validParticipants[i].lng}/`;
-                    url += `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
-                }
-                window.open(url, '_blank');
-            }
-
+    const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
+    if (!this.startPointCoords.lat || !this.startPointCoords.lng || validParticipants.length === 0) {
+        this.showToast("Добавьте начальную точку и хотя бы одного участника с координатами.");
+        return;
+    }
+    let url = 'https://www.google.com/maps/dir/';
+    if (!returnTrip) {
+        // ВСЕГДА начинаем от текущего местоположения для навигации
+        url += 'Current+Location/';
+        validParticipants.forEach(p => url += `${p.lat},${p.lng}/`);
+        if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}`;
+    } else {
+        // Обратный маршрут: от меня → машина → участники → начальная точка
+        url += 'Current+Location/';
+        if (this.machineStop.lat && this.machineStop.lng) url += `${this.machineStop.lat},${this.machineStop.lng}/`;
+        for (let i = validParticipants.length - 1; i >= 0; i--) url += `${validParticipants[i].lat},${validParticipants[i].lng}/`;
+        url += `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+    }
+    // Добавляем параметры для принудительного открытия в браузере + навигации
+    url += '?dir_action=navigate&entry=ttu';
+    window.open(url, '_blank');
+}
             copyResult() {
                 const text = this.elements.output.textContent.trim();
                 if (!text) {
