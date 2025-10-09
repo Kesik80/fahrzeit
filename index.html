@@ -1,7 +1,10 @@
 <!-- 
 + 30.09.2025 13:00: при добавлении нового   участника поле «Координаты» теперь НЕ обязательно;
 + 30.09.2025 14:00: добавил René, OLGA-Park;
-- выпадающий список точек станций
++ 06.10.2025 22:00 выпадающий список точек станций
++ 07.10.2025 23:00 переход по паролю на страницу настройки
++ 08.10.2025 22:30 добавлена консоль
++
 
 -->
 
@@ -1122,6 +1125,10 @@ this.participantOrders = {
                 const checkboxContainer = document.createElement('div');
                 checkboxContainer.className = 'checkbox-container';
                 checkboxContainer.innerHTML = `
+   
+   
+   
+   
     <label>
         <input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei
     </label>
@@ -1724,6 +1731,52 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+
+<!-- иконка консоли -->
+<button id="btnConsole"
+        title="Показать/скрыть консоль"
+        style="position:fixed; left:3px; bottom:3px; z-index:9999;
+               width:24px; height:24px;          /* фиксируем размеры */
+               margin:0; padding:0; border:none; background:none;
+               color: var(--text);
+               display:flex; align-items:center; justify-content:center;
+               cursor:pointer;">
+<svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.64645 9.14645C5.84171 8.95118 6.15829 8.95118 6.35355 9.14645L8.35355 11.1464C8.44732 11.2402 8.5 11.3674 8.5 11.5C8.5 11.6326 8.44732 11.7598 8.35355 11.8536L6.35355 13.8536C6.15829 14.0488 5.84171 14.0488 5.64645 13.8536C5.45118 13.6583 5.45118 13.3417 5.64645 13.1464L7.29289 11.5L5.64645 9.85355C5.45118 9.65829 5.45118 9.34171 5.64645 9.14645ZM14.5 13H9.5C9.22386 13 9 13.2239 9 13.5C9 13.7761 9.22386 14 9.5 14H14.5C14.7761 14 15 13.7761 15 13.5C15 13.2239 14.7761 13 14.5 13ZM2.99609 5.5C2.99609 4.11929 4.11538 3 5.49609 3H14.4961C15.8768 3 16.9961 4.11929 16.9961 5.5V6H16.999V7H16.9961V14.5C16.9961 15.8807 15.8768 17 14.4961 17H5.49609C4.11538 17 2.99609 15.8807 2.99609 14.5V5.5ZM15.9961 6V5.5C15.9961 4.67157 15.3245 4 14.4961 4H5.49609C4.66767 4 3.99609 4.67157 3.99609 5.5V6H15.9961ZM3.99609 7V14.5C3.99609 15.3284 4.66767 16 5.49609 16H14.4961C15.3245 16 15.9961 15.3284 15.9961 14.5V7H3.99609Z"/>
+</svg>
+</button>
+
+<!-- сама консоль (изначально скрыта) -->
+<div id="mobileConsole" style="
+  display:none;
+  position:fixed; inset:auto 0 0 0; height:120px;
+  background:#000; color:#0f0; font:11px/1.3 monospace;
+  overflow:auto; padding:4px; z-index:9998;">
+  <div>=== консоль ===</div>
+</div>
+
+<script>
+/* ---------- мобильная консоль ---------- */
+const con = document.getElementById('mobileConsole');
+const btn = document.getElementById('btnConsole');
+
+// перехватываем console.log
+const origLog = console.log;
+console.log = function (...args) {
+  origLog(...args);                       // выводим в обычную консоль
+  const line = args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ');
+  con.insertAdjacentHTML('beforeend', '<div>' + line + '</div>');
+  con.scrollTop = con.scrollHeight;
+};
+
+// показ/скрытие по кнопке
+btn.addEventListener('click', () => {
+  con.style.display = con.style.display === 'none' ? 'block' : 'none';
+});
+
+/* первое тестовое сообщение */
+console.log('mobile console ready');
+</script>
 
 
 </body>
