@@ -60,7 +60,7 @@ this.travelTimes = {
   'OLGA-Park-Andrii': 10,
   'OLGA-Park-Anatolii': 10,
   'OLGA-Park-Sergio': 10,
-  'OLGA-Park-Dima': 20,
+  'OLGA-Park-Dima': 25,
   'OLGA-Park-Marvin': 20,
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 5,
