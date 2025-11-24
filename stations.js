@@ -8,8 +8,7 @@ const defaultCoords = {
   'René': {lat:51.476281, lng:6.861856},
   'OLGA-Park': {lat:51.5004335, lng:6.8686337},
   'Marvin': {lat:51.556472, lng:6.731424},
-  'Vasyl': {lat:51.515355, lng:6.893655},
-  'Gelsenkirchen Parkplatz': {lat:51.535672, lng:7.096112}
+  'Vasyl': {lat:51.515355, lng:6.893655}
 };
 
 // реестр станций
@@ -65,16 +64,7 @@ this.travelTimes = {
   'OLGA-Park-Marvin': 20,
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 5,
-  'OLGA-Park-Vasyl': 10,
-  'Gelsenkirchen Parkplatz-Sergii': 30,
-  'Gelsenkirchen Parkplatz-Anatolii': 5,
-  'Gelsenkirchen Parkplatz-Andrii': 25,
-  'Gelsenkirchen Parkplatz-Sergio': 25,
-  'Gelsenkirchen Parkplatz-Dima': 5,
-  'Gelsenkirchen Parkplatz-René': 25,
-  'Gelsenkirchen Parkplatz-OLGA-Park': 20,
-  'Gelsenkirchen Parkplatz-Marvin': 30,
-  'Gelsenkirchen Parkplatz-Vasyl': 20
+  'OLGA-Park-Vasyl': 10
 };
 
 // Приоритетные списки остановок
