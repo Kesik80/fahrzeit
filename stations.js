@@ -15,7 +15,9 @@ const defaultCoords = {
 this.stations = {
   'Gelsenkirchen-Bismarck': {lat:51.538627, lng:7.108037},
   'Hagen': {lat:51.373517, lng:7.461144},
-  'Essen West': {lat:51.4539273, lng:6.9794622}
+  'Essen West': {lat:51.4539273, lng:6.9794622},
+  'Gelsenkirchen Horst': {lat:51.5415351, lng:7.0202811},
+  'Gelsenkirchen Horst 2': {lat:51.539072, lng:7.0090119}
 };
 
 // Время в пути между участниками
@@ -60,7 +62,7 @@ this.travelTimes = {
   'OLGA-Park-Andrii': 10,
   'OLGA-Park-Anatolii': 10,
   'OLGA-Park-Sergio': 10,
-  'OLGA-Park-Dima': 25,
+  'OLGA-Park-Dima': 20,
   'OLGA-Park-Marvin': 20,
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 5,
