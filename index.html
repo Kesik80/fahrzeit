@@ -155,6 +155,36 @@ border-radius: 4px;
 font-size: 1em;
 text-align: center
 }
+.time-display {
+min-width: 35px;
+max-width: 35px;
+padding: 6px 10px;
+border: 2px solid var(--border);
+border-radius: 4px;
+font-size: 0.95em;
+text-align: center;
+background: var(--surface);
+color: var(--text);
+cursor: pointer;
+transition: all 0.2s;
+user-select: none;
+white-space: nowrap;
+
+}
+.time-display:hover {
+border-color: var(--primary-color);
+background: rgba(0, 123, 255, 0.05);
+}
+.time-display.auto-calculated {
+border-color: #ffc107;
+background: #fff9e6;
+}
+.time-display.auto-calculated:hover {
+border-color: #ff9800;
+}
+.time-display.editing {
+display: none;
+}
 .participant .right-section {
 margin-left: auto;
 display: flex;
@@ -242,6 +272,15 @@ transform: translateY(-5px)
 width: 100%;
 height: 100%
 }
+.calc-route-icon {
+transition: transform 0.2s ease;
+}
+.calc-route-icon:hover {
+transform: scale(1.1);
+}
+.calc-route-icon:active {
+transform: scale(0.95);
+}
 .material-symbols-outlined {
 font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 font-size: 24px;
@@ -277,6 +316,123 @@ display: none;
 z-index: 1000;
 box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
 text-align: center
+}
+/* Модальное окно для пароля God Mode */
+.god-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+backdrop-filter: blur(4px);
+z-index: 10000;
+animation: fadeIn 0.2s ease;
+}
+.god-modal.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.god-modal-content {
+background: var(--surface);
+border-radius: 12px;
+padding: 24px;
+max-width: 320px;
+width: 90%;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+animation: slideUp 0.3s ease;
+}
+.god-modal-title {
+font-size: 1.2em;
+font-weight: 600;
+margin-bottom: 16px;
+color: var(--text);
+text-align: center;
+}
+.god-modal-input {
+width: 100%;
+padding: 12px;
+border: 2px solid var(--border);
+border-radius: 8px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface);
+color: var(--text);
+margin-bottom: 16px;
+transition: border-color 0.2s;
+text-align: center;
+letter-spacing: 2px;
+font-family: monospace;
+}
+.god-modal-input:focus {
+outline: none;
+border-color: var(--primary-color);
+}
+.god-modal-input.error {
+border-color: var(--danger-color);
+animation: shake 0.4s;
+}
+.god-modal-buttons {
+display: flex;
+gap: 8px;
+}
+.god-modal-btn {
+flex: 1;
+padding: 12px;
+border: none;
+border-radius: 8px;
+font-size: 0.95em;
+cursor: pointer;
+transition: all 0.2s;
+}
+.god-modal-btn.primary {
+background: var(--primary-color);
+color: white;
+}
+.god-modal-btn.primary:hover {
+background: #0056b3;
+transform: translateY(-1px);
+}
+.god-modal-btn.secondary {
+background: var(--border);
+color: var(--text);
+}
+.god-modal-btn.secondary:hover {
+background: #bbb;
+}
+.god-loader {
+display: inline-block;
+width: 14px;
+height: 14px;
+border: 2px solid rgba(255,255,255,.3);
+border-top-color: white;
+border-radius: 50%;
+animation: spin 0.6s linear infinite;
+margin-left: 8px;
+}
+@keyframes fadeIn {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+@keyframes slideUp {
+from {
+opacity: 0;
+transform: translateY(20px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+@keyframes shake {
+0%, 100% { transform: translateX(0); }
+25% { transform: translateX(-10px); }
+75% { transform: translateX(10px); }
+}
+@keyframes spin {
+to { transform: rotate(360deg); }
 }
 .sortable-ghost {
 opacity: .2;
@@ -618,6 +774,24 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </div>
 <pre id="output"></pre>
 <div id="toast" class="toast"></div>
+
+<!-- God Mode Password Modal -->
+<div id="godModal" class="god-modal">
+<div class="god-modal-content">
+<div class="god-modal-title">🔐 Режим редактора</div>
+<input 
+type="password" 
+id="godPasswordInput" 
+class="god-modal-input" 
+placeholder="Введите пароль"
+autocomplete="off"
+/>
+<div class="god-modal-buttons">
+<button class="god-modal-btn secondary" id="godCancelBtn">Отмена</button>
+<button class="god-modal-btn primary" id="godSubmitBtn">Войти</button>
+</div>
+</div>
+</div>
 <div id="coordsModal" class="modal">
 <div class="modal-content" id="modalContent"
 style="background: var(--modal-bg, #fff) !important; color: var(--modal-text, #000) !important;">
@@ -745,7 +919,7 @@ this.startPointCoords = { lat: null, lng: null };
 this.defaultCoordinates = defaultCoords;      // для сброса
 this.nameToCoordinates = { ...defaultCoords };
 this.participants = [];
-this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.sortable = null;
@@ -788,6 +962,14 @@ this.syncCoordinates();
 this.addEventListeners();
 this.renderParticipants();
 this.elements.output.innerHTML = '';
+}
+formatMinutes(minutes) {
+if (minutes < 60) {
+return `${minutes}`;
+}
+const hours = Math.floor(minutes / 60);
+const mins = minutes % 60;
+return `${hours}.${mins.toString().padStart(2, '0')}`;
 }
 getTravelTime(fromName, toName) {
 if (fromName === toName) return 0;
@@ -951,7 +1133,9 @@ ${participantNameOptions}
 <option value="add-new">Добавить новое имя</option>
 </select>
 <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Редактировать координаты участника">${coordsSvg}</button>
-<input type="number" value="${p.time}" min="1" max="60" data-index="${i}" data-type="participant-time" aria-label="Время поездки к участнику в минутах"/>
+<div class="time-display" data-index="${i}" data-type="participant-time-display" title="Нажмите для изменения">
+${this.formatMinutes(p.time)}
+</div>
 <div class="right-section">
 <span class="material-symbols-outlined" aria-label="Переместить участника">
 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
@@ -961,17 +1145,30 @@ ${participantNameOptions}
 `;
 container.appendChild(div);
 div.querySelector('[data-type="participant-name"]').addEventListener('change', e => this.updateName(i, e.target.value));
-div.querySelector('[data-type="participant-time"]').addEventListener('change', e => this.updateTime(i, e.target.value));
+const timeDisplay = div.querySelector('[data-type="participant-time-display"]');
+if (timeDisplay) {
+timeDisplay.addEventListener('click', () => this.editParticipantTime(i, timeDisplay));
+}
 div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
 div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
 });
 const machineDiv = document.createElement('div');
 machineDiv.className = 'participant machine';
 const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
+// SVG иконки для расчета времени в пути
+const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#999" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#999" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#999" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#999" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#999" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
 machineDiv.innerHTML = `
 <input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины"/>
 <button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${machineCoordsSvg}</button>
-<input type="number" value="${this.machineStop.time}" min="1" max="60" data-type="machine-time" aria-label="Время на остановке машины в минутах"/>
+<div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Нажмите для изменения">
+${this.formatMinutes(this.machineStop.time)}
+</div>
+<button class="calc-route-icon" data-type="calc-route" aria-label="Рассчитать время в пути" title="Рассчитать время в пути от последнего участника"
+  style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; margin-left: 4px; transform: translateY(-5px);">
+  ${calcIcon}
+</button>
 <div class="right-section">
 ${this.machineStop.arrivalTime
 ? `<div class="arrival-time" tabindex="0" role="button" aria-label="Изменить время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>`
@@ -981,8 +1178,12 @@ ${this.machineStop.arrivalTime
 `;
 container.appendChild(machineDiv);
 machineDiv.querySelector('[data-type="machine-name"]').addEventListener('change', e => this.updateMachineName(e.target.value));
-machineDiv.querySelector('[data-type="machine-time"]').addEventListener('change', e => this.updateMachineTime(e.target.value));
+const machineTimeDisplay = machineDiv.querySelector('[data-type="machine-time-display"]');
+if (machineTimeDisplay) {
+machineTimeDisplay.addEventListener('click', () => this.editMachineTime(machineTimeDisplay));
+}
 machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
+machineDiv.querySelector('[data-type="calc-route"]').addEventListener('click', () => this.calculateTravelTimeToMachine());
 container.appendChild(machineDiv);
 // Добавляем новый контейнер для чекбоксов
 const checkboxContainer = document.createElement('div');
@@ -1269,6 +1470,10 @@ this.updateParticipantTimes();
 }
 else if (this.isEditingMachine) {
 this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
+this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); 
+// Автоматически рассчитываем время после сохранения координат машины
+setTimeout(() => this.calculateTravelTimeToMachine(), 500);
+return; // Выходим, чтобы не дублировать вызовы ниже
 } else if (this.isEditingStartPoint) {
 this.startPointCoords = { lat: coords.lat, lng: coords.lng };
 this.updateParticipantTimes();
@@ -1315,6 +1520,113 @@ this.renderParticipants();
 this.initSortable();
 this.calculate();
 }
+editParticipantTime(index, displayElement) {
+// Создаем поле ввода
+const input = document.createElement('input');
+input.type = 'text';
+const minutes = this.participants[index].time;
+const hours = Math.floor(minutes / 60);
+const mins = minutes % 60;
+input.value = hours > 0 ? `${hours}.${mins.toString().padStart(2, '0')}` : `${minutes}`;
+input.placeholder = '3.30';
+input.style.width = '55px';
+input.style.maxWidth = '55px';
+input.style.minWidth = '60px';
+input.style.padding = '6px 10px';
+input.style.border = '2px solid var(--primary-color)';
+input.style.borderRadius = '4px';
+input.style.fontSize = '0.95em';
+input.style.textAlign = 'center';
+input.style.background = 'var(--surface)';
+input.style.color = 'var(--text)';
+
+input.style.boxSizing = 'border-box';
+
+// Вставляем поле вместо отображения
+displayElement.classList.add('editing');
+displayElement.parentNode.insertBefore(input, displayElement);
+
+const saveTime = () => {
+const value = input.value.trim();
+let totalMinutes = 0;
+if (value.includes('.') || value.includes(':')) {
+// Формат: 3.30 или 3:30
+const parts = value.split(/[.:]/).map(p => parseInt(p) || 0);
+totalMinutes = (parts[0] || 0) * 60 + (parts[1] || 0);
+} else {
+// Просто минуты: 45
+totalMinutes = parseInt(value) || 0;
+}
+this.participants[index].time = Math.max(1, Math.min(999, totalMinutes));
+this.participants[index].timeManuallyEdited = true;
+input.remove();
+displayElement.classList.remove('editing');
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+};
+
+input.addEventListener('blur', saveTime);
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') saveTime();
+});
+input.focus();
+input.select();
+}
+editMachineTime(displayElement) {
+// Создаем поле ввода
+const input = document.createElement('input');
+input.type = 'text';
+const minutes = this.machineStop.time;
+const hours = Math.floor(minutes / 60);
+const mins = minutes % 60;
+input.value = hours > 0 ? `${hours}.${mins.toString().padStart(2, '0')}` : `${minutes}`;
+input.placeholder = '3.30';
+input.style.width = '55px';
+input.style.maxWidth = '55px';
+input.style.minWidth = '60px';
+input.style.padding = '6px 6px';
+input.style.border = '2px solid var(--primary-color)';
+input.style.borderRadius = '4px';
+input.style.fontSize = '0.95em';
+input.style.textAlign = 'center';
+input.style.background = 'var(--surface)';
+input.style.color = 'var(--text)';
+
+input.style.boxSizing = 'border-box';
+
+// Вставляем поле вместо отображения
+displayElement.classList.add('editing');
+displayElement.parentNode.insertBefore(input, displayElement);
+
+const saveTime = () => {
+const value = input.value.trim();
+let totalMinutes = 0;
+if (value.includes('.') || value.includes(':')) {
+// Формат: 3.30 или 3:30
+const parts = value.split(/[.:]/).map(p => parseInt(p) || 0);
+totalMinutes = (parts[0] || 0) * 60 + (parts[1] || 0);
+} else {
+// Просто минуты: 45
+totalMinutes = parseInt(value) || 0;
+}
+this.machineStop.time = Math.max(1, Math.min(999, totalMinutes));
+this.machineStop.autoCalculated = false;
+input.remove();
+displayElement.classList.remove('editing');
+this.saveData();
+this.renderParticipants();
+this.calculate();
+};
+
+input.addEventListener('blur', saveTime);
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') saveTime();
+});
+input.focus();
+input.select();
+}
 updateName(index, value) {
 if (value === 'add-new') this.openCoordsModal(index, false, true);
 else {
@@ -1338,6 +1650,76 @@ this.saveData();
 this.renderParticipants();
 this.calculate();
 }
+async calculateTravelTimeToMachine() {
+// Находим последнего участника с координатами
+const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
+if (validParticipants.length === 0) {
+this.showToast('⚠️ Нет участников с координатами');
+return;
+}
+// Проверяем координаты машины
+if (!this.machineStop.lat || !this.machineStop.lng) {
+this.showToast('⚠️ Укажите координаты машины');
+return;
+}
+const lastParticipant = validParticipants[validParticipants.length - 1];
+
+// Определяем время для расчета трафика
+let departureTime = 'now';
+if (this.machineStop.arrivalTime) {
+// Если задано время прибытия, рассчитываем departure_time
+const [hours, minutes] = this.machineStop.arrivalTime.split(':');
+const arrivalDate = new Date();
+arrivalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+// Конвертируем в Unix timestamp (секунды)
+departureTime = Math.floor(arrivalDate.getTime() / 1000).toString();
+}
+
+try {
+this.showToast('🔄 Расчет времени в пути...');
+
+// Вызываем Vercel serverless function
+const response = await fetch('/api/calculate-time', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+},
+body: JSON.stringify({
+originLat: lastParticipant.lat,
+originLng: lastParticipant.lng,
+destLat: this.machineStop.lat,
+destLng: this.machineStop.lng,
+departureTime: departureTime
+})
+});
+
+if (!response.ok) {
+const errorData = await response.json();
+throw new Error(errorData.message || 'Ошибка запроса к API');
+}
+
+const data = await response.json();
+
+if (data.success) {
+// Обновляем время машины
+this.machineStop.time = data.duration.minutes;
+this.machineStop.autoCalculated = true;
+this.saveData();
+this.renderParticipants();
+this.calculate();
+
+const timeInfo = this.machineStop.arrivalTime ? ` к ${this.machineStop.arrivalTime}` : ' сейчас';
+const trafficInfo = data.hasTraffic ? ' (с учетом трафика)' : '';
+this.showToast(`✅ ${data.duration.minutes} мин (${data.distance.km} км)${timeInfo}${trafficInfo}`);
+console.log(`Время в пути: ${data.duration.minutes} мин, Расстояние: ${data.distance.km} км, Время: ${timeInfo}${trafficInfo}`);
+} else {
+throw new Error('Ошибка в ответе API');
+}
+} catch (error) {
+console.error('Ошибка расчета:', error);
+this.showToast(`❌ Ошибка: ${error.message}`);
+}
+}
 updateMachineName(value) {
 this.machineStop.name = value.trim() || 'an der Maschine';
 this.saveData();
@@ -1346,6 +1728,7 @@ this.calculate();
 updateMachineTime(value) {
 const time = parseInt(value) || 20;
 this.machineStop.time = Math.max(1, Math.min(720, time));
+this.machineStop.autoCalculated = false;  // Сбрасываем флаг при ручном изменении
 this.saveData();
 this.calculate();
 }
@@ -1567,17 +1950,92 @@ https://cdn.jsdelivr.net/npm/bcryptjs@3.0.2/umd/index.min.js
 const GOD_HASH = '$2a$12$O3Syhnm4rRn55bdKSmkZ5e9ptITFc23gshbj2NugI2N/khhcZlwOm';
 document.addEventListener('DOMContentLoaded', () => {
 const link = document.getElementById('godL');
+const modal = document.getElementById('godModal');
+const input = document.getElementById('godPasswordInput');
+const submitBtn = document.getElementById('godSubmitBtn');
+const cancelBtn = document.getElementById('godCancelBtn');
+
 if (!link) { console.error('godL не найден'); return; }
-link.addEventListener('click', async (e) => {
+
+// Открытие модального окна
+link.addEventListener('click', (e) => {
 e.preventDefault();
-const pwd = prompt('Введите пароль:');
-if (!pwd) return;
+modal.classList.add('show');
+input.value = '';
+input.classList.remove('error');
+setTimeout(() => input.focus(), 100);
+});
+
+// Закрытие модального окна
+const closeModal = () => {
+modal.classList.remove('show');
+input.value = '';
+input.classList.remove('error');
+};
+
+// Отмена
+cancelBtn.addEventListener('click', closeModal);
+
+// Закрытие при клике вне модального окна
+modal.addEventListener('click', (e) => {
+if (e.target === modal) closeModal();
+});
+
+// Закрытие по Escape
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && modal.classList.contains('show')) {
+closeModal();
+}
+});
+
+// Проверка пароля
+const checkPassword = async () => {
+const pwd = input.value.trim();
+if (!pwd) {
+input.classList.add('error');
+return;
+}
+
+// Показываем loader
+submitBtn.innerHTML = 'Проверка...<span class="god-loader"></span>';
+submitBtn.disabled = true;
+
+try {
 const ok = await bcrypt.compare(pwd, GOD_HASH);
 if (ok) {
-window.location.href = link.href;   // перенаправляем
+submitBtn.innerHTML = '✅ Успешно!';
+setTimeout(() => {
+window.location.href = link.href;
+}, 500);
 } else {
-alert('Неверный пароль');
+submitBtn.innerHTML = 'Войти';
+submitBtn.disabled = false;
+input.classList.add('error');
+input.value = '';
+input.focus();
+// Небольшая вибрация на мобильных
+if (navigator.vibrate) navigator.vibrate(200);
 }
+} catch (error) {
+console.error('Ошибка проверки пароля:', error);
+submitBtn.innerHTML = 'Войти';
+submitBtn.disabled = false;
+}
+};
+
+// Кнопка "Войти"
+submitBtn.addEventListener('click', checkPassword);
+
+// Enter для отправки
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+checkPassword();
+}
+});
+
+// Убираем ошибку при вводе
+input.addEventListener('input', () => {
+input.classList.remove('error');
 });
 });
 </script>
