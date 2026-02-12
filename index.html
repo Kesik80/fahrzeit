@@ -217,7 +217,7 @@ height: 24px;
 background: var(--primary-color);
 color: white;
 border: none;
-border-radius: 80%;
+border-radius: 50%;
 cursor: pointer;
 font-size: 16px;
 font-weight: bold;
@@ -266,8 +266,8 @@ background: var(--surface);
 color: var(--text);
 }
 .sub-participant .remove-sub-btn {
-width: 16px;
-height: 16px;
+width: 18px;
+height: 18px;
 background: var(--danger-color);
 color: white;
 border: none;
@@ -1361,15 +1361,15 @@ subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', subIdx);
 
-// Собираем все занятые имена: ВСЕ основные участники + все субучастники
-const allMainNames = new Set(this.participants.map(p => p.name).filter(n => n));
-const allSubNames = new Set();
-this.participants.forEach(other => {
-(other.subParticipants || []).forEach(n => allSubNames.add(n));
+// Собираем занятые имена для этого субучастника
+const usedInSub = new Set([p.name]);
+p.subParticipants.forEach((n, idx) => { if (idx !== subIdx) usedInSub.add(n); });
+this.participants.forEach((other, idx) => {
+if (idx !== i) { (other.subParticipants || []).forEach(n => usedInSub.add(n)); }
 });
 
 const subNameOptions = Object.keys(this.nameToCoordinates)
-.filter(n => n !== this.startPoint && !allMainNames.has(n) && (!allSubNames.has(n) || n === subName))
+.filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === subName))
 .sort()
 .map(n => `<option value="${n}" ${subName === n ? 'selected' : ''}>${n}</option>`).join('');
 
@@ -1933,19 +1933,27 @@ this.calculate();
 }
 openSubParticipantModal(mainIndex) {
 this.currentMainParticipantIndex = mainIndex;
-this.currentSubParticipantIndex = null;
 const modal = document.getElementById('subModal');
 const select = document.getElementById('subParticipantSelect');
+const mainParticipant = this.participants[mainIndex];
 
-// Все занятые имена: ВСЕ основные участники + все субучастники всех групп
-const allMainNames = new Set(this.participants.map(p => p.name).filter(n => n));
-const allSubNames = new Set();
-this.participants.forEach(p => (p.subParticipants || []).forEach(n => allSubNames.add(n)));
+// Собираем имена которые уже заняты: сам участник + его субучастники
+const usedNames = new Set();
+usedNames.add(mainParticipant.name);
+(mainParticipant.subParticipants || []).forEach(n => usedNames.add(n));
 
-// Показываем только свободные имена (не основные, не субучастники)
+// Также исключаем имена которые уже являются субучастниками у ДРУГИХ участников
+// (но основные участники других групп оставляем в списке)
+this.participants.forEach((p, idx) => {
+if (idx !== mainIndex) {
+(p.subParticipants || []).forEach(n => usedNames.add(n));
+}
+});
+
+// Заполняем список ВСЕМИ именами из nameToCoordinates кроме занятых
 select.innerHTML = '<option value="">Выберите участника</option>';
 Object.keys(this.nameToCoordinates)
-.filter(name => name !== this.startPoint && !allMainNames.has(name) && !allSubNames.has(name))
+.filter(name => !usedNames.has(name) && name !== this.startPoint)
 .sort()
 .forEach(name => {
 const option = document.createElement('option');
@@ -1953,12 +1961,6 @@ option.value = name;
 option.textContent = name;
 select.appendChild(option);
 });
-
-// Опция добавления нового имени
-const addNewOption = document.createElement('option');
-addNewOption.value = 'add-new';
-addNewOption.textContent = '+ Добавить новое имя';
-select.appendChild(addNewOption);
 
 modal.classList.add('show');
 setTimeout(() => select.focus(), 100);
@@ -1968,14 +1970,6 @@ const select = document.getElementById('subParticipantSelect');
 const selectedName = select.value;
 if (!selectedName) {
 this.showToast('⚠️ Выберите участника');
-return;
-}
-// Если выбрано "Добавить новое имя" — открываем модальное окно
-if (selectedName === 'add-new') {
-document.getElementById('subModal').classList.remove('show');
-this.isAddingSubName = true;
-this.currentSubParticipantIndex = null; // новый субучастник, не замена
-this.openCoordsModal(null, false, true);
 return;
 }
 const mainIndex = this.currentMainParticipantIndex;
