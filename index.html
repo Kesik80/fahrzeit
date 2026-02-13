@@ -8,6 +8,8 @@
 + 09.10.25 16:00 исправлена проблема старт в Google Maps
 + 04.02.2026: ИСПРАВЛЕНО — маршрут "туда" и "обратно" с реальным местоположением и кнопкой "В путь"
 + 04.02.2026: УДАЛЕНЫ кнопки open-map-direct и open-map-return
++ 13.02.2026: ДОБАВЛЕНО — кнопка "+" открывает модальное окно с выбором "Treffpunkt" или "Kollege";
+              формат вывода: "12:00 René (Olga-Park)" или "12:00 René, Vasyl und Alex (Olga-Park)"
 -->
 <!DOCTYPE html>
 <html lang="de">
@@ -287,6 +289,93 @@ cursor: grab;
 color: #999;
 font-size: 16px;
 user-select: none;
+}
+/* Модальное окно выбора типа добавления (Treffpunkt / Kollege) */
+.add-type-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+backdrop-filter: blur(4px);
+z-index: 10000;
+}
+.add-type-modal.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.add-type-modal-content {
+background: var(--surface);
+border-radius: 12px;
+padding: 24px;
+max-width: 400px;
+width: 90%;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+animation: slideUp 0.3s ease;
+}
+.add-type-modal-title {
+font-size: 1.2em;
+font-weight: 600;
+margin-bottom: 20px;
+color: var(--text);
+text-align: center;
+}
+.add-type-section {
+margin-bottom: 16px;
+}
+.add-type-section-label {
+font-size: 0.85em;
+font-weight: 600;
+color: var(--info-color);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+margin-bottom: 6px;
+}
+.add-type-select {
+width: 100%;
+padding: 10px;
+border: 2px solid var(--border, #ddd);
+border-radius: 8px;
+font-size: 1em;
+background: var(--surface);
+color: var(--text);
+cursor: pointer;
+transition: border-color 0.2s;
+}
+.add-type-select:focus {
+outline: none;
+border-color: var(--primary-color);
+}
+.add-type-buttons {
+display: flex;
+gap: 8px;
+margin-top: 20px;
+}
+.add-type-btn {
+flex: 1;
+padding: 10px;
+border: none;
+border-radius: 8px;
+font-size: 0.95em;
+cursor: pointer;
+transition: all 0.2s;
+}
+.add-type-btn.primary {
+background: var(--primary-color);
+color: white;
+}
+.add-type-btn.primary:hover { background: #0056b3; }
+.add-type-btn.secondary {
+background: var(--border, #ddd);
+color: var(--text);
+}
+.add-type-btn.secondary:hover { background: #bbb; }
+/* Участник с Treffpunkt — подсветка */
+.participant.has-treffpunkt {
+border-left: 3px solid #28a745;
 }
 /* Модальное окно субучастников */
 .sub-modal {
@@ -922,6 +1011,29 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 <pre id="output"></pre>
 <div id="toast" class="toast"></div>
 
+<!-- Add Type Modal: Treffpunkt oder Kollege -->
+<div id="addTypeModal" class="add-type-modal">
+<div class="add-type-modal-content">
+<div class="add-type-modal-title">➕ Teilnehmer hinzufügen</div>
+<div class="add-type-section">
+<div class="add-type-section-label">📍 Treffpunkt (Место встречи)</div>
+<select id="treffpunktSelect" class="add-type-select">
+<option value="">– Treffpunkt wählen –</option>
+</select>
+</div>
+<div class="add-type-section">
+<div class="add-type-section-label">👤 Kollege (Коллега)</div>
+<select id="kollegeSelect" class="add-type-select">
+<option value="">– Kollege wählen –</option>
+</select>
+</div>
+<div class="add-type-buttons">
+<button class="add-type-btn secondary" id="addTypeCancelBtn">Abbrechen</button>
+<button class="add-type-btn primary" id="addTypeConfirmBtn">Hinzufügen</button>
+</div>
+</div>
+</div>
+
 <!-- Sub-Participant Modal -->
 <div id="subModal" class="sub-modal">
 <div class="sub-modal-content">
@@ -1009,7 +1121,6 @@ const defaultCoords = {
 'Sergio': {lat:51.52, lng:6.887619},
 'Dima': {lat:51.551753, lng:7.102285},
 'René': {lat:51.476281, lng:6.861856},
-'OLGA-Park': {lat:51.5004335, lng:6.8686337},
 'Marvin': {lat:51.556472, lng:6.731424},
 'Vasyl': {lat:51.515355, lng:6.893655}
 };
@@ -1073,7 +1184,15 @@ this.travelTimes = {
 'Vasyl-Dima': 20,
 'Vasyl-Marvin': 25,
 'Vasyl-Maikel': 25,
-'Vasyl-René': 25,
+'Vasyl-René': 25
+};
+// Пункты встречи (Treffpunkt)
+this.treffpunkt = {
+'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
+'Gelsenkirchen-Treffpunkt': {lat: 51.530304, lng: 7.110901}
+};
+// Время в пути от пункта встречи до каждого участника
+this.trefftravelTimes = {
 'OLGA-Park-Sergii': 10,
 'OLGA-Park-Andrii': 10,
 'OLGA-Park-Anatolii': 10,
@@ -1082,12 +1201,21 @@ this.travelTimes = {
 'OLGA-Park-Marvin': 20,
 'OLGA-Park-Maikel': 20,
 'OLGA-Park-René': 5,
-'OLGA-Park-Vasyl': 10
+'OLGA-Park-Vasyl': 10,
+'Gelsenkirchen-Treffpunkt-Sergii': 30,
+'Gelsenkirchen-Treffpunkt-Andrii': 30,
+'Gelsenkirchen-Treffpunkt-Anatolii': 30,
+'Gelsenkirchen-Treffpunkt-Sergio': 25,
+'Gelsenkirchen-Treffpunkt-Dima': 10,
+'Gelsenkirchen-Treffpunkt-Marvin': 20,
+'Gelsenkirchen-Treffpunkt-Maikel': 20,
+'Gelsenkirchen-Treffpunkt-René': 35,
+'Gelsenkirchen-Treffpunkt-Vasyl': 25
 };
 // Приоритетные списки остановок
 this.participantOrders = {
 'Sergii': ['Anatolii', 'Sergio', 'Vasyl'],
-'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Vasyl', 'OLGA-Park'],
+'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Vasyl'],
 'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
 'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
 'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
@@ -1156,7 +1284,13 @@ getTravelTime(fromName, toName) {
 if (fromName === toName) return 0;
 const key = `${fromName}-${toName}`;
 const rev = `${toName}-${fromName}`;
-return this.travelTimes[key] ?? this.travelTimes[rev] ?? 5; // 5 – fallback
+// Сначала ищем в обычных travelTimes
+if (this.travelTimes[key] !== undefined) return this.travelTimes[key];
+if (this.travelTimes[rev] !== undefined) return this.travelTimes[rev];
+// Затем в trefftravelTimes
+if (this.trefftravelTimes[key] !== undefined) return this.trefftravelTimes[key];
+if (this.trefftravelTimes[rev] !== undefined) return this.trefftravelTimes[rev];
+return 5; // fallback
 }
 updateParticipantTimes() {
 let previousPoint = this.startPoint;
@@ -1221,7 +1355,7 @@ useSuperscript: localStorage.getItem('fahrzeitRechnerUseSuperscript')
 };
 if (saved.greeting) this.greeting = saved.greeting;
 if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
-if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false, subParticipants: p.subParticipants || [] })); } catch { this.participants = []; }
+if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false, subParticipants: p.subParticipants || [], isTreffpunkt: p.isTreffpunkt || false, treffpunktPersons: p.treffpunktPersons || [] })); } catch { this.participants = []; }
 if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; }
 if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
 if (saved.startPoint) {
@@ -1253,6 +1387,26 @@ this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordina
 this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
 this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
 this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
+// Add-type modal handlers
+const addTypeModal = document.getElementById('addTypeModal');
+const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
+const addTypeConfirmBtn = document.getElementById('addTypeConfirmBtn');
+if (addTypeModal && addTypeCancelBtn && addTypeConfirmBtn) {
+addTypeCancelBtn.addEventListener('click', () => {
+addTypeModal.classList.remove('show');
+});
+addTypeConfirmBtn.addEventListener('click', () => {
+this.addParticipantFromModal();
+});
+addTypeModal.addEventListener('click', (e) => {
+if (e.target === addTypeModal) addTypeModal.classList.remove('show');
+});
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && addTypeModal.classList.contains('show')) {
+addTypeModal.classList.remove('show');
+}
+});
+}
 // Sub-participant modal handlers
 const subModal = document.getElementById('subModal');
 const subCancelBtn = document.getElementById('subCancelBtn');
@@ -1293,7 +1447,10 @@ name,
 time: this.getTravelTime(prev, name),
 lat: coords.lat,
 lng: coords.lng,
-timeManuallyEdited: false
+timeManuallyEdited: false,
+isTreffpunkt: false,
+subParticipants: [],
+treffpunktPersons: []
 };
 });
 this.updateParticipantTimes();
@@ -1329,8 +1486,68 @@ groupDiv.className = 'participant-group';
 groupDiv.setAttribute('data-index', i);
 // Основной участник
 const div = document.createElement('div');
-div.className = 'participant main-participant';
+div.className = 'participant main-participant' + (p.isTreffpunkt ? ' has-treffpunkt' : '');
 div.setAttribute('data-index', i);
+
+if (p.isTreffpunkt) {
+// ===== Рендер Treffpunkt-участника =====
+const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+div.innerHTML = `
+<select data-index="${i}" data-type="participant-name" aria-label="Treffpunkt">
+<option value="${p.name}" selected>📍 ${p.name}</option>
+${Object.keys(this.treffpunkt).filter(n => n !== p.name).map(n => `<option value="${n}">📍 ${n}</option>`).join('')}
+</select>
+<button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Redaktieren">${coordsSvg}</button>
+<div class="time-display" data-index="${i}" data-type="participant-time-display" title="Нажмите для изменения">
+${this.formatMinutes(p.time)}
+</div>
+<button class="add-sub-btn" data-index="${i}" title="Person hinzufügen" style="background:#28a745;">+</button>
+<div class="right-section">
+<span class="material-symbols-outlined" aria-label="Переместить">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+</span>
+<button class="remove-btn" data-index="${i}" aria-label="Удалить">✖</button>
+</div>
+`;
+groupDiv.appendChild(div);
+
+// Показываем людей на Treffpunkt как субучастников
+if (p.treffpunktPersons && p.treffpunktPersons.length > 0) {
+p.treffpunktPersons.forEach((personName, personIdx) => {
+const subDiv = document.createElement('div');
+subDiv.className = 'sub-participant';
+subDiv.setAttribute('data-main-index', i);
+subDiv.setAttribute('data-sub-index', personIdx);
+
+const usedInTreff = new Set(p.treffpunktPersons.filter((_, idx) => idx !== personIdx));
+this.participants.forEach((other, idx) => {
+if (idx !== i) {
+(other.subParticipants || []).forEach(n => usedInTreff.add(n));
+(other.treffpunktPersons || []).forEach(n => usedInTreff.add(n));
+if (other.name) usedInTreff.add(other.name);
+}
+});
+if (this.startPoint) usedInTreff.add(this.startPoint);
+
+const personOptions = Object.keys(this.nameToCoordinates)
+.filter(n => !usedInTreff.has(n) || n === personName)
+.sort()
+.map(n => `<option value="${n}" ${n === personName ? 'selected' : ''}>${n}</option>`)
+.join('');
+
+subDiv.innerHTML = `
+<span class="drag-handle-sub">⋮⋮</span>
+<select data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" aria-label="Person am Treffpunkt">
+${personOptions}
+</select>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Удалить">✖</button>
+`;
+groupDiv.appendChild(subDiv);
+});
+}
+
+} else {
+// ===== Рендер обычного участника (оригинальный код) =====
 const participantNameOptions = Object.keys(this.nameToCoordinates).filter(n => n !== this.startPoint)
 .map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join('');
 const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
@@ -1353,26 +1570,22 @@ ${this.formatMinutes(p.time)}
 </div>
 `;
 groupDiv.appendChild(div);
-// Дополнительные участники
+// Дополнительные участники (subParticipants)
 if (p.subParticipants && p.subParticipants.length > 0) {
 p.subParticipants.forEach((subName, subIdx) => {
 const subDiv = document.createElement('div');
 subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', subIdx);
-
-// Собираем занятые имена для этого субучастника
 const usedInSub = new Set([p.name]);
 p.subParticipants.forEach((n, idx) => { if (idx !== subIdx) usedInSub.add(n); });
 this.participants.forEach((other, idx) => {
 if (idx !== i) { (other.subParticipants || []).forEach(n => usedInSub.add(n)); }
 });
-
 const subNameOptions = Object.keys(this.nameToCoordinates)
 .filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === subName))
 .sort()
 .map(n => `<option value="${n}" ${subName === n ? 'selected' : ''}>${n}</option>`).join('');
-
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
 <select data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" aria-label="Дополнительный участник">
@@ -1384,23 +1597,30 @@ ${subNameOptions}
 groupDiv.appendChild(subDiv);
 });
 }
+}
+
 container.appendChild(groupDiv);
 // Event listeners для основного участника
-div.querySelector('[data-type="participant-name"]').addEventListener('change', e => this.updateName(i, e.target.value));
+div.querySelector('[data-type="participant-name"]').addEventListener('change', e => {
+if (p.isTreffpunkt) this.updateTreffpunktName(i, e.target.value);
+else this.updateName(i, e.target.value);
+});
 const timeDisplay = div.querySelector('[data-type="participant-time-display"]');
 if (timeDisplay) {
 timeDisplay.addEventListener('click', () => this.editParticipantTime(i, timeDisplay));
 }
 div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
-div.querySelector('.add-sub-btn').addEventListener('click', () => this.openSubParticipantModal(i));
+div.querySelector('.add-sub-btn').addEventListener('click', () => {
+if (p.isTreffpunkt) this.openTreffpunktPersonModal(i);
+else this.openSubParticipantModal(i);
+});
 div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
-// Event listeners для субучастников
+// Event listeners для субучастников / treffpunkt persons
 groupDiv.querySelectorAll('[data-type="sub-name"]').forEach(select => {
 select.addEventListener('change', (e) => {
 const mainIdx = parseInt(e.target.dataset.mainIndex);
 const subIdx = parseInt(e.target.dataset.subIndex);
 if (e.target.value === 'add-new') {
-// Открываем модальное окно добавления нового имени для субучастника
 this.currentMainParticipantIndex = mainIdx;
 this.currentSubParticipantIndex = subIdx;
 this.isAddingSubName = true;
@@ -1410,11 +1630,22 @@ this.updateSubParticipant(mainIdx, subIdx, e.target.value);
 }
 });
 });
+groupDiv.querySelectorAll('[data-type="treff-person-name"]').forEach(select => {
+select.addEventListener('change', (e) => {
+const mainIdx = parseInt(e.target.dataset.mainIndex);
+const personIdx = parseInt(e.target.dataset.subIndex);
+this.updateTreffpunktPerson(mainIdx, personIdx, e.target.value);
+});
+});
 groupDiv.querySelectorAll('.remove-sub-btn').forEach(btn => {
 btn.addEventListener('click', () => {
 const mainIdx = parseInt(btn.dataset.mainIndex);
 const subIdx = parseInt(btn.dataset.subIndex);
+if (this.participants[mainIdx].isTreffpunkt) {
+this.removeTreffpunktPerson(mainIdx, subIdx);
+} else {
 this.removeSubParticipant(mainIdx, subIdx);
+}
 });
 });
 });
@@ -1794,7 +2025,82 @@ else url += `/search/${encodeURIComponent(coords)}`;
 window.open(url, '_blank');
 }
 addParticipant() {
-this.participants.push({ name: '', time: 5, lat: null, lng: null, timeManuallyEdited: false });
+this.openAddTypeModal();
+}
+openAddTypeModal() {
+const modal = document.getElementById('addTypeModal');
+const treffSelect = document.getElementById('treffpunktSelect');
+const kollegeSelect = document.getElementById('kollegeSelect');
+
+// Заполняем список Treffpunkt
+treffSelect.innerHTML = '<option value="">– Treffpunkt wählen –</option>';
+Object.keys(this.treffpunkt).forEach(name => {
+const opt = document.createElement('option');
+opt.value = name;
+opt.textContent = name;
+treffSelect.appendChild(opt);
+});
+
+// Заполняем список коллег (все имена кроме startPoint и уже добавленных участников без Treffpunkt)
+const usedMainNames = this.participants.filter(p => !p.isTreffpunkt).map(p => p.name).filter(n => n);
+kollegeSelect.innerHTML = '<option value="">– Kollege wählen –</option>';
+Object.keys(this.nameToCoordinates)
+.filter(name => name !== this.startPoint && !usedMainNames.includes(name) && !this.treffpunkt[name])
+.sort()
+.forEach(name => {
+const opt = document.createElement('option');
+opt.value = name;
+opt.textContent = name;
+kollegeSelect.appendChild(opt);
+});
+
+// Сбрасываем оба селекта
+treffSelect.value = '';
+kollegeSelect.value = '';
+
+// Взаимоисключение: при выборе одного — сбрасываем другой
+treffSelect.onchange = () => { if (treffSelect.value) kollegeSelect.value = ''; };
+kollegeSelect.onchange = () => { if (kollegeSelect.value) treffSelect.value = ''; };
+
+modal.classList.add('show');
+}
+addParticipantFromModal() {
+const treffSelect = document.getElementById('treffpunktSelect');
+const kollegeSelect = document.getElementById('kollegeSelect');
+const treffVal = treffSelect.value;
+const kollegeVal = kollegeSelect.value;
+
+if (!treffVal && !kollegeVal) {
+this.showToast('⚠️ Bitte wählen Sie einen Treffpunkt oder Kollegen');
+return;
+}
+
+if (treffVal) {
+// Добавляем как Treffpunkt-участника
+const coords = this.treffpunkt[treffVal] || { lat: null, lng: null };
+this.participants.push({
+name: treffVal,
+time: 5,
+lat: coords.lat,
+lng: coords.lng,
+timeManuallyEdited: false,
+isTreffpunkt: true,
+treffpunktPersons: [] // кто садится на этом месте
+});
+} else {
+// Добавляем обычного коллегу
+const coords = this.nameToCoordinates[kollegeVal] || { lat: null, lng: null };
+this.participants.push({
+name: kollegeVal,
+time: 5,
+lat: coords.lat,
+lng: coords.lng,
+timeManuallyEdited: false,
+isTreffpunkt: false
+});
+}
+
+document.getElementById('addTypeModal').classList.remove('show');
 this.updateParticipantTimes();
 this.saveData();
 this.renderParticipants();
@@ -1966,13 +2272,18 @@ modal.classList.add('show');
 setTimeout(() => select.focus(), 100);
 }
 addSubParticipant() {
+// Если текущий участник — Treffpunkt, добавляем как treffpunktPerson
+const mainIndex = this.currentMainParticipantIndex;
+if (mainIndex !== null && this.participants[mainIndex] && this.participants[mainIndex].isTreffpunkt) {
+this.addTreffpunktPerson();
+return;
+}
 const select = document.getElementById('subParticipantSelect');
 const selectedName = select.value;
 if (!selectedName) {
 this.showToast('⚠️ Выберите участника');
 return;
 }
-const mainIndex = this.currentMainParticipantIndex;
 if (!this.participants[mainIndex].subParticipants) {
 this.participants[mainIndex].subParticipants = [];
 }
@@ -2012,6 +2323,84 @@ this.renderParticipants();
 return;
 }
 this.participants[mainIndex].subParticipants[subIndex] = newName;
+this.saveData();
+this.calculate();
+}
+// ===== Методы для Treffpunkt =====
+updateTreffpunktName(index, newName) {
+const coords = this.treffpunkt[newName] || { lat: null, lng: null };
+this.participants[index].name = newName;
+this.participants[index].lat = coords.lat;
+this.participants[index].lng = coords.lng;
+this.participants[index].timeManuallyEdited = false;
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+openTreffpunktPersonModal(mainIndex) {
+this.currentMainParticipantIndex = mainIndex;
+const modal = document.getElementById('subModal');
+const select = document.getElementById('subParticipantSelect');
+const mainParticipant = this.participants[mainIndex];
+
+// Собираем занятые имена
+const usedNames = new Set();
+(mainParticipant.treffpunktPersons || []).forEach(n => usedNames.add(n));
+this.participants.forEach((p, idx) => {
+if (idx !== mainIndex) {
+if (p.name) usedNames.add(p.name);
+(p.subParticipants || []).forEach(n => usedNames.add(n));
+(p.treffpunktPersons || []).forEach(n => usedNames.add(n));
+}
+});
+if (this.startPoint) usedNames.add(this.startPoint);
+
+select.innerHTML = '<option value="">Person auswählen</option>';
+Object.keys(this.nameToCoordinates)
+.filter(name => !usedNames.has(name) && !this.treffpunkt[name])
+.sort()
+.forEach(name => {
+const option = document.createElement('option');
+option.value = name;
+option.textContent = name;
+select.appendChild(option);
+});
+
+modal.classList.add('show');
+setTimeout(() => select.focus(), 100);
+}
+addTreffpunktPerson() {
+const select = document.getElementById('subParticipantSelect');
+const selectedName = select.value;
+if (!selectedName) {
+this.showToast('⚠️ Bitte Person auswählen');
+return;
+}
+const mainIndex = this.currentMainParticipantIndex;
+if (!this.participants[mainIndex].treffpunktPersons) {
+this.participants[mainIndex].treffpunktPersons = [];
+}
+this.participants[mainIndex].treffpunktPersons.push(selectedName);
+document.getElementById('subModal').classList.remove('show');
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`✅ ${selectedName} → ${this.participants[mainIndex].name}`);
+}
+removeTreffpunktPerson(mainIndex, personIdx) {
+const removedName = this.participants[mainIndex].treffpunktPersons[personIdx];
+this.participants[mainIndex].treffpunktPersons.splice(personIdx, 1);
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`🗑️ ${removedName} entfernt`);
+}
+updateTreffpunktPerson(mainIndex, personIdx, newName) {
+this.participants[mainIndex].treffpunktPersons[personIdx] = newName;
 this.saveData();
 this.calculate();
 }
@@ -2183,7 +2572,27 @@ out+=this.useUhrBei
 let current=new Date(startTime);
 valid.forEach(p=>{
 current.setMinutes(current.getMinutes()+p.time);
-// Формируем строку имён с субучастниками
+let line = '';
+if (p.isTreffpunkt) {
+// Treffpunkt: формат "12:00 René (Olga-Park)" или "12:00 René, Vasyl und Alex (Olga-Park)"
+const persons = (p.treffpunktPersons || []).filter(n => n);
+let personsStr = '';
+if (persons.length === 0) {
+personsStr = p.name; // просто название, если никого не добавили
+} else if (persons.length === 1) {
+personsStr = `${persons[0]} (${p.name})`;
+} else if (persons.length === 2) {
+personsStr = `${persons[0]} und ${persons[1]} (${p.name})`;
+} else {
+personsStr = persons.slice(0, -1).join(', ') + ' und ' + persons[persons.length - 1] + ` (${p.name})`;
+}
+line = this.useUhrBei
+? `um ${this.formatTime(current)} Uhr bei ${personsStr}
+`
+: `${this.formatTime(current)}  ${personsStr}
+`;
+} else {
+// Обычный участник (оригинальный код)
 let names = p.name;
 if (p.subParticipants && p.subParticipants.length > 0) {
 const subs = p.subParticipants.filter(n => n);
@@ -2196,11 +2605,13 @@ names = all.slice(0, -1).join(', ') + ' und ' + all[all.length - 1];
 }
 }
 }
-out+=this.useUhrBei
+line = this.useUhrBei
 ? `um ${this.formatTime(current)} Uhr bei ${names}
 `
 : `${this.formatTime(current)}  ${names}
 `;
+}
+out += line;
 });
 // Время прибытия к машине
 const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
