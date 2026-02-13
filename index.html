@@ -179,6 +179,7 @@ background: rgba(0, 123, 255, 0.05);
 }
 .time-display.auto-calculated {
 border-color: #ffc107;
+background: #fff9e6;
 }
 .time-display.auto-calculated:hover {
 border-color: #ff9800;
@@ -375,6 +376,35 @@ color: var(--text);
 /* Участник с Treffpunkt — подсветка */
 .participant.has-treffpunkt {
 border-left: 3px solid #28a745;
+}
+/* Поле ввода нового имени — inline внутри модалки */
+.new-name-row {
+display: none;
+margin-top: 8px;
+flex-direction: column;
+gap: 4px;
+}
+.new-name-row.visible {
+display: flex;
+}
+.new-name-input {
+width: 100%;
+padding: 10px;
+border: 2px solid var(--primary-color);
+border-radius: 8px;
+font-size: 1em;
+background: var(--surface);
+color: var(--text);
+box-sizing: border-box;
+transition: border-color 0.2s;
+}
+.new-name-input:focus {
+outline: none;
+border-color: #0056b3;
+}
+.new-name-hint {
+font-size: 0.8em;
+color: var(--info-color);
 }
 /* Модальное окно субучастников */
 .sub-modal {
@@ -1025,6 +1055,10 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 <select id="kollegeSelect" class="add-type-select">
 <option value="">– Kollege wählen –</option>
 </select>
+<div class="new-name-row" id="newKollegeRow">
+<input type="text" id="newKollegeName" class="new-name-input" placeholder="Neuer Name eingeben…" autocomplete="off" />
+<span class="new-name-hint">Name wird gespeichert und zur Liste hinzugefügt</span>
+</div>
 </div>
 <div class="add-type-buttons">
 <button class="add-type-btn secondary" id="addTypeCancelBtn">Abbrechen</button>
@@ -1040,6 +1074,10 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 <select id="subParticipantSelect" class="sub-modal-select">
 <option value="">Выберите участника</option>
 </select>
+<div class="new-name-row" id="newSubNameRow">
+<input type="text" id="newSubName" class="new-name-input" placeholder="Neuer Name eingeben…" autocomplete="off" />
+<span class="new-name-hint">Name wird gespeichert und zur Liste hinzugefügt</span>
+</div>
 <div class="sub-modal-buttons">
 <button class="sub-modal-btn secondary" id="subCancelBtn">Отмена</button>
 <button class="sub-modal-btn primary" id="subAddBtn">Добавить</button>
@@ -1390,42 +1428,48 @@ this.elements.openMapButton.addEventListener('click', () => this.openMapForSelec
 const addTypeModal = document.getElementById('addTypeModal');
 const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
 const addTypeConfirmBtn = document.getElementById('addTypeConfirmBtn');
-if (addTypeModal && addTypeCancelBtn && addTypeConfirmBtn) {
-addTypeCancelBtn.addEventListener('click', () => {
+const closeAddTypeModal = () => {
 addTypeModal.classList.remove('show');
-});
+const row = document.getElementById('newKollegeRow');
+const inp = document.getElementById('newKollegeName');
+if (row) row.classList.remove('visible');
+if (inp) inp.value = '';
+};
+if (addTypeModal && addTypeCancelBtn && addTypeConfirmBtn) {
+addTypeCancelBtn.addEventListener('click', closeAddTypeModal);
 addTypeConfirmBtn.addEventListener('click', () => {
 this.addParticipantFromModal();
 });
 addTypeModal.addEventListener('click', (e) => {
-if (e.target === addTypeModal) addTypeModal.classList.remove('show');
+if (e.target === addTypeModal) closeAddTypeModal();
 });
 document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && addTypeModal.classList.contains('show')) {
-addTypeModal.classList.remove('show');
-}
+if (e.key === 'Escape' && addTypeModal.classList.contains('show')) closeAddTypeModal();
 });
 }
 // Sub-participant modal handlers
 const subModal = document.getElementById('subModal');
 const subCancelBtn = document.getElementById('subCancelBtn');
 const subAddBtn = document.getElementById('subAddBtn');
-if (subModal && subCancelBtn && subAddBtn) {
-subCancelBtn.addEventListener('click', () => {
+const closeSubModal = () => {
 subModal.classList.remove('show');
-});
+const row = document.getElementById('newSubNameRow');
+const inp = document.getElementById('newSubName');
+if (row) row.classList.remove('visible');
+if (inp) inp.value = '';
+const sel = document.getElementById('subParticipantSelect');
+if (sel) sel.value = '';
+};
+if (subModal && subCancelBtn && subAddBtn) {
+subCancelBtn.addEventListener('click', closeSubModal);
 subAddBtn.addEventListener('click', () => {
 this.addSubParticipant();
 });
 subModal.addEventListener('click', (e) => {
-if (e.target === subModal) {
-subModal.classList.remove('show');
-}
+if (e.target === subModal) closeSubModal();
 });
 document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && subModal.classList.contains('show')) {
-subModal.classList.remove('show');
-}
+if (e.key === 'Escape' && subModal.classList.contains('show')) closeSubModal();
 });
 }
 // --- УДАЛЕНЫ ОБРАБОТЧИКИ ДЛЯ open-map-direct и open-map-return ---
@@ -1895,8 +1939,7 @@ coordsInput.value = participant.lat && participant.lng ? `${participant.lat},${p
 }
 modal.style.display = 'flex';
 // Автофокус только при добавлении нового имени —
-// в остальных случаях (машина, координаты участника, начальная точка)
-// клавиатура не выскакивает автоматически
+// иначе на мобильном сразу выскакивает клавиатура
 if (isAddingNewName) {
 nameInput.focus();
 }
@@ -2035,6 +2078,8 @@ openAddTypeModal() {
 const modal = document.getElementById('addTypeModal');
 const treffSelect = document.getElementById('treffpunktSelect');
 const kollegeSelect = document.getElementById('kollegeSelect');
+const newKollegeRow = document.getElementById('newKollegeRow');
+const newKollegeName = document.getElementById('newKollegeName');
 
 // Заполняем список Treffpunkt
 treffSelect.innerHTML = '<option value="">– Treffpunkt wählen –</option>';
@@ -2045,7 +2090,7 @@ opt.textContent = name;
 treffSelect.appendChild(opt);
 });
 
-// Заполняем список коллег (все имена кроме startPoint и уже добавленных участников без Treffpunkt)
+// Заполняем список коллег
 const usedMainNames = this.participants.filter(p => !p.isTreffpunkt).map(p => p.name).filter(n => n);
 kollegeSelect.innerHTML = '<option value="">– Kollege wählen –</option>';
 Object.keys(this.nameToCoordinates)
@@ -2057,20 +2102,42 @@ opt.value = name;
 opt.textContent = name;
 kollegeSelect.appendChild(opt);
 });
+// Опция добавления нового имени
+const newOpt = document.createElement('option');
+newOpt.value = 'add-new';
+newOpt.textContent = '➕ Neuer Kollege…';
+kollegeSelect.appendChild(newOpt);
 
-// Сбрасываем оба селекта
+// Сброс
 treffSelect.value = '';
 kollegeSelect.value = '';
+newKollegeRow.classList.remove('visible');
+newKollegeName.value = '';
 
-// Взаимоисключение: при выборе одного — сбрасываем другой
-treffSelect.onchange = () => { if (treffSelect.value) kollegeSelect.value = ''; };
-kollegeSelect.onchange = () => { if (kollegeSelect.value) treffSelect.value = ''; };
+// Взаимоисключение + показ поля нового имени
+treffSelect.onchange = () => {
+if (treffSelect.value) {
+kollegeSelect.value = '';
+newKollegeRow.classList.remove('visible');
+}
+};
+kollegeSelect.onchange = () => {
+if (kollegeSelect.value) treffSelect.value = '';
+if (kollegeSelect.value === 'add-new') {
+newKollegeRow.classList.add('visible');
+setTimeout(() => newKollegeName.focus(), 50);
+} else {
+newKollegeRow.classList.remove('visible');
+newKollegeName.value = '';
+}
+};
 
 modal.classList.add('show');
 }
 addParticipantFromModal() {
 const treffSelect = document.getElementById('treffpunktSelect');
 const kollegeSelect = document.getElementById('kollegeSelect');
+const newKollegeName = document.getElementById('newKollegeName');
 const treffVal = treffSelect.value;
 const kollegeVal = kollegeSelect.value;
 
@@ -2089,10 +2156,36 @@ lat: coords.lat,
 lng: coords.lng,
 timeManuallyEdited: false,
 isTreffpunkt: true,
-treffpunktPersons: [] // кто садится на этом месте
+treffpunktPersons: []
 });
+} else if (kollegeVal === 'add-new') {
+// Новый коллега — вводится вручную
+const newName = newKollegeName.value.trim();
+if (!newName) {
+this.showToast('⚠️ Bitte einen Namen eingeben');
+newKollegeName.focus();
+return;
+}
+if (this.nameToCoordinates[newName]) {
+this.showToast(`⚠️ "${newName}" existiert bereits`);
+newKollegeName.focus();
+return;
+}
+// Сохраняем в реестр (без координат)
+this.nameToCoordinates[newName] = { lat: null, lng: null };
+this.participants.push({
+name: newName,
+time: 5,
+lat: null,
+lng: null,
+timeManuallyEdited: false,
+isTreffpunkt: false,
+subParticipants: [],
+treffpunktPersons: []
+});
+this.showToast(`✅ "${newName}" hinzugefügt`);
 } else {
-// Добавляем обычного коллегу
+// Обычный коллега из списка
 const coords = this.nameToCoordinates[kollegeVal] || { lat: null, lng: null };
 this.participants.push({
 name: kollegeVal,
@@ -2100,7 +2193,9 @@ time: 5,
 lat: coords.lat,
 lng: coords.lng,
 timeManuallyEdited: false,
-isTreffpunkt: false
+isTreffpunkt: false,
+subParticipants: [],
+treffpunktPersons: []
 });
 }
 
@@ -2245,22 +2340,24 @@ openSubParticipantModal(mainIndex) {
 this.currentMainParticipantIndex = mainIndex;
 const modal = document.getElementById('subModal');
 const select = document.getElementById('subParticipantSelect');
+const newSubNameRow = document.getElementById('newSubNameRow');
+const newSubNameInput = document.getElementById('newSubName');
 const mainParticipant = this.participants[mainIndex];
 
-// Собираем имена которые уже заняты: сам участник + его субучастники
+// Сброс поля нового имени
+newSubNameRow.classList.remove('visible');
+newSubNameInput.value = '';
+
+// Собираем занятые имена
 const usedNames = new Set();
 usedNames.add(mainParticipant.name);
 (mainParticipant.subParticipants || []).forEach(n => usedNames.add(n));
-
-// Также исключаем имена которые уже являются субучастниками у ДРУГИХ участников
-// (но основные участники других групп оставляем в списке)
 this.participants.forEach((p, idx) => {
 if (idx !== mainIndex) {
 (p.subParticipants || []).forEach(n => usedNames.add(n));
 }
 });
 
-// Заполняем список ВСЕМИ именами из nameToCoordinates кроме занятых
 select.innerHTML = '<option value="">Выберите участника</option>';
 Object.keys(this.nameToCoordinates)
 .filter(name => !usedNames.has(name) && name !== this.startPoint)
@@ -2271,6 +2368,22 @@ option.value = name;
 option.textContent = name;
 select.appendChild(option);
 });
+// Опция нового имени
+const newOpt = document.createElement('option');
+newOpt.value = 'add-new';
+newOpt.textContent = '➕ Neue Person…';
+select.appendChild(newOpt);
+
+// Показ/скрытие поля ввода
+select.onchange = () => {
+if (select.value === 'add-new') {
+newSubNameRow.classList.add('visible');
+setTimeout(() => newSubNameInput.focus(), 50);
+} else {
+newSubNameRow.classList.remove('visible');
+newSubNameInput.value = '';
+}
+};
 
 modal.classList.add('show');
 setTimeout(() => select.focus(), 100);
@@ -2283,11 +2396,31 @@ this.addTreffpunktPerson();
 return;
 }
 const select = document.getElementById('subParticipantSelect');
-const selectedName = select.value;
+const newSubNameInput = document.getElementById('newSubName');
+let selectedName = select.value;
+
 if (!selectedName) {
 this.showToast('⚠️ Выберите участника');
 return;
 }
+
+// Новое имя введено вручную
+if (selectedName === 'add-new') {
+const newName = newSubNameInput.value.trim();
+if (!newName) {
+this.showToast('⚠️ Bitte einen Namen eingeben');
+newSubNameInput.focus();
+return;
+}
+if (this.nameToCoordinates[newName]) {
+this.showToast(`⚠️ "${newName}" existiert bereits`);
+newSubNameInput.focus();
+return;
+}
+this.nameToCoordinates[newName] = { lat: null, lng: null };
+selectedName = newName;
+}
+
 if (!this.participants[mainIndex].subParticipants) {
 this.participants[mainIndex].subParticipants = [];
 }
@@ -2347,7 +2480,13 @@ openTreffpunktPersonModal(mainIndex) {
 this.currentMainParticipantIndex = mainIndex;
 const modal = document.getElementById('subModal');
 const select = document.getElementById('subParticipantSelect');
+const newSubNameRow = document.getElementById('newSubNameRow');
+const newSubNameInput = document.getElementById('newSubName');
 const mainParticipant = this.participants[mainIndex];
+
+// Сброс поля нового имени
+newSubNameRow.classList.remove('visible');
+newSubNameInput.value = '';
 
 // Собираем занятые имена
 const usedNames = new Set();
@@ -2371,17 +2510,53 @@ option.value = name;
 option.textContent = name;
 select.appendChild(option);
 });
+// Опция нового имени
+const newOpt = document.createElement('option');
+newOpt.value = 'add-new';
+newOpt.textContent = '➕ Neue Person…';
+select.appendChild(newOpt);
+
+// Показ/скрытие поля ввода
+select.onchange = () => {
+if (select.value === 'add-new') {
+newSubNameRow.classList.add('visible');
+setTimeout(() => newSubNameInput.focus(), 50);
+} else {
+newSubNameRow.classList.remove('visible');
+newSubNameInput.value = '';
+}
+};
 
 modal.classList.add('show');
 setTimeout(() => select.focus(), 100);
 }
 addTreffpunktPerson() {
 const select = document.getElementById('subParticipantSelect');
-const selectedName = select.value;
+const newSubNameInput = document.getElementById('newSubName');
+let selectedName = select.value;
+
 if (!selectedName) {
 this.showToast('⚠️ Bitte Person auswählen');
 return;
 }
+
+// Новое имя введено вручную
+if (selectedName === 'add-new') {
+const newName = newSubNameInput.value.trim();
+if (!newName) {
+this.showToast('⚠️ Bitte einen Namen eingeben');
+newSubNameInput.focus();
+return;
+}
+if (this.nameToCoordinates[newName]) {
+this.showToast(`⚠️ "${newName}" existiert bereits`);
+newSubNameInput.focus();
+return;
+}
+this.nameToCoordinates[newName] = { lat: null, lng: null };
+selectedName = newName;
+}
+
 const mainIndex = this.currentMainParticipantIndex;
 if (!this.participants[mainIndex].treffpunktPersons) {
 this.participants[mainIndex].treffpunktPersons = [];
