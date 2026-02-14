@@ -126,6 +126,7 @@ flex-shrink: 0;
 line-height: 1;
 padding: 0;
 color: var(--text) !important;
+transform: translateY(-5px);
 }
 .participant {
 background: var(--surface-color);
@@ -201,7 +202,7 @@ background: var(--danger-color);
 color: white;
 border: none;
 border-radius: 4px;
-font-size: 14px;
+font-size: 16px;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -209,12 +210,17 @@ cursor: pointer;
 flex-shrink: 0;
 line-height: 1;
 padding: 0;
-transform: translate(5px, -15px);
+transform: translate(5px, -18px);
+}
+.participant .remove-btn::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
 }
 /* Кнопка добавления дополнительного участника */
 .add-sub-btn {
-width: 24px;
-height: 24px;
+width: 22px;
+height: 22px;
 background: var(--primary-color);
 color: white;
 border: none;
@@ -228,11 +234,11 @@ display: flex;
 align-items: center;
 justify-content: center;
 flex-shrink: 0;
-margin-top: 0px;
+transform: translateY(-5px);
 }
 .add-sub-btn:hover {
 background: #0056b3;
-transform: scale(1.1);
+transform: translateY(-5px) scale(1.1);
 }
 /* Группа участников */
 .participant-group {
@@ -266,6 +272,8 @@ box-sizing: border-box;
 background: var(--surface);
 color: var(--text);
 }
+
+/* крестикудаления участников */
 .sub-participant .remove-sub-btn {
 width: 18px;
 height: 18px;
@@ -279,6 +287,11 @@ line-height: 1;
 flex-shrink: 0;
 align-self: flex-start;
 margin-top: -4px;
+}
+.sub-participant .remove-sub-btn::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
 }
 .sub-participant .remove-sub-btn:hover {
 background: #c82333;
@@ -474,6 +487,8 @@ color: var(--text);
 .sub-modal-btn.secondary:hover {
 background: #bbb;
 }
+
+/* крестик времени прибытия */
 .time-remove {
 width: 24px;
 height: 24px;
@@ -489,8 +504,13 @@ cursor: pointer;
 flex-shrink: 0;
 line-height: 1;
 transform: translateY(-5px);
-margin-top: -5px;
+margin-top: -17px;
 margin-right: -7px;
+}
+.time-remove::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
 }
 /* красные крестики ВСЕГДА */
 .time-remove,
@@ -501,6 +521,7 @@ border: none !important;
 border-radius: 4px;
 cursor: pointer;
 }
+
 .arrival-time {
 font-weight: bold;
 cursor: pointer;
@@ -536,14 +557,33 @@ transform: translateY(-5px)
 width: 100%;
 height: 100%
 }
+.start-point-coords svg {
+width: 100%;
+height: 100%
+}
 .calc-route-icon {
+width: 24px;
+height: 24px;
+border: none;
+background: transparent;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+padding: 0;
+flex-shrink: 0;
+transform: translateY(-5px);
 transition: transform 0.2s ease;
 }
 .calc-route-icon:hover {
-transform: scale(1.1);
+transform: translateY(-5px) scale(1.1);
 }
 .calc-route-icon:active {
-transform: scale(0.95);
+transform: translateY(-5px) scale(0.95);
+}
+.calc-route-icon svg {
+width: 22px;
+height: 22px;
 }
 .material-symbols-outlined {
 font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -828,6 +868,7 @@ justify-content: flex-end;
 --bg: #f0f0f0;
 --text: #333333;
 --surface: #ffffff;
+--border: #cccccc;
 /*кнопки */
 --primary-color: #007bff;
 --success-color: #28a745;
@@ -1548,7 +1589,7 @@ ${this.formatMinutes(p.time)}
 <span class="material-symbols-outlined" aria-label="Переместить">
 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
 </span>
-<button class="remove-btn" data-index="${i}" aria-label="Удалить">✖</button>
+<button class="remove-btn" data-index="${i}" aria-label="Удалить"></button>
 </div>
 `;
 groupDiv.appendChild(div);
@@ -1582,7 +1623,7 @@ subDiv.innerHTML = `
 <select data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" aria-label="Person am Treffpunkt">
 ${personOptions}
 </select>
-<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Удалить">✖</button>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Удалить"></button>
 `;
 groupDiv.appendChild(subDiv);
 });
@@ -1608,7 +1649,7 @@ ${this.formatMinutes(p.time)}
 <span class="material-symbols-outlined" aria-label="Переместить участника">
 <svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="#e3e3e3"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
 </span>
-<button class="remove-btn" data-index="${i}" aria-label="Удалить участника">✖</button>
+<button class="remove-btn" data-index="${i}" aria-label="Удалить участника"></button>
 </div>
 `;
 groupDiv.appendChild(div);
@@ -1634,7 +1675,7 @@ subDiv.innerHTML = `
 ${subNameOptions}
 <option value="add-new">Добавить новое имя</option>
 </select>
-<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Удалить">✖</button>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Удалить"></button>
 `;
 groupDiv.appendChild(subDiv);
 });
@@ -1704,13 +1745,12 @@ machineDiv.innerHTML = `
 <div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Нажмите для изменения">
 ${this.formatMinutes(this.machineStop.time)}
 </div>
-<button class="calc-route-icon" data-type="calc-route" aria-label="Рассчитать время в пути" title="Рассчитать время в пути от последнего участника"
-  style="width: 24px; height: 24px; border: none; background: transparent; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; margin-left: 4px; transform: translateY(-5px);">
+<button class="calc-route-icon" data-type="calc-route" aria-label="Рассчитать время в пути" title="Рассчитать время в пути от последнего участника">
   ${calcIcon}
 </button>
 <div class="right-section">
 ${this.machineStop.arrivalTime
-? `<div class="arrival-time" tabindex="0" role="button" aria-label="Изменить время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия">✖</button>`
+? `<div class="arrival-time" tabindex="0" role="button" aria-label="Изменить время прибытия">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Очистить время прибытия"></button>`
 : '<button class="time-icon" aria-label="Установить время прибытия">🕒</button>'
 }
 </div>
