@@ -48,10 +48,12 @@
 <h1>Редактор групп координат</h1>
 
 <select id="groupSel">
-  <option value="defaultCoords">defaultCoords</option>
-  <option value="stations">stations</option>
-  <option value="travelTimes">travelTimes</option>
-  <option value="participantOrders">participantOrders</option>
+  <option value="defaultCoords">👤 defaultCoords</option>
+  <option value="stations">🚉 stations</option>
+  <option value="travelTimes">⏱ travelTimes</option>
+  <option value="treffpunkt">📍 treffpunkt</option>
+  <option value="trefftravelTimes">⏱📍 trefftravelTimes</option>
+  <option value="participantOrders">🔢 participantOrders</option>
 </select>
 
 <div id="cards"></div>
@@ -76,13 +78,16 @@
 <!-- модалка добавления точки -->
 <div id="addModal" class="modal">
   <div class="modal-content">
-    <h3>Новая точка</h3>
+    <h3 id="addModalTitle">Новая запись</h3>
     <select id="modalGroupSel">
-      <option value="defaultCoords">defaultCoords</option>
-      <option value="stations">stations</option>
+      <option value="defaultCoords">👤 defaultCoords</option>
+      <option value="stations">🚉 stations</option>
+      <option value="treffpunkt">📍 treffpunkt</option>
+      <option value="travelTimes">⏱ travelTimes (ключ: A-B)</option>
+      <option value="trefftravelTimes">⏱📍 trefftravelTimes (ключ: Пункт-Имя)</option>
     </select>
-    <input id="newName" type="text" placeholder="Название точки">
-    <input id="newCoord" type="text" placeholder="Координаты (lat,lng), например 51.538627,7.108037">
+    <input id="newName" type="text" placeholder="Название / ключ">
+    <input id="newCoord" type="text" placeholder="Координаты (lat,lng) или время (мин)" id="newCoordOrTime">
     <div class="modal-buttons">
       <button id="addConfirm" class="add-confirm">Добавить</button>
       <button id="addCancel" class="add-cancel">Отмена</button>
@@ -165,6 +170,20 @@ let participantOrders = {
   'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
   'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
   'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+};
+let treffpunkt = {
+  'OLGA-Park':               { lat: 51.5004335, lng: 6.8686337 },
+  'Gelsenkirchen-Treffpunkt': { lat: 51.530304,  lng: 7.110901  }
+};
+let trefftravelTimes = {
+  'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10,
+  'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20,   'OLGA-Park-Marvin': 20,
+  'OLGA-Park-Maikel': 20, 'OLGA-Park-René': 5,    'OLGA-Park-Vasyl': 10,
+  'Gelsenkirchen-Treffpunkt-Sergii': 30, 'Gelsenkirchen-Treffpunkt-Andrii': 30,
+  'Gelsenkirchen-Treffpunkt-Anatolii': 30, 'Gelsenkirchen-Treffpunkt-Sergio': 25,
+  'Gelsenkirchen-Treffpunkt-Dima': 10,  'Gelsenkirchen-Treffpunkt-Marvin': 20,
+  'Gelsenkirchen-Treffpunkt-Maikel': 20,'Gelsenkirchen-Treffpunkt-René': 35,
+  'Gelsenkirchen-Treffpunkt-Vasyl': 25
 };
 
 // ==========  УТИЛИТЫ  ==========
@@ -307,6 +326,57 @@ const clean = {};
   return;   // важно – не трогать box дальше
 }
 
+  // -----  treffpunkt  -----
+  if (grp === 'treffpunkt') {
+    for (const [name, coord] of Object.entries(treffpunkt)) {
+      const card = document.createElement('div'); card.className = 'card';
+      const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
+      x.onclick = () => {
+        // удаляем все trefftravelTimes для этого пункта
+        Object.keys(trefftravelTimes).forEach(key => {
+          if (key.startsWith(name + '-')) delete trefftravelTimes[key];
+        });
+        delete treffpunkt[name];
+        render(); showMsg('Удалено');
+      };
+      card.appendChild(x);
+      const title = document.createElement('div'); title.className = 'card-title'; title.textContent = name;
+      title.onclick = () => makeTreffTitleEditable(title, name);
+      const coordDiv = document.createElement('div'); coordDiv.className = 'card-coord';
+      const inp = document.createElement('input'); inp.type = 'text'; inp.value = `${coord.lat},${coord.lng}`;
+      inp.addEventListener('change', async () => {
+        const coords = await parseAnyCoords(inp.value.trim());
+        if (coords) { inp.value = `${coords.lat},${coords.lng}`; treffpunkt[name] = coords; showMsg('Сохранено'); }
+        else { showMsg('Ошибка координат'); inp.value = `${coord.lat},${coord.lng}`; }
+      });
+      coordDiv.appendChild(inp); card.appendChild(title); card.appendChild(coordDiv); box.appendChild(card);
+    }
+    document.getElementById('rawJson').value = JSON.stringify(treffpunkt, null, 2);
+    return;
+  }
+
+  // -----  trefftravelTimes  -----
+  if (grp === 'trefftravelTimes') {
+    const keys = Object.keys(trefftravelTimes);
+    for (const key of keys) {
+      const card = document.createElement('div'); card.className = 'card';
+      const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
+      x.onclick = () => { delete trefftravelTimes[key]; render(); showMsg('Удалено'); };
+      card.appendChild(x);
+      const title = document.createElement('div'); title.className = 'card-title'; title.textContent = key; title.style.cursor = 'default';
+      const timeInp = document.createElement('input'); timeInp.type = 'number'; timeInp.min = '1'; timeInp.max = '999';
+      timeInp.value = trefftravelTimes[key]; timeInp.style.width = '60px';
+      timeInp.addEventListener('change', () => {
+        trefftravelTimes[key] = Math.max(1, parseInt(timeInp.value) || 1);
+        showMsg('Сохранено');
+      });
+      card.appendChild(title); card.appendChild(timeInp);
+      box.appendChild(card);
+    }
+    document.getElementById('rawJson').value = JSON.stringify(trefftravelTimes, null, 2);
+    return;
+  }
+
   // -----  travelTimes  -----
   if (grp === 'travelTimes') {
     const keys = Object.keys(travelTimes).sort();
@@ -384,23 +454,85 @@ function finishTitleEdit(input, oldName, grp) {
   render(); showMsg('Переименовано');
 }
 
+// ==========  ПЕРЕИМЕНОВАНИЕ TREFFPUNKT  ==========
+function makeTreffTitleEditable(titleDiv, oldName) {
+  const input = document.createElement('input'); input.value = oldName;
+  input.addEventListener('blur', () => {
+    const newName = input.value.trim();
+    if (!newName || newName === oldName) { titleDiv.textContent = oldName; return; }
+    if (treffpunkt[newName]) { showMsg('Такой пункт уже есть'); titleDiv.textContent = oldName; return; }
+    treffpunkt[newName] = treffpunkt[oldName]; delete treffpunkt[oldName];
+    // переименуем ключи в trefftravelTimes
+    const prefix = oldName + '-';
+    Object.keys(trefftravelTimes).filter(k => k.startsWith(prefix)).forEach(k => {
+      const newKey = newName + '-' + k.slice(prefix.length);
+      trefftravelTimes[newKey] = trefftravelTimes[k];
+      delete trefftravelTimes[k];
+    });
+    render(); showMsg('Переименовано');
+  });
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
+  titleDiv.innerHTML = ''; titleDiv.appendChild(input); input.focus(); input.select();
+}
+
 // ==========  КНОПКИ НИЖНЕЙ ПАНЕЛИ  ==========
 document.getElementById('addBtn').onclick = () => {
+  const grp = currentGroup();
+  const modalSel = document.getElementById('modalGroupSel');
+  // Синхронизируем выбор группы с текущей вкладкой
+  if ([...modalSel.options].some(o => o.value === grp)) modalSel.value = grp;
+  // Обновим плейсхолдер
+  updateAddModalPlaceholder();
   document.getElementById('addModal').style.display = 'flex';
   document.getElementById('newName').focus();
 };
+document.getElementById('modalGroupSel').addEventListener('change', updateAddModalPlaceholder);
+function updateAddModalPlaceholder() {
+  const grp = document.getElementById('modalGroupSel').value;
+  const coordInp = document.getElementById('newCoord');
+  const nameInp = document.getElementById('newName');
+  if (grp === 'travelTimes') {
+    nameInp.placeholder = 'Ключ: Имя1-Имя2';
+    coordInp.placeholder = 'Время (минуты)';
+  } else if (grp === 'trefftravelTimes') {
+    nameInp.placeholder = 'Ключ: Пункт-Имя';
+    coordInp.placeholder = 'Время (минуты)';
+  } else {
+    nameInp.placeholder = 'Название точки';
+    coordInp.placeholder = 'Координаты (lat,lng)';
+  }
+}
 document.getElementById('addCancel').onclick = () => document.getElementById('addModal').style.display = 'none';
 document.getElementById('addConfirm').onclick = () => {
   const grp  = document.getElementById('modalGroupSel').value;
   const name = document.getElementById('newName').value.trim();
-  if (!name) { showMsg('Введите название'); return; }
-  if (data[grp][name]) { showMsg('Точка уже есть'); return; }
-  const m = document.getElementById('newCoord').value.trim().match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
-  const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
-  data[grp][name] = { lat, lng };
-  if (grp === 'defaultCoords') addTravelLinks(name);
+  const val  = document.getElementById('newCoord').value.trim();
+  if (!name) { showMsg('Введите название / ключ'); return; }
+
+  if (grp === 'travelTimes') {
+    if (travelTimes[name] !== undefined) { showMsg('Такой ключ уже есть'); return; }
+    const mins = parseInt(val) || 5;
+    travelTimes[name] = mins;
+  } else if (grp === 'trefftravelTimes') {
+    if (trefftravelTimes[name] !== undefined) { showMsg('Такой ключ уже есть'); return; }
+    const mins = parseInt(val) || 5;
+    trefftravelTimes[name] = mins;
+  } else if (grp === 'treffpunkt') {
+    if (treffpunkt[name]) { showMsg('Пункт уже есть'); return; }
+    const m = val.match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
+    const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
+    treffpunkt[name] = { lat, lng };
+  } else {
+    if (data[grp][name]) { showMsg('Точка уже есть'); return; }
+    const m = val.match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
+    const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
+    data[grp][name] = { lat, lng };
+    if (grp === 'defaultCoords') addTravelLinks(name);
+  }
   render();
   document.getElementById('addModal').style.display = 'none';
+  document.getElementById('newName').value = '';
+  document.getElementById('newCoord').value = '';
   showMsg('Добавлено');
 };
 
@@ -416,17 +548,21 @@ document.getElementById('fileInput').addEventListener('change', e => {
   reader.onload = evt => {
     try {
       const text = evt.target.result;
-      const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
-      const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
-      const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-      const ordM = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+      const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
+      const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
+      const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
+      const ordM  = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+      const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
+      const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
       if (!defM || !stM) throw new Error('Не найдены блоки');
       data = {
-        defaultCoords: Function('"use strict";return (' + defM[1] + ')')(),
+        defaultCoords: Function('"use strict";return (' + defM[1] + ')')(  ),
         stations:      Function('"use strict";return (' + stM[1]  + ')')()
       };
-      if (tmM) travelTimes = Function('"use strict";return (' + tmM[1] + ')')();
+      if (tmM)  travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
       if (ordM) participantOrders = Function('"use strict";return (' + ordM[1] + ')')();
+      if (trfM) treffpunkt        = Function('"use strict";return (' + trfM[1] + ')')();
+      if (trtM) trefftravelTimes  = Function('"use strict";return (' + trtM[1] + ')')();
       render(); showMsg('Загружено');
     } catch { showMsg('Ошибка чтения файла'); }
   };
@@ -442,15 +578,16 @@ document.getElementById('applyRaw').onclick = () => {
 };
 
 // ==========  ЭКСПОРТ  ==========
-function exportAsJS() {
+function buildExportText() {
   const defLines = []; for (const [n, c] of Object.entries(data.defaultCoords)) defLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
   const stLines  = []; for (const [n, c] of Object.entries(data.stations))      stLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
   const tmLines  = []; for (const [p, t] of Object.entries(travelTimes))        tmLines.push(`  '${p}': ${t}`);
-  const ordLines = []; 
+  const trfLines = []; for (const [n, c] of Object.entries(treffpunkt))         trfLines.push(`  '${n}': {lat: ${c.lat}, lng: ${c.lng}}`);
+  const trtLines = []; for (const [p, t] of Object.entries(trefftravelTimes))   trtLines.push(`  '${p}': ${t}`);
+  const ordLines = [];
   Object.keys(participantOrders).filter(k => !k.startsWith('_'))
         .forEach(start => ordLines.push(`  '${start}': [${participantOrders[start].map(n=>`'${n}'`).join(', ')}]`));
-  const text = `
-// реестр имен
+  return `// реестр имен
 const defaultCoords = {
 ${defLines.join(',\n')}
 };
@@ -465,10 +602,23 @@ this.travelTimes = {
 ${tmLines.join(',\n')}
 };
 
+// Пункты встречи (Treffpunkt)
+this.treffpunkt = {
+${trfLines.join(',\n')}
+};
+
+// Время в пути от пункта встречи до каждого участника
+this.trefftravelTimes = {
+${trtLines.join(',\n')}
+};
+
 // Приоритетные списки остановок
 this.participantOrders = {
 ${ordLines.join(',\n')}
 };`;
+}
+function exportAsJS() {
+  const text = buildExportText();
   const blob = new Blob([text], {type:'application/javascript;charset=utf-8'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'stations.js'; a.click();
   URL.revokeObjectURL(a.href);
@@ -521,47 +671,9 @@ async function expandShortUrl(url) {
 // ==========  СТАРТ  ==========
 render();
 
-// ======  УПРОЩЁННЫЙ ЭКСПОРТ (как у тебя в exportAsJS)  ======
-function buildStationsText() {
-  const defLines = [];
-  for (const [n, c] of Object.entries(data.defaultCoords))
-    defLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+// buildStationsText делегирует в buildExportText (включает treffpunkt и trefftravelTimes)
+function buildStationsText() { return buildExportText(); }
 
-  const stLines = [];
-  for (const [n, c] of Object.entries(data.stations))
-    stLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
-
-  const tmLines = [];
-  for (const [pair, t] of Object.entries(travelTimes))
-    tmLines.push(`  '${pair}': ${t}`);
-
-  const ordLines = [];
-  Object.keys(participantOrders)
-        .filter(k => !k.startsWith('_'))
-        .forEach(start =>
-          ordLines.push(`  '${start}': [${participantOrders[start].map(n=>`'${n}'`).join(', ')}]`)
-        );
-
-  return `// реестр имен
-const defaultCoords = {
-${defLines.join(',\n')}
-};
-
-// реестр станций
-this.stations = {
-${stLines.join(',\n')}
-};
-
-// Время в пути между участниками
-this.travelTimes = {
-${tmLines.join(',\n')}
-};
-
-// Приоритетные списки остановок
-this.participantOrders = {
-${ordLines.join(',\n')}
-};`;
-}
 
 // ======  ЗАГРУЗКА stations.js НА GITHUB  ======
 // ----------  показ модалки  ----------

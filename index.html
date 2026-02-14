@@ -145,10 +145,12 @@ flex: 1;
 min-width: 35%;
 max-width: 35%;
 padding: var(--small-spacing);
-border: 1px solid #ddd;
+border: 1px solid var(--border, #ddd);
 border-radius: 4px;
 font-size: 1em;
-box-sizing: border-box
+box-sizing: border-box;
+background: var(--surface);
+color: var(--text)
 }
 .participant input[type=number] {
 width: 50px;
@@ -1190,119 +1192,23 @@ constructor() {
 this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag'];
 this.greetings = [...this.defaultGreetings];
 this.greeting = 'Moin zusammen';
-// реестр имен
-const defaultCoords = {
-'Sergii': {lat:51.530133, lng:6.850858},
-'Anatolii': {lat:51.522694, lng:6.858944},
-'Andrii': {lat:51.534558, lng:6.861061},
-'Sergio': {lat:51.52, lng:6.887619},
-'Dima': {lat:51.551753, lng:7.102285},
-'René': {lat:51.476281, lng:6.861856},
-'Marvin': {lat:51.556472, lng:6.731424},
-'Vasyl': {lat:51.515355, lng:6.893655}
-};
-// реестр станций
-this.stations = {
-  "Gelsenkirchen-Bismarck": {
-    "lat": 51.538627,
-    "lng": 7.108037
-  },
-  "Hagen": {
-    "lat": 51.373517,
-    "lng": 7.461144
-  },
-  "Essen West": {
-    "lat": 51.4539273,
-    "lng": 6.9794622
-  },
-  "Gelsenkirchen Horst": {
-    "lat": 51.5415351,
-    "lng": 7.0202811
-  },
-  "Gelsenkirchen Horst 2": {
-    "lat": 51.539072,
-    "lng": 7.0090119
-  }
-};
-// Время в пути между участниками
-this.travelTimes = {
-'Sergii-Anatolii': 5,
-'Sergii-Andrii': 5,
-'Sergii-Sergio': 10,
-'Sergii-Dima': 30,
-'Andrii-Anatolii': 5,
-'Andrii-Sergio': 10,
-'Andrii-Dima': 25,
-'Anatolii-Sergio': 10,
-'Anatolii-Dima': 30,
-'Sergio-Dima': 25,
-'Marvin-Sergii': 20,
-'Marvin-Anatolii': 17,
-'Marvin-Andrii': 20,
-'Marvin-Sergio': 25,
-'Marvin-Dima': 30,
-'Maikel-Sergii': 20,
-'Maikel-Andrii': 20,
-'Maikel-Anatolii': 15,
-'Maikel-Sergio': 20,
-'Maikel-Dima': 30,
-'Maikel-Marvin': 5,
-'René-Sergii': 15,
-'René-Andrii': 15,
-'René-Anatolii': 10,
-'René-Sergio': 15,
-'René-Dima': 25,
-'René-Marvin': 25,
-'René-Maikel': 25,
-'Vasyl-Sergii': 10,
-'Vasyl-Andrii': 10,
-'Vasyl-Anatolii': 10,
-'Vasyl-Sergio': 5,
-'Vasyl-Dima': 20,
-'Vasyl-Marvin': 25,
-'Vasyl-Maikel': 25,
-'Vasyl-René': 25
-};
-// Пункты встречи (Treffpunkt)
-this.treffpunkt = {
-'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
-'Gelsenkirchen-Treffpunkt': {lat: 51.530304, lng: 7.110901}
-};
-// Время в пути от пункта встречи до каждого участника
-this.trefftravelTimes = {
-'OLGA-Park-Sergii': 10,
-'OLGA-Park-Andrii': 10,
-'OLGA-Park-Anatolii': 10,
-'OLGA-Park-Sergio': 10,
-'OLGA-Park-Dima': 20,
-'OLGA-Park-Marvin': 20,
-'OLGA-Park-Maikel': 20,
-'OLGA-Park-René': 5,
-'OLGA-Park-Vasyl': 10,
-'Gelsenkirchen-Treffpunkt-Sergii': 30,
-'Gelsenkirchen-Treffpunkt-Andrii': 30,
-'Gelsenkirchen-Treffpunkt-Anatolii': 30,
-'Gelsenkirchen-Treffpunkt-Sergio': 25,
-'Gelsenkirchen-Treffpunkt-Dima': 10,
-'Gelsenkirchen-Treffpunkt-Marvin': 20,
-'Gelsenkirchen-Treffpunkt-Maikel': 20,
-'Gelsenkirchen-Treffpunkt-René': 35,
-'Gelsenkirchen-Treffpunkt-Vasyl': 25
-};
-// Приоритетные списки остановок
-this.participantOrders = {
-'Sergii': ['Anatolii', 'Sergio', 'Vasyl'],
-'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Vasyl'],
-'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
-'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
-'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
-};
+// Данные загружаются из stations.js — см. метод loadStations()
+const defaultCoords = {};
+this.stations        = {};
+this.travelTimes     = {};
+this.treffpunkt      = {};
+this.trefftravelTimes = {};
+this.participantOrders = {};
 this.startPoint = '';
 this.startPointCoords = { lat: null, lng: null };
 this.defaultCoordinates = defaultCoords;      // для сброса
 this.nameToCoordinates = { ...defaultCoords };
 this.participants = [];
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
+this.machineDestinations = [
+  { name: 'an der Maschine', lat: null, lng: null },
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+];
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.sortable = null;
@@ -1343,11 +1249,47 @@ this.isAddingSubName = false;
 this.isAddingNewGreeting = false;
 this.isEditingGreeting = false;
 this.isEditingStartPoint = false;
+this.isAddingNewDestination = false;
+this.isAddingNewKollege = false;
+this.isAddingNewSubPerson = false;
+this.isAddingNewTreffpunkt = false;
 this.loadData();
 this.syncCoordinates();
 this.addEventListeners();
 this.renderParticipants();
 this.elements.output.innerHTML = '';
+}
+async loadStations() {
+try {
+  const resp = await fetch('stations.js', { cache: 'no-cache' });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const text = await resp.text();
+  // Парсим каждый блок через Function()
+  const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
+  const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
+  const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
+  const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
+  const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
+  const ordM  = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+  if (defM)  {
+    const coords = Function('"use strict";return (' + defM[1] + ')')();
+    this.defaultCoordinates = coords;
+    this.nameToCoordinates  = { ...coords };
+  }
+  if (stM)  this.stations          = Function('"use strict";return (' + stM[1]  + ')')();
+  if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
+  if (trfM) this.treffpunkt        = Function('"use strict";return (' + trfM[1] + ')')();
+  if (trtM) this.trefftravelTimes  = Function('"use strict";return (' + trtM[1] + ')')();
+  if (ordM) this.participantOrders = Function('"use strict";return (' + ordM[1] + ')')();
+  // После загрузки данных — пересчитываем и рендерим
+  this.syncCoordinates();
+  this.updateParticipantTimes();
+  this.renderParticipants();
+  this.calculate();
+} catch (e) {
+  console.warn('stations.js не загружен:', e.message);
+  this.showToast('⚠️ stations.js не найден — данные по умолчанию не загружены');
+}
 }
 formatMinutes(minutes) {
 if (minutes < 60) {
@@ -1391,6 +1333,7 @@ localStorage.setItem('fahrzeitRechnerGreeting', this.greeting);
 localStorage.setItem('fahrzeitRechnerGreetings', JSON.stringify(this.greetings));
 localStorage.setItem('fahrzeitRechnerParticipants', JSON.stringify(this.participants));
 localStorage.setItem('fahrzeitRechnerMachineStop', JSON.stringify(this.machineStop));
+localStorage.setItem('fahrzeitRechnerMachineDestinations', JSON.stringify(this.machineDestinations));
 localStorage.setItem('fahrzeitRechnerNameToCoordinates', JSON.stringify(this.nameToCoordinates));
 localStorage.setItem('fahrzeitRechnerStartPoint', this.startPoint);
 localStorage.setItem('fahrzeitRechnerUseUhrBei', this.useUhrBei);
@@ -1404,6 +1347,10 @@ this.startPointCoords = { lat: null, lng: null };
 this.participants = [];
 this.nameToCoordinates = { ...this.defaultCoordinates };
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+this.machineDestinations = [
+  { name: 'an der Maschine', lat: null, lng: null },
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+];
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.saveData();
@@ -1425,6 +1372,7 @@ greeting: localStorage.getItem('fahrzeitRechnerGreeting'),
 greetings: localStorage.getItem('fahrzeitRechnerGreetings'),
 participants: localStorage.getItem('fahrzeitRechnerParticipants'),
 machineStop: localStorage.getItem('fahrzeitRechnerMachineStop'),
+machineDestinations: localStorage.getItem('fahrzeitRechnerMachineDestinations'),
 nameToCoordinates: localStorage.getItem('fahrzeitRechnerNameToCoordinates'),
 startPoint: localStorage.getItem('fahrzeitRechnerStartPoint'),
 useUhrBei: localStorage.getItem('fahrzeitRechnerUseUhrBei'),
@@ -1433,7 +1381,18 @@ useSuperscript: localStorage.getItem('fahrzeitRechnerUseSuperscript')
 if (saved.greeting) this.greeting = saved.greeting;
 if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
 if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false, subParticipants: p.subParticipants || [], isTreffpunkt: p.isTreffpunkt || false, treffpunktPersons: p.treffpunktPersons || [] })); } catch { this.participants = []; }
-if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; }
+if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+this.machineDestinations = [
+  { name: 'an der Maschine', lat: null, lng: null },
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+]; }
+if (saved.machineDestinations) try {
+  const parsed = JSON.parse(saved.machineDestinations);
+  // Конвертируем старый формат (массив строк) в новый (массив объектов)
+  this.machineDestinations = parsed.map(d =>
+    typeof d === 'string' ? { name: d, lat: null, lng: null } : d
+  );
+} catch { /* use default */ }
 if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
 if (saved.startPoint) {
 this.startPoint = saved.startPoint;
@@ -1739,8 +1698,17 @@ const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoo
 const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
 const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#999" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#999" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#999" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#999" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#999" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
 const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
+// Строим опции для select пункта назначения
+const destOptions = this.machineDestinations.map(d =>
+  `<option value="${d.name}" ${this.machineStop.name === d.name ? 'selected' : ''}>${d.name}</option>`
+).join('');
+const isCustom = !this.machineDestinations.some(d => d.name === this.machineStop.name);
 machineDiv.innerHTML = `
-<input type="text" value="${this.machineStop.name}" data-type="machine-name" aria-label="Название остановки машины"/>
+<select data-type="machine-name" aria-label="Пункт назначения">
+  ${destOptions}
+  ${isCustom ? `<option value="${this.machineStop.name}" selected>${this.machineStop.name}</option>` : ''}
+  <option value="__add_new__">➕ Добавить пункт…</option>
+</select>
 <button class="coords-icon" data-type="machine-coords" aria-label="Редактировать координаты машины">${machineCoordsSvg}</button>
 <div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Нажмите для изменения">
 ${this.formatMinutes(this.machineStop.time)}
@@ -1756,7 +1724,30 @@ ${this.machineStop.arrivalTime
 </div>
 `;
 container.appendChild(machineDiv);
-machineDiv.querySelector('[data-type="machine-name"]').addEventListener('change', e => this.updateMachineName(e.target.value));
+const machineNameSel = machineDiv.querySelector('[data-type="machine-name"]');
+
+machineNameSel.addEventListener('change', e => {
+  const val = e.target.value;
+  if (val === '__add_new__') {
+    // Сбрасываем select обратно на текущее значение — модалка сама сохранит
+    machineNameSel.value = this.machineStop.name;
+    this.openCoordsModal(null, false, false, false, true); // isAddingNewDestination
+  } else {
+    // Подставляем координаты если есть
+    const dest = this.machineDestinations.find(d => d.name === val);
+    if (dest && dest.lat && dest.lng) {
+      this.machineStop.lat = dest.lat;
+      this.machineStop.lng = dest.lng;
+      this.machineStop.autoCalculated = false;
+    } else if (dest) {
+      this.machineStop.lat = null;
+      this.machineStop.lng = null;
+    }
+    this.updateMachineName(val);
+    this.renderParticipants();
+  }
+});
+
 const machineTimeDisplay = machineDiv.querySelector('[data-type="machine-time-display"]');
 if (machineTimeDisplay) {
 machineTimeDisplay.addEventListener('click', () => this.editMachineTime(machineTimeDisplay));
@@ -1920,11 +1911,14 @@ if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
 }
 return null;
 }
-openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false) {
+openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false, isAddingNewDestination = false, isAddingNewKollege = false, isAddingNewSubPerson = false) {
 this.currentEditIndex = index;
 this.isEditingMachine = isMachine;
 this.isAddingNewName = isAddingNewName;
 this.isEditingStartPoint = isEditingStartPoint;
+this.isAddingNewDestination = isAddingNewDestination;
+this.isAddingNewKollege = isAddingNewKollege;
+this.isAddingNewSubPerson = isAddingNewSubPerson;
 this.isAddingNewGreeting = false;
 this.isEditingGreeting = false;
 if (!isAddingNewName) this.isAddingSubName = false;
@@ -1941,7 +1935,10 @@ const modalTitle = this.elements.modalTitle;
 const openMapButton = this.elements.openMapButton;
 const deleteGreetingButton = this.elements.deleteGreetingButton;
 modalContent.classList.toggle('add-new-name', isAddingNewName);
-modalTitle.textContent = isAddingNewName ? 'Добавить новое имя' :
+modalTitle.textContent = isAddingNewDestination ? 'Новый пункт назначения' :
+isAddingNewKollege ? 'Neuer Kollege' :
+isAddingNewSubPerson ? 'Neue Person' :
+isAddingNewName ? 'Добавить новое имя' :
 isEditingStartPoint ? 'Редактировать координаты начальной точки' :
 isMachine ? 'Редактировать координаты машины' : 'Редактировать координаты';
 [nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
@@ -1963,7 +1960,7 @@ this.elements.coordsInput.value = stSel.value;
 } else {
 stSel.style.display = 'none';
 }
-if (isAddingNewName) {
+if (isAddingNewDestination || isAddingNewName || isAddingNewKollege || isAddingNewSubPerson) {
 nameLabel.style.display = 'block';
 nameInput.style.display = 'block';
 nameInput.value = '';
@@ -2029,6 +2026,61 @@ coords = await this.parseCoordinates(raw);
 if (!coords) return;                    // только требуем корректность
 }
 // если raw пуст – coords остаётся null, продолжаем сохранять
+if (this.isAddingNewKollege || this.isAddingNewSubPerson) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('⚠️ Bitte einen Namen eingeben'); return; }
+if (this.nameToCoordinates[name]) { this.showToast(`⚠️ "${name}" existiert bereits`); return; }
+this.nameToCoordinates[name] = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
+if (this.isAddingNewKollege) {
+  this.participants.push({ name, time: 5, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, timeManuallyEdited: false, isTreffpunkt: false, subParticipants: [], treffpunktPersons: [] });
+  document.getElementById('addTypeModal').classList.remove('show');
+} else {
+  // isAddingNewSubPerson — добавляем как субучастника или treffpunktPerson
+  const mainIndex = this.currentMainParticipantIndex;
+  const mainP = this.participants[mainIndex];
+  if (mainP.isTreffpunkt) {
+    if (!mainP.treffpunktPersons) mainP.treffpunktPersons = [];
+    mainP.treffpunktPersons.push(name);
+  } else {
+    if (!mainP.subParticipants) mainP.subParticipants = [];
+    mainP.subParticipants.push(name);
+  }
+  document.getElementById('subModal').classList.remove('show');
+}
+this.closeModal(); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+return;
+}
+if (this.isAddingNewDestination) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('Введите название пункта.'); return; }
+if (this.machineDestinations.some(d => d.name === name)) { this.showToast('Такой пункт уже есть.'); return; }
+this.machineDestinations.push({ name, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null });
+this.machineStop.name = name;
+this.machineStop.lat  = coords ? coords.lat : null;
+this.machineStop.lng  = coords ? coords.lng : null;
+this.machineStop.autoCalculated = false;
+this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+return;
+}
+if (this.isAddingNewTreffpunkt) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('⚠️ Bitte einen Namen eingeben'); return; }
+if (this.treffpunkt[name]) { this.showToast(`⚠️ "${name}" existiert bereits`); return; }
+this.treffpunkt[name] = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
+// Сразу добавляем как участника-Treffpunkt
+this.participants.push({
+  name,
+  time: 5,
+  lat: coords ? coords.lat : null,
+  lng: coords ? coords.lng : null,
+  timeManuallyEdited: false,
+  isTreffpunkt: true,
+  treffpunktPersons: []
+});
+this.isAddingNewTreffpunkt = false;
+this.closeModal(); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+return;
+}
 if (this.isAddingNewName) {
 const name = this.elements.nameInput.value.trim();
 if (!name) { this.showToast("Введите имя."); return; }
@@ -2097,7 +2149,10 @@ this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
 }
 closeModal() {
 this.elements.coordsModal.style.display = 'none';
-this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = false;
+this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = this.isAddingNewDestination = this.isAddingNewKollege = this.isAddingNewSubPerson = this.isAddingNewTreffpunkt = false;
+this.isAddingNewKollege = false;
+this.isAddingNewSubPerson = false;
+this.isAddingNewTreffpunkt = false;
 this.currentEditIndex = null;
 }
 openMapForSelection() {
@@ -2128,6 +2183,10 @@ opt.value = name;
 opt.textContent = name;
 treffSelect.appendChild(opt);
 });
+const newTreffOpt = document.createElement('option');
+newTreffOpt.value = 'add-new-treff';
+newTreffOpt.textContent = '➕ Neuer Treffpunkt…';
+treffSelect.appendChild(newTreffOpt);
 
 // Заполняем список коллег
 const usedMainNames = this.participants.filter(p => !p.isTreffpunkt).map(p => p.name).filter(n => n);
@@ -2155,16 +2214,26 @@ newKollegeName.value = '';
 
 // Взаимоисключение + показ поля нового имени
 treffSelect.onchange = () => {
-if (treffSelect.value) {
-kollegeSelect.value = '';
-newKollegeRow.classList.remove('visible');
+if (treffSelect.value === 'add-new-treff') {
+  treffSelect.value = '';
+  document.getElementById('addTypeModal').classList.remove('show');
+  // Открываем модалку координат как "Neuer Treffpunkt" — переиспользуем isAddingNewName
+  // но с пометкой что это для treffpunkt
+  this.isAddingNewTreffpunkt = true;
+  this.openCoordsModal(null, false, true); // isAddingNewName=true откроет поля имени+координат
+  // Поменять заголовок после открытия
+  setTimeout(() => { const t = document.getElementById('modalTitle'); if (t) t.textContent = 'Neuer Treffpunkt'; }, 10);
+} else if (treffSelect.value) {
+  kollegeSelect.value = '';
+  newKollegeRow.classList.remove('visible');
 }
 };
 kollegeSelect.onchange = () => {
 if (kollegeSelect.value) treffSelect.value = '';
 if (kollegeSelect.value === 'add-new') {
-newKollegeRow.classList.add('visible');
-setTimeout(() => newKollegeName.focus(), 50);
+kollegeSelect.value = '';
+document.getElementById('addTypeModal').classList.remove('show');
+this.openCoordsModal(null, false, false, false, false, true); // isAddingNewKollege
 } else {
 newKollegeRow.classList.remove('visible');
 newKollegeName.value = '';
@@ -2416,8 +2485,9 @@ select.appendChild(newOpt);
 // Показ/скрытие поля ввода
 select.onchange = () => {
 if (select.value === 'add-new') {
-newSubNameRow.classList.add('visible');
-setTimeout(() => newSubNameInput.focus(), 50);
+select.value = '';
+document.getElementById('subModal').classList.remove('show');
+this.openCoordsModal(null, false, false, false, false, false, true); // isAddingNewSubPerson
 } else {
 newSubNameRow.classList.remove('visible');
 newSubNameInput.value = '';
@@ -2558,8 +2628,9 @@ select.appendChild(newOpt);
 // Показ/скрытие поля ввода
 select.onchange = () => {
 if (select.value === 'add-new') {
-newSubNameRow.classList.add('visible');
-setTimeout(() => newSubNameInput.focus(), 50);
+select.value = '';
+document.getElementById('subModal').classList.remove('show');
+this.openCoordsModal(null, false, false, false, false, false, true); // isAddingNewSubPerson
 } else {
 newSubNameRow.classList.remove('visible');
 newSubNameInput.value = '';
@@ -2930,7 +3001,8 @@ this.calculate();
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-new FahrzeitRechner();
+const app = new FahrzeitRechner();
+app.loadStations();
 // ---------- тема ----------
 const switcher = document.getElementById('themeSwitch');
 if (!switcher) return;
