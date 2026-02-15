@@ -2915,12 +2915,16 @@ this.elements.output.innerHTML=out;
 // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ — С УЧЁТОМ ТВОЕГО УТОЧНЕНИЯ
 openGoogleMaps(returnTrip = false) {
   const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
-  if (validParticipants.length === 0) {
-    this.showToast("Добавьте хотя бы одного участника с координатами.");
-    return;
+
+  // Маршрут туда требует хотя бы конечную точку (машину) или участника
+  if (!returnTrip) {
+    const hasDest = this.machineStop.lat && this.machineStop.lng;
+    if (validParticipants.length === 0 && !hasDest) {
+      this.showToast("Укажите координаты конечной точки или добавьте участников.");
+      return;
+    }
   }
 
-  // Запрашиваем текущее местоположение
   if (!navigator.geolocation) {
     this.showToast("Геолокация не поддерживается.");
     return;
@@ -2936,25 +2940,28 @@ openGoogleMaps(returnTrip = false) {
       let destination;
 
       if (!returnTrip) {
-        // ➤ Маршрут ТУДА: от текущего местоположения → участники → машина
+        // ➤ Маршрут ТУДА: текущее положение → участники → машина
         waypoints = validParticipants.map(p => `${p.lat},${p.lng}`);
         if (this.machineStop.lat && this.machineStop.lng) {
           destination = `${this.machineStop.lat},${this.machineStop.lng}`;
         } else {
-          // Если машины нет — конец маршрута = последний участник
+          // Нет координат машины — конец маршрута = последний участник
           destination = waypoints.pop();
         }
       } else {
-        // ◀ Маршрут ОБРАТНО: от текущего местоположения → участники (в обратном порядке) → дом водителя
+        // ◀ Маршрут ОБРАТНО: текущее положение → участники (обратный порядок) → дом водителя
         if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
           this.showToast("Укажите начальную точку (дом водителя) для маршрута обратно.");
           return;
         }
-        waypoints = validParticipants.reverse().map(p => `${p.lat},${p.lng}`);
+        if (validParticipants.length === 0) {
+          this.showToast("Добавьте хотя бы одного участника с координатами для маршрута обратно.");
+          return;
+        }
+        waypoints = [...validParticipants].reverse().map(p => `${p.lat},${p.lng}`);
         destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
       }
 
-      // ✅ ОФИЦИАЛЬНЫЙ ФОРМАТ GOOGLE MAPS
       let url = 'https://www.google.com/maps/dir/?api=1';
       url += `&origin=${encodeURIComponent(origin)}`;
       url += `&destination=${encodeURIComponent(destination)}`;
@@ -2969,11 +2976,7 @@ openGoogleMaps(returnTrip = false) {
       console.error("Ошибка геолокации:", error);
       this.showToast("Не удалось определить ваше местоположение. Разрешите доступ к геолокации.");
     },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000
-    }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
 }
 
