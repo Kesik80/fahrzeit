@@ -8,7 +8,8 @@ const defaultCoords = {
   'René': {lat:51.476281, lng:6.861856},
   'OLGA-Park': {lat:51.5004335, lng:6.8686337},
   'Marvin': {lat:51.556472, lng:6.731424},
-  'Vasyl': {lat:51.515355, lng:6.893655}
+  'Vasyl': {lat:51.515355, lng:6.893655},
+  'Alex': {lat:0, lng:0}
 };
 
 // реестр станций
@@ -64,7 +65,16 @@ this.travelTimes = {
   'OLGA-Park-Marvin': 20,
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 5,
-  'OLGA-Park-Vasyl': 10
+  'OLGA-Park-Vasyl': 10,
+  'Alex-Sergii': 5,
+  'Alex-Anatolii': 5,
+  'Alex-Andrii': 5,
+  'Alex-Sergio': 5,
+  'Alex-Dima': 5,
+  'Alex-René': 5,
+  'Alex-OLGA-Park': 5,
+  'Alex-Marvin': 5,
+  'Alex-Vasyl': 5
 };
 
 // Пункты встречи (Treffpunkt)
@@ -97,7 +107,7 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок
 this.participantOrders = {
-  'Sergii': ['Anatolii', 'Sergio', 'Vasyl'],
+  'Sergii': ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
   'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
   'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
   'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
