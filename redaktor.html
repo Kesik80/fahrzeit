@@ -168,10 +168,9 @@ async function loadFromGitHub() {
     render();
   } catch (e) {
     status.className = 'err';
-    status.textContent = '⚠️ Не удалось загрузить с GitHub: ' + e.message + ' — используются встроенные данные';
-    loadDefaults();
-    document.getElementById('ghUploadBtn').disabled = false;
-    render();
+    status.textContent = '❌ ОШИБКА: Не удалось загрузить stations.js с GitHub (' + e.message + '). Редактор не может работать без интернета.';
+    document.getElementById('ghUploadBtn').disabled = true;
+    // Не загружаем fallback — редактор остаётся пустым
   }
 }
 
@@ -192,55 +191,6 @@ function parseStationsText(text) {
   if (ordM) participantOrders  = Function('"use strict";return (' + ordM[1] + ')')();
   if (trfM) treffpunkt         = Function('"use strict";return (' + trfM[1] + ')')();
   if (trtM) trefftravelTimes   = Function('"use strict";return (' + trtM[1] + ')')();
-}
-
-// ==========  ВСТРОЕННЫЕ ДАННЫЕ (запасной вариант)  ==========
-function loadDefaults() {
-  data = {
-    defaultCoords: {
-      'Sergii':    { lat: 51.530133, lng: 6.850858 },
-      'Anatolii':  { lat: 51.522694, lng: 6.858944 },
-      'Andrii':    { lat: 51.534558, lng: 6.861061 },
-      'Sergio':    { lat: 51.520000, lng: 6.887619 },
-      'Dima':      { lat: 51.551753, lng: 7.102285 },
-      'René':      { lat: 51.476281, lng: 6.861856 },
-      'Marvin':    { lat: 51.556472, lng: 6.731424 },
-      'Vasyl':     { lat: 51.515355, lng: 6.893655 }
-    },
-    stations: {
-      'Gelsenkirchen-Bismarck': { lat: 51.538627, lng: 7.108037 },
-      'Hagen':                  { lat: 51.373517, lng: 7.461144 },
-      'Essen West':             { lat: 51.4539273, lng: 6.9794622 }
-    }
-  };
-  travelTimes = {
-    'Sergii-Anatolii': 5, 'Sergii-Andrii': 5, 'Sergii-Sergio': 10, 'Sergii-Dima': 30,
-    'Andrii-Anatolii': 5, 'Andrii-Sergio': 10, 'Andrii-Dima': 25,
-    'Anatolii-Sergio': 10, 'Anatolii-Dima': 30, 'Sergio-Dima': 25,
-    'Marvin-Sergii': 20, 'Marvin-Anatolii': 17, 'Marvin-Andrii': 20, 'Marvin-Sergio': 25, 'Marvin-Dima': 30,
-    'René-Sergii': 15, 'René-Andrii': 15, 'René-Anatolii': 10, 'René-Sergio': 15, 'René-Dima': 25,
-    'Vasyl-Sergii': 10, 'Vasyl-Andrii': 10, 'Vasyl-Anatolii': 10, 'Vasyl-Sergio': 5, 'Vasyl-Dima': 20
-  };
-  participantOrders = {
-    'Sergii':   ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
-    'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima'],
-    'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
-    'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
-    'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
-  };
-  treffpunkt = {
-    'OLGA-Park':               { lat: 51.5004335, lng: 6.8686337 },
-    'Gelsenkirchen-Treffpunkt': { lat: 51.530304,  lng: 7.110901  }
-  };
-  trefftravelTimes = {
-    'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10,
-    'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20,   'OLGA-Park-Marvin': 20,
-    'OLGA-Park-René': 5,    'OLGA-Park-Vasyl': 10,
-    'Gelsenkirchen-Treffpunkt-Sergii': 30, 'Gelsenkirchen-Treffpunkt-Andrii': 30,
-    'Gelsenkirchen-Treffpunkt-Anatolii': 30, 'Gelsenkirchen-Treffpunkt-Sergio': 25,
-    'Gelsenkirchen-Treffpunkt-Dima': 10,  'Gelsenkirchen-Treffpunkt-Marvin': 20,
-    'Gelsenkirchen-Treffpunkt-René': 35, 'Gelsenkirchen-Treffpunkt-Vasyl': 25
-  };
 }
 
 // ==========  УТИЛИТЫ  ==========
