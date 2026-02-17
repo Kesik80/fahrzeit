@@ -1,5 +1,10 @@
 <!--
 закоментировано         //.sort()                                   // красота: по алфавиту
+ИСПРАВЛЕНИЯ:
+- убран несуществующий id="ghToken" (заменён на ghTokenInp) — крэш при загрузке
+- добавлена автозагрузка stations.js с GitHub при открытии страницы
+- исправлен незакрытый <div> в модалке GitHub
+- кнопка ⬆️ разблокирована только после загрузки данных
 -->
 <!doctype html>
 <html lang="ru">
@@ -37,15 +42,19 @@
   .add-cancel{background:#6c757d;color:#fff}
   #msgModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;align-items:flex-start;justify-content:center;padding-top:15vh}
   #msgContent{background:#fff;width:86%;max-width:320px;border-radius:8px;padding:1rem;text-align:center;font-size:1.1rem}
-  /* новые мелкие кнопки */
   #addRiderBtn{font-size:1.2rem;padding:0 .4rem;margin-left:4px;border:1px solid #bbb;border-radius:4px;background:#fff;cursor:pointer}
   #addRiderBtn:hover{background:#f0f0f0}
-  #ghUploadBtn:disabled{ opacity:.4; cursor:not-allowed }
+  #ghUploadBtn:disabled{opacity:.4;cursor:not-allowed}
+  #loadStatus{font-size:.75rem;text-align:center;color:#666;padding:.2rem 4px;background:#fff;border-bottom:1px solid #eee}
+  #loadStatus.ok{color:#28a745}
+  #loadStatus.err{color:#dc3545}
+  #loadStatus.loading{color:#007bff}
 </style>
 </head>
 <body>
 
 <h1>Редактор групп координат</h1>
+<div id="loadStatus" class="loading">⏳ Загрузка stations.js с GitHub…</div>
 
 <select id="groupSel">
   <option value="defaultCoords">👤 defaultCoords</option>
@@ -60,20 +69,15 @@
 <div class="rawBlock"><textarea id="rawJson"></textarea></div>
 
 <div class="bottomBar">
-  <button id="loadBtn" title="Загрузить">📂</button>
-  <button id="copyBtn" title="Копировать">📋</button>
-  <button id="addBtn" title="Добавить">➕</button>
-  <button id="saveBtn" title="Сохранить">💾</button>
-  <button id="applyRaw" title="Применить">✔️</button>
-  <button id="ghUploadBtn" title="Upload stations.js">⬆️</button>
-
-  
+  <button id="loadBtn"     title="Загрузить файл">📂</button>
+  <button id="copyBtn"     title="Копировать">📋</button>
+  <button id="addBtn"      title="Добавить">➕</button>
+  <button id="saveBtn"     title="Сохранить локально">💾</button>
+  <button id="applyRaw"    title="Применить JSON">✔️</button>
+  <button id="ghUploadBtn" title="Загрузить stations.js на GitHub" disabled>⬆️</button>
 </div>
 
 <input type="file" id="fileInput">
-
-
-
 
 <!-- модалка добавления точки -->
 <div id="addModal" class="modal">
@@ -87,10 +91,10 @@
       <option value="trefftravelTimes">⏱📍 trefftravelTimes (ключ: Пункт-Имя)</option>
     </select>
     <input id="newName" type="text" placeholder="Название / ключ">
-    <input id="newCoord" type="text" placeholder="Координаты (lat,lng) или время (мин)" id="newCoordOrTime">
+    <input id="newCoord" type="text" placeholder="Координаты (lat,lng) или время (мин)">
     <div class="modal-buttons">
       <button id="addConfirm" class="add-confirm">Добавить</button>
-      <button id="addCancel" class="add-cancel">Отмена</button>
+      <button id="addCancel"  class="add-cancel">Отмена</button>
     </div>
   </div>
 </div>
@@ -99,92 +103,145 @@
 <div id="ghModal" class="modal">
   <div class="modal-content">
     <h3>Upload to GitHub</h3>
-    
     <input id="ghTokenInp" type="password" placeholder="GitHub token (classic)" autocomplete="off">
 
-    <!-- 1. Отправка stations.js (как было) -->
+    <!-- 1. Отправка stations.js -->
     <div style="margin-bottom:1rem">
-        <div class="modal-buttons">
-      <button id="ghSendStationsBtn" class="add-confirm">⬆️ stations.js</button>
+      <div class="modal-buttons">
+        <button id="ghSendStationsBtn" class="add-confirm">⬆️ stations.js</button>
+      </div>
     </div>
 
-<!-- 2. Отправка произвольного файла (новое) -->
-<hr style="margin:.8rem 0">
-<div style="font-weight:bold;margin-bottom:.4rem">Загрузить другой файл</div>
-<input id="ghAnyFile" type="file" style="margin-bottom:.5rem">
-<input id="ghAnyName" type="text" placeholder="Название на GitHub (например data.json)">
-<div class="modal-buttons">
-  <button id="ghSendAnyBtn"  class="add-confirm">📤 Отправить</button>
-  <button id="ghCancelBtn"   class="add-cancel">Отмена</button>
-</div>
+    <!-- 2. Отправка произвольного файла -->
+    <hr style="margin:.8rem 0">
+    <div style="font-weight:bold;margin-bottom:.4rem">Загрузить другой файл</div>
+    <input id="ghAnyFile" type="file" style="margin-bottom:.5rem">
+    <input id="ghAnyName" type="text" placeholder="Название на GitHub (например data.json)">
+    <div class="modal-buttons">
+      <button id="ghSendAnyBtn" class="add-confirm">📤 Отправить</button>
+      <button id="ghCancelBtn"  class="add-cancel">Отмена</button>
+    </div>
 
   </div>
 </div>
-
-
 
 <!-- тост -->
 <div id="msgModal" class="modal">
   <div id="msgContent">Сообщение</div>
 </div>
 
-<!-- Sortable -->
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
-
 <script>
-// ==========  ДАННЫЕ ПО УМОЛЧАНИЮ  ==========
+// ==========  КОНСТАНТЫ GITHUB  ==========
+const GH_OWNER = 'Kesik80';
+const GH_REPO  = 'fahrzeit';
+const GH_FILE  = 'stations.js';
+// RAW URL для чтения без токена
+const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${GH_FILE}`;
+
+// ==========  ДАННЫЕ (пустые до загрузки)  ==========
 let data = {
-  defaultCoords: {
-    'Sergii':      { lat: 51.530133, lng: 6.850858 },
-    'Anatolii':    { lat: 51.522694, lng: 6.858944 },
-    'Andrii':      { lat: 51.534558, lng: 6.861061 },
-    'Sergio':      { lat: 51.520000, lng: 6.887619 },
-    'Dima':        { lat: 51.551753, lng: 7.102285 },
-    'René':        { lat: 51.476281, lng: 6.861856 },
-    'OLGA-Park':   { lat: 51.5004335, lng: 6.8686337 },
-    'Marvin':      { lat: 51.556472, lng: 6.731424 },
-    'Vasyl':       { lat: 51.515355, lng: 6.893655 }
-  },
-  stations: {
-    'Gelsenkirchen-Bismarck': { lat: 51.538627, lng: 7.108037 },
-    'Hagen':                  { lat: 51.373517, lng: 7.461144 },
-    'Essen West':             { lat: 51.4539273, lng: 6.9794622 }
+  defaultCoords: {},
+  stations: {}
+};
+const DEFAULT_TRAVEL_TIME = 5;
+let travelTimes       = {};
+let participantOrders = {};
+let treffpunkt        = {};
+let trefftravelTimes  = {};
+
+// ==========  ЗАГРУЗКА stations.js С GITHUB ПРИ СТАРТЕ  ==========
+async function loadFromGitHub() {
+  const status = document.getElementById('loadStatus');
+  status.className = 'loading';
+  status.textContent = '⏳ Загрузка stations.js с GitHub…';
+  try {
+    // cache-bust чтобы не читать старый кэш браузера
+    const resp = await fetch(GH_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const text = await resp.text();
+    parseStationsText(text);
+    status.className = 'ok';
+    status.textContent = '✅ stations.js загружен с GitHub';
+    document.getElementById('ghUploadBtn').disabled = false;
+    render();
+  } catch (e) {
+    status.className = 'err';
+    status.textContent = '⚠️ Не удалось загрузить с GitHub: ' + e.message + ' — используются встроенные данные';
+    loadDefaults();
+    document.getElementById('ghUploadBtn').disabled = false;
+    render();
   }
-};
-const DEFAULT_TRAVEL_TIME = 5;   // минуты
-let travelTimes = {
-  'Sergii-Anatolii': 5, 'Sergii-Andrii': 5, 'Sergii-Sergio': 10, 'Sergii-Dima': 30,
-  'Andrii-Anatolii': 5, 'Andrii-Sergio': 10, 'Andrii-Dima': 25,
-  'Anatolii-Sergio': 10, 'Anatolii-Dima': 30,
-  'Sergio-Dima': 25,
-  'Marvin-Sergii': 20, 'Marvin-Anatolii': 17, 'Marvin-Andrii': 20, 'Marvin-Sergio': 25, 'Marvin-Dima': 30,
-  'Maikel-Sergii': 20, 'Maikel-Andrii': 20, 'Maikel-Anatolii': 15, 'Maikel-Sergio': 20, 'Maikel-Dima': 30, 'Maikel-Marvin': 5,
-  'René-Sergii': 15, 'René-Andrii': 15, 'René-Anatolii': 15, 'René-Sergio': 15, 'René-Dima': 25, 'René-Marvin': 25, 'René-Maikel': 25,
-  'Vasyl-Sergii': 10, 'Vasyl-Andrii': 10, 'Vasyl-Anatolii': 10, 'Vasyl-Sergio': 5, 'Vasyl-Dima': 20, 'Vasyl-Marvin': 25, 'Vasyl-Maikel': 25, 'Vasyl-René': 25,
-  'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10, 'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20, 'OLGA-Park-Marvin': 20, 'OLGA-Park-Maikel': 20, 'OLGA-Park-René': 5, 'OLGA-Park-Vasyl': 10
-};
-let participantOrders = {
-  'Sergii':   ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
-  'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima', 'Marvin'],
-  'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
-  'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
-  'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
-};
-let treffpunkt = {
-  'OLGA-Park':               { lat: 51.5004335, lng: 6.8686337 },
-  'Gelsenkirchen-Treffpunkt': { lat: 51.530304,  lng: 7.110901  }
-};
-let trefftravelTimes = {
-  'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10,
-  'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20,   'OLGA-Park-Marvin': 20,
-  'OLGA-Park-Maikel': 20, 'OLGA-Park-René': 5,    'OLGA-Park-Vasyl': 10,
-  'Gelsenkirchen-Treffpunkt-Sergii': 30, 'Gelsenkirchen-Treffpunkt-Andrii': 30,
-  'Gelsenkirchen-Treffpunkt-Anatolii': 30, 'Gelsenkirchen-Treffpunkt-Sergio': 25,
-  'Gelsenkirchen-Treffpunkt-Dima': 10,  'Gelsenkirchen-Treffpunkt-Marvin': 20,
-  'Gelsenkirchen-Treffpunkt-Maikel': 20,'Gelsenkirchen-Treffpunkt-René': 35,
-  'Gelsenkirchen-Treffpunkt-Vasyl': 25
-};
+}
+
+// ==========  ПАРСЕР ТЕКСТА stations.js  ==========
+function parseStationsText(text) {
+  const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
+  const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
+  const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
+  const ordM  = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+  const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
+  const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
+
+  if (!defM && !stM) throw new Error('Не найдены блоки defaultCoords / stations');
+
+  if (defM) data.defaultCoords = Function('"use strict";return (' + defM[1] + ')')();
+  if (stM)  data.stations      = Function('"use strict";return (' + stM[1]  + ')')();
+  if (tmM)  travelTimes        = Function('"use strict";return (' + tmM[1]  + ')')();
+  if (ordM) participantOrders  = Function('"use strict";return (' + ordM[1] + ')')();
+  if (trfM) treffpunkt         = Function('"use strict";return (' + trfM[1] + ')')();
+  if (trtM) trefftravelTimes   = Function('"use strict";return (' + trtM[1] + ')')();
+}
+
+// ==========  ВСТРОЕННЫЕ ДАННЫЕ (запасной вариант)  ==========
+function loadDefaults() {
+  data = {
+    defaultCoords: {
+      'Sergii':    { lat: 51.530133, lng: 6.850858 },
+      'Anatolii':  { lat: 51.522694, lng: 6.858944 },
+      'Andrii':    { lat: 51.534558, lng: 6.861061 },
+      'Sergio':    { lat: 51.520000, lng: 6.887619 },
+      'Dima':      { lat: 51.551753, lng: 7.102285 },
+      'René':      { lat: 51.476281, lng: 6.861856 },
+      'Marvin':    { lat: 51.556472, lng: 6.731424 },
+      'Vasyl':     { lat: 51.515355, lng: 6.893655 }
+    },
+    stations: {
+      'Gelsenkirchen-Bismarck': { lat: 51.538627, lng: 7.108037 },
+      'Hagen':                  { lat: 51.373517, lng: 7.461144 },
+      'Essen West':             { lat: 51.4539273, lng: 6.9794622 }
+    }
+  };
+  travelTimes = {
+    'Sergii-Anatolii': 5, 'Sergii-Andrii': 5, 'Sergii-Sergio': 10, 'Sergii-Dima': 30,
+    'Andrii-Anatolii': 5, 'Andrii-Sergio': 10, 'Andrii-Dima': 25,
+    'Anatolii-Sergio': 10, 'Anatolii-Dima': 30, 'Sergio-Dima': 25,
+    'Marvin-Sergii': 20, 'Marvin-Anatolii': 17, 'Marvin-Andrii': 20, 'Marvin-Sergio': 25, 'Marvin-Dima': 30,
+    'René-Sergii': 15, 'René-Andrii': 15, 'René-Anatolii': 10, 'René-Sergio': 15, 'René-Dima': 25,
+    'Vasyl-Sergii': 10, 'Vasyl-Andrii': 10, 'Vasyl-Anatolii': 10, 'Vasyl-Sergio': 5, 'Vasyl-Dima': 20
+  };
+  participantOrders = {
+    'Sergii':   ['Anatolii', 'Andrii', 'Sergio', 'Dima'],
+    'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Dima'],
+    'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+    'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+    'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+  };
+  treffpunkt = {
+    'OLGA-Park':               { lat: 51.5004335, lng: 6.8686337 },
+    'Gelsenkirchen-Treffpunkt': { lat: 51.530304,  lng: 7.110901  }
+  };
+  trefftravelTimes = {
+    'OLGA-Park-Sergii': 10, 'OLGA-Park-Andrii': 10, 'OLGA-Park-Anatolii': 10,
+    'OLGA-Park-Sergio': 10, 'OLGA-Park-Dima': 20,   'OLGA-Park-Marvin': 20,
+    'OLGA-Park-René': 5,    'OLGA-Park-Vasyl': 10,
+    'Gelsenkirchen-Treffpunkt-Sergii': 30, 'Gelsenkirchen-Treffpunkt-Andrii': 30,
+    'Gelsenkirchen-Treffpunkt-Anatolii': 30, 'Gelsenkirchen-Treffpunkt-Sergio': 25,
+    'Gelsenkirchen-Treffpunkt-Dima': 10,  'Gelsenkirchen-Treffpunkt-Marvin': 20,
+    'Gelsenkirchen-Treffpunkt-René': 35, 'Gelsenkirchen-Treffpunkt-Vasyl': 25
+  };
+}
 
 // ==========  УТИЛИТЫ  ==========
 function addTravelLinks(newName) {
@@ -196,7 +253,7 @@ function addTravelLinks(newName) {
 }
 function removeTravelLinks(delName) {
   Object.keys(travelTimes).forEach(key => {
-    if (key.startsWith(delName + '-')) delete travelTimes[key];
+    if (key.startsWith(delName + '-') || key.endsWith('-' + delName)) delete travelTimes[key];
   });
 }
 function showMsg(text, ms = 500) {
@@ -210,7 +267,6 @@ function showMsg(text, ms = 500) {
 // ==========  РЕНДЕР  ==========
 const groupSel = document.getElementById('groupSel');
 groupSel.addEventListener('change', render);
-
 function currentGroup() { return groupSel.value; }
 
 function render() {
@@ -221,8 +277,6 @@ function render() {
   // -----  participantOrders  -----
   if (grp === 'participantOrders') {
     const drivers = Object.keys(data.defaultCoords).sort();
-
-    // 1. выбор водителя
     const driverSel = document.createElement('select');
     driverSel.id = 'driverSel';
     drivers.forEach(d => {
@@ -233,18 +287,14 @@ function render() {
     });
     box.appendChild(driverSel);
 
-
-
-    // 2. выбор пассажира
     const riderSel = document.createElement('select');
     riderSel.id = 'riderSel';
     riderSel.style.marginLeft = '8px';
     function refillRiders() {
       riderSel.innerHTML = '';
-      const currentDriver = driverSel.value;
-      const already = participantOrders[currentDriver] || [];
+      const already = participantOrders[driverSel.value] || [];
       drivers
-        .filter(n => n !== currentDriver && !already.includes(n))
+        .filter(n => n !== driverSel.value && !already.includes(n))
         .forEach(n => {
           const opt = document.createElement('option');
           opt.value = opt.textContent = n;
@@ -253,28 +303,25 @@ function render() {
     }
     refillRiders();
 
-    // 3. кнопка добавить
     const addBtn = document.createElement('button');
     addBtn.id = 'addRiderBtn';
     addBtn.textContent = '➕';
     addBtn.onclick = () => {
-      const driver = driverSel.value;
-      const rider  = riderSel.value;
+      const driver = driverSel.value, rider = riderSel.value;
       if (!rider) return;
       if (!participantOrders[driver]) participantOrders[driver] = [];
       participantOrders[driver].push(rider);
       participantOrders._lastDriver = driver;
-      render();               // обновим всё
-      showMsg('Добавлено');
+      render(); showMsg('Добавлено');
     };
     box.appendChild(riderSel);
     box.appendChild(addBtn);
 
-    // 4. Sortable-список
     const listBox = document.createElement('div');
     listBox.id = 'orderList';
     listBox.style.marginTop = '10px';
     box.appendChild(listBox);
+
     function rebuildList() {
       const driver = driverSel.value;
       participantOrders._lastDriver = driver;
@@ -290,41 +337,34 @@ function render() {
       listBox.querySelectorAll('.delX').forEach(btn => {
         btn.onclick = e => {
           e.stopPropagation();
-          const name = btn.dataset.name;
-          const arr  = participantOrders[driverSel.value];
-          const i    = arr.indexOf(name);
+          const arr = participantOrders[driverSel.value];
+          const i = arr.indexOf(btn.dataset.name);
           if (i > -1) arr.splice(i, 1);
-          rebuildList();
-          showMsg('Удалено');
+          rebuildList(); showMsg('Удалено');
         };
       });
       if (listBox._sortable) listBox._sortable.destroy();
       listBox._sortable = new Sortable(listBox, {
         animation: 150,
         onEnd: () => {
-          const driver   = driverSel.value;
           const newOrder = Array.from(listBox.children)
             .map(div => div.querySelector('span').textContent.split('. ')[1]);
-          participantOrders[driver] = newOrder;
-          rebuildList();
-          showMsg('Порядок изменён');
+          participantOrders[driverSel.value] = newOrder;
+          rebuildList(); showMsg('Порядок изменён');
         }
       });
     }
     driverSel.onchange = () => { refillRiders(); rebuildList(); };
     rebuildList();
 
-    // 5. чистый JSON без служебных полей
-const clean = {};
-  Object.keys(participantOrders)
-        .filter(k => !k.startsWith('_'))          // служебные поля
-        //.sort()                                   // красота: по алфавиту
-        .forEach(k => clean[k] = participantOrders[k]);
-
-  document.getElementById('rawJson').value =
-    'let participantOrders = ' + JSON.stringify(clean, null, 2) + ';';
-  return;   // важно – не трогать box дальше
-}
+    const clean = {};
+    Object.keys(participantOrders)
+      .filter(k => !k.startsWith('_'))
+      .forEach(k => clean[k] = participantOrders[k]);
+    document.getElementById('rawJson').value =
+      'let participantOrders = ' + JSON.stringify(clean, null, 2) + ';';
+    return;
+  }
 
   // -----  treffpunkt  -----
   if (grp === 'treffpunkt') {
@@ -332,7 +372,6 @@ const clean = {};
       const card = document.createElement('div'); card.className = 'card';
       const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
       x.onclick = () => {
-        // удаляем все trefftravelTimes для этого пункта
         Object.keys(trefftravelTimes).forEach(key => {
           if (key.startsWith(name + '-')) delete trefftravelTimes[key];
         });
@@ -357,8 +396,7 @@ const clean = {};
 
   // -----  trefftravelTimes  -----
   if (grp === 'trefftravelTimes') {
-    const keys = Object.keys(trefftravelTimes);
-    for (const key of keys) {
+    for (const key of Object.keys(trefftravelTimes)) {
       const card = document.createElement('div'); card.className = 'card';
       const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
       x.onclick = () => { delete trefftravelTimes[key]; render(); showMsg('Удалено'); };
@@ -367,11 +405,10 @@ const clean = {};
       const timeInp = document.createElement('input'); timeInp.type = 'number'; timeInp.min = '1'; timeInp.max = '999';
       timeInp.value = trefftravelTimes[key]; timeInp.style.width = '60px';
       timeInp.addEventListener('change', () => {
-        trefftravelTimes[key] = Math.max(1, parseInt(timeInp.value) || 1);
-        showMsg('Сохранено');
+        const v = parseInt(timeInp.value);
+        if (v > 0) { trefftravelTimes[key] = v; showMsg('Сохранено'); }
       });
-      card.appendChild(title); card.appendChild(timeInp);
-      box.appendChild(card);
+      card.appendChild(title); card.appendChild(timeInp); box.appendChild(card);
     }
     document.getElementById('rawJson').value = JSON.stringify(trefftravelTimes, null, 2);
     return;
@@ -379,8 +416,7 @@ const clean = {};
 
   // -----  travelTimes  -----
   if (grp === 'travelTimes') {
-    const keys = Object.keys(travelTimes).sort();
-    for (const key of keys) {
+    for (const key of Object.keys(travelTimes)) {
       const card = document.createElement('div'); card.className = 'card';
       const x = document.createElement('span'); x.className = 'delX'; x.textContent = '✕';
       x.onclick = () => { delete travelTimes[key]; render(); showMsg('Удалено'); };
@@ -389,11 +425,10 @@ const clean = {};
       const timeInp = document.createElement('input'); timeInp.type = 'number'; timeInp.min = '1'; timeInp.max = '999';
       timeInp.value = travelTimes[key]; timeInp.style.width = '60px';
       timeInp.addEventListener('change', () => {
-        travelTimes[key] = Math.max(1, parseInt(timeInp.value) || 1);
-        showMsg('Сохранено');
+        const v = parseInt(timeInp.value);
+        if (v > 0) { travelTimes[key] = v; showMsg('Сохранено'); }
       });
-      card.appendChild(title); card.appendChild(timeInp);
-      box.appendChild(card);
+      card.appendChild(title); card.appendChild(timeInp); box.appendChild(card);
     }
     document.getElementById('rawJson').value = JSON.stringify(travelTimes, null, 2);
     return;
@@ -406,7 +441,6 @@ const clean = {};
     x.onclick = () => {
       if (grp === 'defaultCoords') removeTravelLinks(name);
       delete data[grp][name];
-      // удаляем из всех маршрутов
       Object.keys(participantOrders).forEach(start => {
         if (!start.startsWith('_'))
           participantOrders[start] = participantOrders[start].filter(n => n !== name);
@@ -421,12 +455,11 @@ const clean = {};
     inp.addEventListener('change', async () => {
       const coords = await parseAnyCoords(inp.value.trim());
       if (coords) {
-        inp.value = `${coords.lat},${coords.lng}`; data[grp][name] = coords; render(); showMsg('Скопировано');
+        inp.value = `${coords.lat},${coords.lng}`; data[grp][name] = coords; render(); showMsg('Сохранено');
       } else { showMsg('Координаты не распознаны'); inp.value = `${coord.lat},${coord.lng}`; }
     });
     coordDiv.appendChild(inp); card.appendChild(title); card.appendChild(coordDiv); box.appendChild(card);
   }
-  // синхронизируем raw
   if (grp === 'stations') document.getElementById('rawJson').value = JSON.stringify(data.stations, null, 2);
   else                    document.getElementById('rawJson').value = JSON.stringify(data.defaultCoords, null, 2);
 }
@@ -445,7 +478,6 @@ function finishTitleEdit(input, oldName, grp) {
   data[grp][newName] = data[grp][oldName]; delete data[grp][oldName];
   if (grp === 'defaultCoords') {
     removeTravelLinks(oldName); addTravelLinks(newName);
-    // обновляем маршруты
     Object.keys(participantOrders).forEach(start => {
       if (!start.startsWith('_'))
         participantOrders[start] = participantOrders[start].map(n => n === oldName ? newName : n);
@@ -462,7 +494,6 @@ function makeTreffTitleEditable(titleDiv, oldName) {
     if (!newName || newName === oldName) { titleDiv.textContent = oldName; return; }
     if (treffpunkt[newName]) { showMsg('Такой пункт уже есть'); titleDiv.textContent = oldName; return; }
     treffpunkt[newName] = treffpunkt[oldName]; delete treffpunkt[oldName];
-    // переименуем ключи в trefftravelTimes
     const prefix = oldName + '-';
     Object.keys(trefftravelTimes).filter(k => k.startsWith(prefix)).forEach(k => {
       const newKey = newName + '-' + k.slice(prefix.length);
@@ -479,9 +510,7 @@ function makeTreffTitleEditable(titleDiv, oldName) {
 document.getElementById('addBtn').onclick = () => {
   const grp = currentGroup();
   const modalSel = document.getElementById('modalGroupSel');
-  // Синхронизируем выбор группы с текущей вкладкой
   if ([...modalSel.options].some(o => o.value === grp)) modalSel.value = grp;
-  // Обновим плейсхолдер
   updateAddModalPlaceholder();
   document.getElementById('addModal').style.display = 'flex';
   document.getElementById('newName').focus();
@@ -490,17 +519,10 @@ document.getElementById('modalGroupSel').addEventListener('change', updateAddMod
 function updateAddModalPlaceholder() {
   const grp = document.getElementById('modalGroupSel').value;
   const coordInp = document.getElementById('newCoord');
-  const nameInp = document.getElementById('newName');
-  if (grp === 'travelTimes') {
-    nameInp.placeholder = 'Ключ: Имя1-Имя2';
-    coordInp.placeholder = 'Время (минуты)';
-  } else if (grp === 'trefftravelTimes') {
-    nameInp.placeholder = 'Ключ: Пункт-Имя';
-    coordInp.placeholder = 'Время (минуты)';
-  } else {
-    nameInp.placeholder = 'Название точки';
-    coordInp.placeholder = 'Координаты (lat,lng)';
-  }
+  const nameInp  = document.getElementById('newName');
+  if (grp === 'travelTimes')      { nameInp.placeholder = 'Ключ: Имя1-Имя2'; coordInp.placeholder = 'Время (минуты)'; }
+  else if (grp === 'trefftravelTimes') { nameInp.placeholder = 'Ключ: Пункт-Имя'; coordInp.placeholder = 'Время (минуты)'; }
+  else                            { nameInp.placeholder = 'Название точки'; coordInp.placeholder = 'Координаты (lat,lng)'; }
 }
 document.getElementById('addCancel').onclick = () => document.getElementById('addModal').style.display = 'none';
 document.getElementById('addConfirm').onclick = () => {
@@ -511,22 +533,18 @@ document.getElementById('addConfirm').onclick = () => {
 
   if (grp === 'travelTimes') {
     if (travelTimes[name] !== undefined) { showMsg('Такой ключ уже есть'); return; }
-    const mins = parseInt(val) || 5;
-    travelTimes[name] = mins;
+    travelTimes[name] = parseInt(val) || 5;
   } else if (grp === 'trefftravelTimes') {
     if (trefftravelTimes[name] !== undefined) { showMsg('Такой ключ уже есть'); return; }
-    const mins = parseInt(val) || 5;
-    trefftravelTimes[name] = mins;
+    trefftravelTimes[name] = parseInt(val) || 5;
   } else if (grp === 'treffpunkt') {
     if (treffpunkt[name]) { showMsg('Пункт уже есть'); return; }
     const m = val.match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
-    const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
-    treffpunkt[name] = { lat, lng };
+    treffpunkt[name] = { lat: m ? parseFloat(m[1]) : 0, lng: m ? parseFloat(m[2]) : 0 };
   } else {
     if (data[grp][name]) { showMsg('Точка уже есть'); return; }
     const m = val.match(/^([-+]?\d*\.?\d+),([-+]?\d*\.?\d+)$/);
-    const lat = m ? parseFloat(m[1]) : 0, lng = m ? parseFloat(m[2]) : 0;
-    data[grp][name] = { lat, lng };
+    data[grp][name] = { lat: m ? parseFloat(m[1]) : 0, lng: m ? parseFloat(m[2]) : 0 };
     if (grp === 'defaultCoords') addTravelLinks(name);
   }
   render();
@@ -537,41 +555,36 @@ document.getElementById('addConfirm').onclick = () => {
 };
 
 document.getElementById('copyBtn').onclick = () => {
-  const ta = document.getElementById('rawJson'); ta.readOnly = true; ta.select();
-  document.execCommand('copy'); window.getSelection().removeAllRanges(); ta.readOnly = false;
+  const ta = document.getElementById('rawJson'); ta.select();
+  document.execCommand('copy'); window.getSelection().removeAllRanges();
   showMsg('Скопировано');
 };
+
+// Загрузить локальный файл
 document.getElementById('loadBtn').onclick = () => document.getElementById('fileInput').click();
 document.getElementById('fileInput').addEventListener('change', e => {
   const file = e.target.files[0]; if (!file) return;
   const reader = new FileReader();
   reader.onload = evt => {
     try {
-      const text = evt.target.result;
-      const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
-      const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
-      const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-      const ordM  = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
-      const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
-      const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
-      if (!defM || !stM) throw new Error('Не найдены блоки');
-      data = {
-        defaultCoords: Function('"use strict";return (' + defM[1] + ')')(  ),
-        stations:      Function('"use strict";return (' + stM[1]  + ')')()
-      };
-      if (tmM)  travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
-      if (ordM) participantOrders = Function('"use strict";return (' + ordM[1] + ')')();
-      if (trfM) treffpunkt        = Function('"use strict";return (' + trfM[1] + ')')();
-      if (trtM) trefftravelTimes  = Function('"use strict";return (' + trtM[1] + ')')();
+      parseStationsText(evt.target.result);
+      document.getElementById('loadStatus').className = 'ok';
+      document.getElementById('loadStatus').textContent = '✅ Загружено из локального файла: ' + file.name;
       render(); showMsg('Загружено');
     } catch { showMsg('Ошибка чтения файла'); }
   };
   reader.readAsText(file, 'utf-8');
+  e.target.value = '';  // сброс чтобы можно было загрузить тот же файл повторно
 });
+
+// Сохранить локально
 document.getElementById('saveBtn').onclick = exportAsJS;
 document.getElementById('applyRaw').onclick = () => {
   try {
-    if (currentGroup() === 'travelTimes') travelTimes = JSON.parse(document.getElementById('rawJson').value);
+    const grp = currentGroup();
+    if      (grp === 'travelTimes')      travelTimes      = JSON.parse(document.getElementById('rawJson').value);
+    else if (grp === 'trefftravelTimes') trefftravelTimes = JSON.parse(document.getElementById('rawJson').value);
+    else if (grp === 'treffpunkt')       treffpunkt       = JSON.parse(document.getElementById('rawJson').value);
     else data = JSON.parse(document.getElementById('rawJson').value);
     render(); showMsg('Применено');
   } catch { showMsg('Ошибка JSON'); }
@@ -579,8 +592,8 @@ document.getElementById('applyRaw').onclick = () => {
 
 // ==========  ЭКСПОРТ  ==========
 function buildExportText() {
-  const defLines = []; for (const [n, c] of Object.entries(data.defaultCoords)) defLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
-  const stLines  = []; for (const [n, c] of Object.entries(data.stations))      stLines.push(`  '${n}': {lat:${c.lat}, lng:${c.lng}}`);
+  const defLines = []; for (const [n, c] of Object.entries(data.defaultCoords)) defLines.push(`  '${n}': {lat: ${c.lat}, lng: ${c.lng}}`);
+  const stLines  = []; for (const [n, c] of Object.entries(data.stations))      stLines.push(`  '${n}': {lat: ${c.lat}, lng: ${c.lng}}`);
   const tmLines  = []; for (const [p, t] of Object.entries(travelTimes))        tmLines.push(`  '${p}': ${t}`);
   const trfLines = []; for (const [n, c] of Object.entries(treffpunkt))         trfLines.push(`  '${n}': {lat: ${c.lat}, lng: ${c.lng}}`);
   const trtLines = []; for (const [p, t] of Object.entries(trefftravelTimes))   trtLines.push(`  '${p}': ${t}`);
@@ -617,6 +630,7 @@ this.participantOrders = {
 ${ordLines.join(',\n')}
 };`;
 }
+
 function exportAsJS() {
   const text = buildExportText();
   const blob = new Blob([text], {type:'application/javascript;charset=utf-8'});
@@ -624,6 +638,7 @@ function exportAsJS() {
   URL.revokeObjectURL(a.href);
   showMsg('Сохранено');
 }
+function buildStationsText() { return buildExportText(); }
 
 // ==========  ПАРСЕР КООРДИНАТ  ==========
 async function parseAnyCoords(s) {
@@ -642,7 +657,7 @@ async function parseAnyCoords(s) {
   const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
   if (dms.length === 2) {
     try {
-      const toDec = ([, d, mi, s, dir]) => { let dec = +d + mi / 60 + s / 3600; if (/S|W/i.test(dir)) dec = -dec; return dec; };
+      const toDec = ([, d, mi, sec, dir]) => { let dec = +d + mi / 60 + sec / 3600; if (/S|W/i.test(dir)) dec = -dec; return dec; };
       const lat = toDec(dms[0]), lng = toDec(dms[1]);
       if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
     } catch {}
@@ -650,7 +665,7 @@ async function parseAnyCoords(s) {
   if (/^https?:\/\//i.test(s)) {
     try {
       const expanded = await expandShortUrl(s);
-      const coords = parseAnyCoords(expanded);
+      const coords = await parseAnyCoords(expanded);
       if (coords) return coords;
     } catch {}
   }
@@ -668,95 +683,70 @@ async function expandShortUrl(url) {
   return r.url || url;
 }
 
-// ==========  СТАРТ  ==========
-render();
-
-// buildStationsText делегирует в buildExportText (включает treffpunkt и trefftravelTimes)
-function buildStationsText() { return buildExportText(); }
-
-
 // ======  ЗАГРУЗКА stations.js НА GITHUB  ======
-// ----------  показ модалки  ----------
-// ----------  Открытие модалки (уже есть) ----------
 document.getElementById('ghUploadBtn').onclick = () => {
   document.getElementById('ghTokenInp').value = localStorage.ghToken || '';
   document.getElementById('ghModal').style.display = 'flex';
   document.getElementById('ghTokenInp').focus();
 };
 
-// ----------  Закрытие (уже есть) ----------
 document.getElementById('ghCancelBtn').onclick = () =>
   document.getElementById('ghModal').style.display = 'none';
 
-// ----------  1. Отправка stations.js (коротко) ----------
 document.getElementById('ghSendStationsBtn').onclick = async () => {
   const token = document.getElementById('ghTokenInp').value.trim();
   if (!token) { alert('Введите токен'); return; }
-  await uploadToGitHub(token, 'stations.js', buildStationsText());
+  await uploadToGitHub(token, GH_FILE, buildStationsText());
 };
 
-// ----------  2. Отправка произвольного файла ----------
 document.getElementById('ghSendAnyBtn').onclick = async () => {
   const token = document.getElementById('ghTokenInp').value.trim();
   if (!token) { alert('Введите токен'); return; }
-
   const fileInput = document.getElementById('ghAnyFile');
   const nameInput = document.getElementById('ghAnyName');
   if (!fileInput.files.length) { alert('Выберите файл'); return; }
   const file = fileInput.files[0];
   const path = nameInput.value.trim() || file.name;
-
-  const content = await file.text();          // читаем как текст
+  const content = await file.text();
   await uploadToGitHub(token, path, content);
 };
 
-// ----------  Универсальный аплоад ----------
 async function uploadToGitHub(token, path, text) {
   localStorage.ghToken = token;
-  const owner = 'Kesik80';
-  const repo  = 'fahrzeit';
 
   const base64 = btoa(unescape(encodeURIComponent(text)));
 
   let sha;
   try {
-    const head = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+    const head = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
       headers: { Authorization: `token ${token}` }
     });
     if (head.ok) sha = (await head.json()).sha;
   } catch (e) {}
 
-  const body = JSON.stringify({
-    message: `web-update ${path}`,
-    content: base64,
-    sha
-  });
+  const body = JSON.stringify({ message: `web-update ${path}`, content: base64, sha });
 
-  const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+  const resp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
     method: 'PUT',
-    headers: {
-      Authorization: `token ${token}`,
-      'Content-Type': 'application/json'
-    },
+    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
     body
   });
 
   document.getElementById('ghModal').style.display = 'none';
+
   if (resp.ok) {
-    showMsg(`${path} uploaded ✔`);
+    showMsg(`${path} uploaded ✔`, 1500);
+    // Обновляем статус
+    document.getElementById('loadStatus').className = 'ok';
+    document.getElementById('loadStatus').textContent = `✅ ${path} загружен на GitHub`;
   } else {
     const err = await resp.json();
     alert('Upload error:\n' + err.message);
   }
+}
 
-
-};
-
-// сохранить
-document.getElementById('ghToken').value = localStorage.ghToken || '';
-document.getElementById('ghToken').addEventListener('change', e => localStorage.ghToken = e.target.value);
-
-
+// ==========  СТАРТ — загружаем stations.js  ==========
+loadFromGitHub();
 </script>
 <a id="downLink" style="display:none"></a>
 
