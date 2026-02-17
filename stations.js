@@ -1,22 +1,23 @@
 // реестр имен
 const defaultCoords = {
-  'Sergii':   {lat: 51.530133,  lng: 6.850858},
-  'Anatolii': {lat: 51.522694,  lng: 6.858944},
-  'Andrii':   {lat: 51.534558,  lng: 6.861061},
-  'Sergio':   {lat: 51.52,      lng: 6.887619},
-  'Dima':     {lat: 51.551753,  lng: 7.102285},
-  'René':     {lat: 51.476281,  lng: 6.861856},
-  'Marvin':   {lat: 51.556472,  lng: 6.731424},
-  'Vasyl':    {lat: 51.515355,  lng: 6.893655}
+  'Sergii': {lat: 51.530133, lng: 6.850858},
+  'Anatolii': {lat: 51.522694, lng: 6.858944},
+  'Andrii': {lat: 51.534558, lng: 6.861061},
+  'Sergio': {lat: 51.52, lng: 6.887619},
+  'Dima': {lat: 51.551753, lng: 7.102285},
+  'René': {lat: 51.476281, lng: 6.861856},
+  'Marvin': {lat: 51.556472, lng: 6.731424},
+  'Vasyl': {lat: 51.515355, lng: 6.893655},
+  'Тест': {lat: 51.515355, lng: 6.893655}
 };
 
 // реестр станций
 this.stations = {
-  'Gelsenkirchen-Bismarck':  {lat: 51.538627,  lng: 7.108037},
-  'Hagen':                   {lat: 51.373517,  lng: 7.461144},
-  'Essen West':              {lat: 51.4539273, lng: 6.9794622},
-  'Gelsenkirchen Horst':     {lat: 51.5415351, lng: 7.0202811},
-  'Gelsenkirchen Horst 2':   {lat: 51.539072,  lng: 7.0090119}
+  'Gelsenkirchen-Bismarck': {lat: 51.538627, lng: 7.108037},
+  'Hagen': {lat: 51.373517, lng: 7.461144},
+  'Essen West': {lat: 51.4539273, lng: 6.9794622},
+  'Gelsenkirchen Horst': {lat: 51.5415351, lng: 7.0202811},
+  'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119}
 };
 
 // Время в пути между участниками
@@ -56,13 +57,21 @@ this.travelTimes = {
   'Vasyl-Dima': 20,
   'Vasyl-Marvin': 25,
   'Vasyl-Maikel': 25,
-  'Vasyl-René': 25
+  'Vasyl-René': 25,
+  'Тест-Sergii': 5,
+  'Тест-Anatolii': 5,
+  'Тест-Andrii': 5,
+  'Тест-Sergio': 5,
+  'Тест-Dima': 5,
+  'Тест-René': 5,
+  'Тест-Marvin': 5,
+  'Тест-Vasyl': 5
 };
 
 // Пункты встречи (Treffpunkt)
 this.treffpunkt = {
-  'OLGA-Park':                {lat: 51.5004335, lng: 6.8686337},
-  'Gelsenkirchen-Treffpunkt': {lat: 51.530304,  lng: 7.110901}
+  'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
+  'Gelsenkirchen-Treffpunkt': {lat: 51.530304, lng: 7.110901}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -89,9 +98,9 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок
 this.participantOrders = {
-  'Sergii':   ['Anatolii', 'Sergio', 'Vasyl'],
+  'Sergii': ['Anatolii', 'Sergio', 'Vasyl'],
   'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Vasyl'],
-  'Andrii':   ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
-  'Sergio':   ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
-  'Dima':     ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+  'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
+  'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
+  'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
 };
