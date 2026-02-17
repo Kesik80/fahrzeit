@@ -8,7 +8,7 @@ const defaultCoords = {
   'René': {lat: 51.476281, lng: 6.861856},
   'Marvin': {lat: 51.556472, lng: 6.731424},
   'Vasyl': {lat: 51.515355, lng: 6.893655},
-  'Тест': {lat: 51.515355, lng: 6.893655}
+  'Alex': {lat: 51.515355, lng: 6.893655}
 };
 
 // реестр станций
@@ -58,14 +58,14 @@ this.travelTimes = {
   'Vasyl-Marvin': 25,
   'Vasyl-Maikel': 25,
   'Vasyl-René': 25,
-  'Тест-Sergii': 5,
-  'Тест-Anatolii': 5,
-  'Тест-Andrii': 5,
-  'Тест-Sergio': 5,
-  'Тест-Dima': 5,
-  'Тест-René': 5,
-  'Тест-Marvin': 5,
-  'Тест-Vasyl': 5
+  'Alex-Sergii': 5,
+  'Alex-Anatolii': 5,
+  'Alex-Andrii': 5,
+  'Alex-Sergio': 5,
+  'Alex-Dima': 5,
+  'Alex-René': 5,
+  'Alex-Marvin': 5,
+  'Alex-Vasyl': 5
 };
 
 // Пункты встречи (Treffpunkt)
