@@ -222,7 +222,7 @@ body {
   background: var(--surface);           /* белый / тёмный фон карточки */
   border: 1px solid var(--border);      /* рамка */
   border-radius: var(--r-sm);           /* скруглённые углы */
-  padding: 4px 4px 4px 14px;           /* меньше справа — крестик у края */
+  padding: 4px 0px 4px 10px;           /* меньше справа — крестик у края */
   margin-bottom: 8px;                  /* отступ снизу между карточками */
   display: flex;                        /* содержимое в ряд */
   align-items: center;                  /* по центру вертикально */
@@ -242,11 +242,11 @@ body {
 }
 
 .card.sub-card {
-  margin-left: 20px;               /* отступ слева — визуально вложено */
+  margin-left: 10px;               /* отступ слева — визуально вложено */
   background: var(--surface2);     /* чуть другой фон для вложенных */
   border-left: 2px solid var(--accent); /* более тонкая синяя полоска */
   border-radius: var(--r-sm);      /* меньший радиус скругления */
-  padding: 11px 16px;              /* чуть компактнее основной карточки */
+  padding: 6px 0 6px 10px;         /* без правого padding — крестик у края */
 }
 
 /* Иконка перетаскивания (drag & drop) */
@@ -258,6 +258,7 @@ body {
   opacity: .4;           /* почти прозрачный в покое */
   transition: opacity .2s; /* плавное появление */
   user-select: none;     /* нельзя выделить текстом */
+  padding: 6px 20px 6px 30px; /* увеличенная зона захвата */
 }
 .card:hover .drag-handle { opacity: .7; } /* становится видимее при hover на карточку */
 
@@ -328,11 +329,11 @@ body {
 /* Кнопка удаления записи (красный крестик) */
 .del-btn {
   width: 28px; height: 28px;            /* размер кнопки */
-  border-radius: var(--r-sm);           /* скруглённые углы */
+  border-radius: 0;                     /* без скруглений — вплотную к краю */
   border: none;                         /* без рамки */
   background: transparent;              /* прозрачный фон */
   color: var(--red);                    /* красный крестик */
-  font-size: 14px;                      /* размер символа ✕ */
+  font-size: 14px;                      /* размер символа ✖ */
   font-weight: 700;                     /* жирный крестик */
   cursor: pointer;                      /* курсор-рука */
   display: flex; align-items: center; justify-content: center; /* центрируем символ */
@@ -340,8 +341,8 @@ body {
   transition: color .15s, transform .12s; /* анимация при hover */
   opacity: .5;                          /* приглушён в покое */
   padding: 0;                           /* без внутренних отступов */
+  margin: -10px 0 0 0;                  /* только вверх, без боковых отступов */
   align-self: flex-start;               /* прижимаем к верху карточки */
-  margin-top: -2px;                     /* поднимаем чуть выше */
 }
 .del-btn:hover {
   background: var(--red-lt); /* лёгкий красный фон при наведении */
@@ -1287,22 +1288,22 @@ function render() {
       order.forEach((item, idx) => {
         if (typeof item === 'string') {
           const div = mkCard(false, idx);
-          const handle = mkHandle(); div.appendChild(handle);
           const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
           nm.textContent = `${idx + 1}. ${item}`; div.appendChild(nm);
           const subBtn = mkAddSubBtn();
           subBtn.onclick = e => { e.stopPropagation(); triggerConvertToGroup(driver, idx, item, drivers); };
           div.appendChild(subBtn);
+          div.appendChild(mkHandle());
           div.appendChild(mkDelBtn(() => { order.splice(idx, 1); rebuildList(); showMsg('Удалено'); }));
           listBox.appendChild(div);
         } else if (item?.main) {
           const div = mkCard(true, idx);
-          const handle = mkHandle(); div.appendChild(handle);
           const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
           nm.textContent = `${idx + 1}. ${item.main} 👥`; div.appendChild(nm);
           const subBtn = mkAddSubBtn();
           subBtn.onclick = e => { e.stopPropagation(); triggerAddToGroup(driver, idx, item.main, drivers); };
           div.appendChild(subBtn);
+          div.appendChild(mkHandle());
           div.appendChild(mkDelBtn(() => { order.splice(idx, 1); rebuildList(); showMsg('Удалено'); }));
           listBox.appendChild(div);
 
@@ -1552,7 +1553,7 @@ function mkHandle() {
   const h = document.createElement('span'); h.className = 'drag-handle'; h.textContent = '⠿'; return h;
 }
 function mkDelBtn(cb) {
-  const b = document.createElement('button'); b.className = 'del-btn'; b.textContent = '✕';
+  const b = document.createElement('button'); b.className = 'del-btn'; b.textContent = '✖';
   b.onclick = e => { e.stopPropagation(); cb(); }; return b;
 }
 function mkAddSubBtn() {
