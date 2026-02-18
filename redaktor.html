@@ -374,6 +374,22 @@ body {
 /* Отступ для вложенных участников группы */
 .group-indent { margin-left: 20px; } /* сдвигаем блок субучастников вправо */
 
+/* Кнопка Google Maps иконка на карточке времени */
+.google-map-btn {
+  width: 22px; height: 22px;      /* размер под SVG 16×16 */
+  border: none;                    /* без рамки */
+  background: transparent;         /* прозрачный фон */
+  cursor: pointer;                 /* курсор-рука */
+  padding: 0;                      /* без отступов */
+  flex-shrink: 0;                  /* не сжимается */
+  display: flex; align-items: center; justify-content: center;
+  opacity: .7;                     /* немного прозрачная в покое */
+  transition: opacity .15s, transform .15s;
+  margin-left: 2px;
+}
+.google-map-btn:hover { opacity: 1; transform: scale(1.15); }
+.google-map-btn:active { transform: scale(.95); }
+
 /* Подпись «мин» / «ч» рядом с полем времени */
 .time-min {
   font-size: .82rem;    /* мелкий текст */
@@ -991,6 +1007,15 @@ const DEFAULT_TT = 5;
 //  GOOGLE API (через Vercel, тот же домен)
 // ═══════════════════════════════════════
 
+// SVG иконка Google Maps — цветная (рассчитано через API)
+const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="16" height="16"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+// SVG иконка Google Maps — серая (не рассчитано / изменено вручную)
+const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="16" height="16"><path fill="#bbb" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#bbb" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#bbb" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#bbb" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#bbb" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+
+function flagKey(key, isTreff) { return (isTreff ? 'treff:' : 'tt:') + key; }
+function setAutoFlag(key, isTreff, val) { autoCalcFlags[flagKey(key, isTreff)] = val; }
+function getAutoFlag(key, isTreff) { return !!autoCalcFlags[flagKey(key, isTreff)]; }
+
 // Запрос времени в пути между двумя координатами → минуты
 async function fetchTravelTime(originLat, originLng, destLat, destLng) {
   const resp = await fetch('/api/calculate-time', {
@@ -1035,13 +1060,14 @@ async function recalcOne(key, src, btnEl) {
   const [a, b] = splitPairKey(key, false);
   const cA = getCoordsFor(a), cB = getCoordsFor(b);
   if (!cA || !cB) { showMsg(`❌ Нет координат: ${!cA ? a : b}`); return; }
-  const orig = btnEl.textContent; btnEl.textContent = '⏳'; btnEl.disabled = true;
+  const orig = btnEl.innerHTML; btnEl.innerHTML = '⏳'; btnEl.disabled = true;
   try {
     src[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
+    setAutoFlag(key, false, true);
     render(); showMsg(`✅ ${key}: ${src[key]} мин`);
   } catch(e) {
     showMsg(`❌ ${e.message}`, 3000);
-    btnEl.textContent = orig; btnEl.disabled = false;
+    btnEl.innerHTML = orig; btnEl.disabled = false;
   }
 }
 
@@ -1050,13 +1076,14 @@ async function recalcOneTreff(key, btnEl) {
   const [treffName, partName] = splitPairKey(key, true);
   const cT = treffpunkt[treffName], cP = getCoordsFor(partName);
   if (!cT || !cP) { showMsg(`❌ Нет координат: ${!cT ? treffName : partName}`); return; }
-  const orig = btnEl.textContent; btnEl.textContent = '⏳'; btnEl.disabled = true;
+  const orig = btnEl.innerHTML; btnEl.innerHTML = '⏳'; btnEl.disabled = true;
   try {
     trefftravelTimes[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng);
+    setAutoFlag(key, true, true);
     render(); showMsg(`✅ ${key}: ${trefftravelTimes[key]} мин`);
   } catch(e) {
     showMsg(`❌ ${e.message}`, 3000);
-    btnEl.textContent = orig; btnEl.disabled = false;
+    btnEl.innerHTML = orig; btnEl.disabled = false;
   }
 }
 
@@ -1066,10 +1093,10 @@ async function autoCalcPair(key, isTreff) {
     const [a, b] = splitPairKey(key, isTreff);
     if (isTreff) {
       const cT = treffpunkt[a], cP = getCoordsFor(b);
-      if (cT && cP) trefftravelTimes[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng);
+      if (cT && cP) { trefftravelTimes[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng); setAutoFlag(key, true, true); }
     } else {
       const cA = getCoordsFor(a), cB = getCoordsFor(b);
-      if (cA && cB) travelTimes[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
+      if (cA && cB) { travelTimes[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng); setAutoFlag(key, false, true); }
     }
     render(); showMsg(`✅ Время рассчитано: ${key}`);
   } catch(e) {
@@ -1082,6 +1109,8 @@ async function autoCalcPair(key, isTreff) {
 // ═══════════════════════════════════════
 let data = { defaultCoords: {}, stations: {} };
 let travelTimes = {}, participantOrders = {}, treffpunkt = {}, trefftravelTimes = {};
+// Флаги: true = рассчитано через Google API, false/undefined = вручную
+let autoCalcFlags = {}; // ключ: "tt:Имя1-Имя2" или "treff:Ключ"
 
 // ═══════════════════════════════════════
 //  THEME
@@ -1412,18 +1441,23 @@ function render() {
       wrap.appendChild(ti);
       wrap.appendChild(unitLabel);
 
-      // Кнопка автоматического пересчёта через API
+      // Кнопка Google Maps — показывает статус расчёта
+      const isTreff = grp === 'trefftravelTimes';
       const recBtn = document.createElement('button');
-      recBtn.className = 'add-sub-btn';
-      recBtn.style.cssText = 'flex-shrink:0;width:26px;height:26px;font-size:13px;margin-left:4px;';
-      recBtn.textContent = '🔄';
-      recBtn.title = 'Получить время через Google API';
+      recBtn.className = 'google-map-btn';
+      recBtn.title = 'Рассчитать время через Google Maps';
+      recBtn.innerHTML = getAutoFlag(key, isTreff) ? coloredMapSvg : grayMapSvg;
       recBtn.onclick = e => {
         e.stopPropagation();
-        const isTreff = grp === 'trefftravelTimes';
         isTreff ? recalcOneTreff(key, recBtn) : recalcOne(key, src, recBtn);
       };
       wrap.appendChild(recBtn);
+
+      // Сбрасываем флаг при ручном изменении
+      ti.addEventListener('change', () => {
+        setAutoFlag(key, isTreff, false);
+        recBtn.innerHTML = grayMapSvg;
+      });
 
       card.appendChild(wrap);
       card.appendChild(mkDelBtn(() => { delete src[key]; render(); showMsg('Удалено'); }));
@@ -1797,6 +1831,7 @@ document.getElementById('recalcStart').onclick = async () => {
       const cB = getCoordsFor(b);
       if (!cA || !cB) throw new Error(`нет координат: ${!cA ? a : b}`);
       src[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
+      setAutoFlag(key, isTreff, true);
       done++;
     } catch(e) {
       errors++;
