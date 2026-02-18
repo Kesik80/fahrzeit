@@ -1012,9 +1012,27 @@ function getCoordsFor(name) {
   return data.defaultCoords[name] || data.stations[name] || null;
 }
 
+// Разбить ключ "Имя1-Имя2" на два имени, учитывая что имена могут содержать дефис
+function splitPairKey(key, isTreff) {
+  const sourceNames = isTreff
+    ? Object.keys(treffpunkt)
+    : [...Object.keys(data.defaultCoords), ...Object.keys(data.stations)];
+  const destNames = [...Object.keys(data.defaultCoords), ...Object.keys(data.stations)];
+
+  for (const a of sourceNames) {
+    if (key.startsWith(a + '-')) {
+      const b = key.slice(a.length + 1);
+      if (destNames.includes(b)) return [a, b];
+    }
+  }
+  // Запасной вариант — первый дефис
+  const i = key.indexOf('-');
+  return [key.slice(0, i), key.slice(i + 1)];
+}
+
 // Пересчёт одной пары travelTimes
 async function recalcOne(key, src, btnEl) {
-  const [a, b] = key.split('-');
+  const [a, b] = splitPairKey(key, false);
   const cA = getCoordsFor(a), cB = getCoordsFor(b);
   if (!cA || !cB) { showMsg(`❌ Нет координат: ${!cA ? a : b}`); return; }
   const orig = btnEl.textContent; btnEl.textContent = '⏳'; btnEl.disabled = true;
@@ -1029,8 +1047,7 @@ async function recalcOne(key, src, btnEl) {
 
 // Пересчёт одной пары trefftravelTimes
 async function recalcOneTreff(key, btnEl) {
-  const dashIdx = key.indexOf('-');
-  const treffName = key.slice(0, dashIdx), partName = key.slice(dashIdx + 1);
+  const [treffName, partName] = splitPairKey(key, true);
   const cT = treffpunkt[treffName], cP = getCoordsFor(partName);
   if (!cT || !cP) { showMsg(`❌ Нет координат: ${!cT ? treffName : partName}`); return; }
   const orig = btnEl.textContent; btnEl.textContent = '⏳'; btnEl.disabled = true;
@@ -1043,20 +1060,18 @@ async function recalcOneTreff(key, btnEl) {
   }
 }
 
-// Тихий авторасчёт одной пары (без кнопки, при добавлении)
+// Тихий авторасчёт одной пары (при добавлении)
 async function autoCalcPair(key, isTreff) {
   try {
+    const [a, b] = splitPairKey(key, isTreff);
     if (isTreff) {
-      const dashIdx = key.indexOf('-');
-      const cT = treffpunkt[key.slice(0, dashIdx)];
-      const cP = getCoordsFor(key.slice(dashIdx + 1));
+      const cT = treffpunkt[a], cP = getCoordsFor(b);
       if (cT && cP) trefftravelTimes[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng);
     } else {
-      const [a, b] = key.split('-');
       const cA = getCoordsFor(a), cB = getCoordsFor(b);
       if (cA && cB) travelTimes[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
     }
-    render(); showMsg(`✅ Время рассчитано для ${key}`);
+    render(); showMsg(`✅ Время рассчитано: ${key}`);
   } catch(e) {
     console.warn('autoCalc:', key, e.message);
   }
@@ -1777,18 +1792,11 @@ document.getElementById('recalcStart').onclick = async () => {
   for (const { key, src, isTreff } of pairs) {
     prog.textContent = `⏳ ${done + errors + 1} / ${pairs.length}  —  ${key}`;
     try {
-      if (isTreff) {
-        const dashIdx = key.indexOf('-');
-        const cT = treffpunkt[key.slice(0, dashIdx)];
-        const cP = getCoordsFor(key.slice(dashIdx + 1));
-        if (!cT || !cP) throw new Error('нет координат');
-        src[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng);
-      } else {
-        const [a, b] = key.split('-');
-        const cA = getCoordsFor(a), cB = getCoordsFor(b);
-        if (!cA || !cB) throw new Error('нет координат');
-        src[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
-      }
+      const [a, b] = splitPairKey(key, isTreff);
+      const cA = isTreff ? treffpunkt[a] : getCoordsFor(a);
+      const cB = getCoordsFor(b);
+      if (!cA || !cB) throw new Error(`нет координат: ${!cA ? a : b}`);
+      src[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
       done++;
     } catch(e) {
       errors++;
