@@ -98,9 +98,9 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок
 this.participantOrders = {
-    'Sergii': ["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]}],
-  'Anatolii': ['Sergii', 'Andrii', 'Sergio', 'Vasyl'],
-  'Andrii': ['Sergii', 'Anatolii', 'Sergio', 'Dima'],
-  'Sergio': ['Anatolii', 'Sergii', 'Andrii', 'Dima'],
-  'Dima': ['Anatolii', 'Sergii', 'Andrii', 'Sergio']
+  'Sergii': ["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]}],
+  'Anatolii': ["Sergii","Andrii","Sergio","Vasyl"],
+  'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
+  'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
+  'Dima': ["Anatolii","Sergii","Andrii","Sergio"]
 };
