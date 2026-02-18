@@ -1481,9 +1481,13 @@ this.startPoint = value;
 const startCoords = this.nameToCoordinates[value];
 this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
 const order = this.participantOrders[value] || [];
-this.participants = order.map((name, idx) => {
+// Строим плоский список имён для расчёта времени (только main-имена по порядку)
+const flatNames = order.map(item => typeof item === 'string' ? item : item.main);
+this.participants = order.map((item, idx) => {
+const name = typeof item === 'string' ? item : item.main;
+const subs = typeof item === 'object' && item.subParticipants ? item.subParticipants : [];
 const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
-const prev = idx === 0 ? this.startPoint : order[idx - 1];
+const prev = idx === 0 ? this.startPoint : flatNames[idx - 1];
 return {
 name,
 time: this.getTravelTime(prev, name),
@@ -1491,7 +1495,7 @@ lat: coords.lat,
 lng: coords.lng,
 timeManuallyEdited: false,
 isTreffpunkt: false,
-subParticipants: [],
+subParticipants: subs,
 treffpunktPersons: []
 };
 });
