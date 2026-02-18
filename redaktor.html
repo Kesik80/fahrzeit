@@ -1879,7 +1879,13 @@ ${L(trefftravelTimes, ([p,t]) => `  '${p}': ${t}`)}
 
 // Приоритетные списки остановок
 this.participantOrders = {
-${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => `  '${s}': ${JSON.stringify(participantOrders[s])}`).join(',\n')}
+${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => {
+  // Разворачиваем группы {main, subParticipants} в плоский массив строк
+  const flat = (participantOrders[s] || []).flatMap(item =>
+    typeof item === 'string' ? [item] : [item.main, ...(item.subParticipants || [])]
+  );
+  return `  '${s}': ${JSON.stringify(flat)}`;
+}).join(',\n')}
 };`;
 }
 
