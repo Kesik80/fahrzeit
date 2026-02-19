@@ -1270,7 +1270,20 @@ try {
   const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
   const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
   const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
-  const ordM  = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+  // participantOrders может содержать вложенные объекты — используем счётчик скобок
+  function extractBlock(str, keyword) {
+    const idx = str.indexOf(keyword);
+    if (idx === -1) return null;
+    const start = str.indexOf('{', idx);
+    if (start === -1) return null;
+    let depth = 0;
+    for (let i = start; i < str.length; i++) {
+      if (str[i] === '{') depth++;
+      else if (str[i] === '}') { depth--; if (depth === 0) return str.slice(start, i + 1); }
+    }
+    return null;
+  }
+  const ordBlock = extractBlock(text, 'this.participantOrders');
   if (defM)  {
     const coords = Function('"use strict";return (' + defM[1] + ')')();
     this.defaultCoordinates = coords;
@@ -1280,7 +1293,7 @@ try {
   if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
   if (trfM) this.treffpunkt        = Function('"use strict";return (' + trfM[1] + ')')();
   if (trtM) this.trefftravelTimes  = Function('"use strict";return (' + trtM[1] + ')')();
-  if (ordM) this.participantOrders = Function('"use strict";return (' + ordM[1] + ')')();
+  if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
   // После загрузки данных — пересчитываем и рендерим
   this.syncCoordinates();
   this.updateParticipantTimes();
@@ -1801,119 +1814,17 @@ if (this.machineStop.arrivalTime) this.calculate(); else this.elements.output.in
 async parseCoordinates(raw) {
 const s = raw.trim();
 if (!s) { this.showToast("Пожалуйста, введите данные."); return null; }
-// 1. «51,123456, 7,123456» — дробь через ЗАПЯТУЮ
-if (/^-?\d{1,2},\d+\s*,\s*-?\d{1,3},\d+$/.test(s)) {
-const parts = s.split(',').map(p => p.trim());
-const lat = parseFloat(parts[0] + '.' + parts[1]);
-const lng = parseFloat(parts[2] + '.' + parts[3]);
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-// 2. «51.123456, 7.123456» — дробь через ТОЧКУ
-if (/^-?\d{1,2}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(s)) {
-const [l, ln] = s.split(',').map(Number);
-if (Math.abs(l) <= 90 && Math.abs(ln) <= 180) return { lat: l, lng: ln };
-}
-const m1 = s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/ll=(-?\d+\.\d+),(-?\d+\.\d+)/) || s.match(/place\/[^\/]+\/(-?\d+\.\d+),(-?\d+\.\d+)/);
-if (m1) {
-const lat = parseFloat(m1[1]), lng = parseFloat(m1[2]);
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-const dms = [...s.matchAll(/(\d{1,3})°(\d{1,2})'(\d{1,2}(?:\.\d+)?)"?\s*([NSEW])/gi)];
-if (dms.length === 2) {
 try {
-const toDec = ([, d, mi, s, dir]) => {
-let dec = +d + mi / 60 + s / 3600;
-if (/S|W/i.test(dir)) dec = -dec;
-return dec;
-};
-const lat = toDec(dms[0]), lng = toDec(dms[1]);
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-} catch { }
-}
-if (/^https?:\/\/(?:[^/]*\.)?goo\.gl\/|https?:\/\/maps\.app\.goo\.gl\/|https?:\/\/(?:www\.)?googleusercontent\.com\/maps\.google\.com\//i.test(s)) {
-try {
-const url = await this.expand(s);
-// 👇 ДОБАВЬТЕ ЭТУ СТРОКУ:
-const cleanUrl = url.replace(/\s+/g, ''); // удаляем ВСЕ пробелы
-let coords = this.parseCoords(cleanUrl);
-if (!coords) coords = await this.coordsFromHTML(cleanUrl);
-if (!coords) { this.showToast("Не удалось извлечь координаты из ссылки."); return null; }
-return coords;
-} catch {
-this.showToast("Ошибка при обработке сокращённой ссылки.");
+this.showToast("🔄 Определяю координаты…");
+const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
+const d = await resp.json();
+if (d.success) return { lat: d.lat, lng: d.lng };
+this.showToast(d.error || "Координаты не распознаны.");
+return null;
+} catch(e) {
+this.showToast("Ошибка: " + e.message);
 return null;
 }
-}
-if (!/^https?:\/\//.test(s)) {
-const coords = this.parseCoords(s);
-if (coords) return coords;
-}
-if (/^https?:\/\//.test(s)) {
-try {
-const coords = await this.coordsFromHTML(s);
-if (coords) return coords;
-} catch {
-this.showToast("Не удалось извлечь координаты из ссылки.");
-return null;
-}
-}
-this.showToast("Пожалуйста, введите корректные координаты или URL Google Карт.");
-return null;
-}
-async expand(shortUrl) {
-const apiUrl = '/api/expand?url=' + encodeURIComponent(shortUrl);
-const response = await fetch(apiUrl);
-if (!response.ok) {
-const data = await response.json();
-throw new Error(data.error || 'Ошибка сервера');
-}
-const data = await response.json();
-return data.expanded;
-}
-parseCoords(str) {
-let m = str.match(/([-+]?\d{1,3}\.\d+)[ ,]+([-+]?\d{1,3}\.\d+)/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-m = str.match(/@([-.\d]+),([-.\d]+),/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-m = str.match(/\/place\/([-.\d]+),([-.\d]+)/)
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-m = str.match(/(?:dest|query|center)=([-.\d]+),([-.\d]+)/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-return null;
-}
-async coordsFromHTML(page) {
-const api = 'https://r.jina.ai/' + page.replace(/^https?:\/\//, '');
-const response = await fetch(api);
-if (!response.ok) return null;
-const text = await response.text();
-let m = text.match(/"lat"\s*:\s*([-.\d]+)\s*,\s*"lng"\s*:\s*([-.\d]+)/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-m = text.match(/https?:\/\/[^"' ]+\?q=([-.\d]+),([-.\d]+)/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-m = text.match(/([-+]?\d{1,3}\.\d{4,}),\s*([-+]?\d{1,3}\.\d{4,})/);
-if (m) {
-const lat = +m[1], lng = +m[2];
-if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-}
-return null;
 }
 openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false, isAddingNewDestination = false, isAddingNewKollege = false, isAddingNewSubPerson = false) {
 this.currentEditIndex = index;
@@ -2163,8 +2074,9 @@ openMapForSelection() {
 const coords = this.elements.coordsInput.value.trim();
 let url = 'https://www.google.com/maps';
 if (coords) {
-const parsed = this.parseCoords(coords);
-if (parsed) url += `/place/${parsed.lat},${parsed.lng}`;
+const m = coords.match(/([-+]?\d{1,3}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+const parsed = m ? { lat: +m[1], lng: +m[2] } : null;
+if (parsed && Math.abs(parsed.lat) <= 90) url += `/place/${parsed.lat},${parsed.lng}`;
 else url += `/search/${encodeURIComponent(coords)}`;
 }
 window.open(url, '_blank');
