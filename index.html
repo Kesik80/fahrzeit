@@ -1177,12 +1177,41 @@ d="M63.521 73.279c-.286 0-.569-.121-.767-.357l-7.332-8.733c-.355-.423-.301-1.054
 d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.123-1.408.424-.354 1.054-.301 1.409.123l10.047 11.966c.355.423.3 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
 </svg>
 </button>
+<button class="map-button" id="openMapPicker" style="display:none" title="Выбрать точку на карте">
+  📍 Выбрать на карте
+</button>
 <div class="modal-buttons">
 <button class="modal-btn save-button"   id="saveCoords">Сохранить</button>
 <button class="modal-btn cancel-button" id="cancelCoords">Отмена</button>
 <button class="modal-btn delete-greeting-btn" id="deleteGreeting">Удалить</button>
 </div>
 </div>
+</div>
+<!-- ═══ MAP PICKER MODAL ═══ -->
+<div id="mapPickerModal" class="modal" style="display:none;">
+  <div class="modal-content" style="
+    max-width: 95vw; width: 600px; padding: 0;
+    background: var(--modal-bg, #fff) !important;
+    border-radius: 12px; overflow: hidden;
+  ">
+    <!-- Шапка -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--primary-color);color:#fff;">
+      <span style="font-weight:600;font-size:1em;">📍 Выберите место на карте</span>
+      <button id="mapPickerClose" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;">✕</button>
+    </div>
+    <!-- Подсказка -->
+    <div id="mapPickerHint" style="padding:8px 16px;font-size:.85em;color:#555;background:#f5f5f5;border-bottom:1px solid #ddd;">
+      Нажмите на карту чтобы поставить метку
+    </div>
+    <!-- Карта -->
+    <div id="mapPickerContainer" style="width:100%;height:55vh;min-height:300px;"></div>
+    <!-- Координаты + кнопки -->
+    <div style="padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--modal-bg,#fff);">
+      <span id="mapPickerCoords" style="flex:1;font-size:.9em;font-family:monospace;color:#333;">—</span>
+      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>✔ Подтвердить</button>
+      <button id="mapPickerCancel" class="modal-btn cancel-button">Отмена</button>
+    </div>
+  </div>
 </div>
 </main>
 <script>
@@ -1238,7 +1267,8 @@ modalTitle: document.getElementById('modalTitle'),
 saveCoordsButton: document.getElementById('saveCoords'),
 deleteGreetingButton: document.getElementById('deleteGreeting'),
 cancelCoordsButton: document.getElementById('cancelCoords'),
-openMapButton: document.getElementById('openMap')
+openMapButton: document.getElementById('openMap'),
+openMapPickerButton: document.getElementById('openMapPicker')
 };
 this.currentEditIndex = null;
 this.currentMainParticipantIndex = null;
@@ -1436,6 +1466,7 @@ this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordina
 this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
 this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
 this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
+this.elements.openMapPickerButton.addEventListener('click', () => this.openMapPicker());
 // Add-type modal handlers
 const addTypeModal = document.getElementById('addTypeModal');
 const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
@@ -1848,6 +1879,7 @@ const greetingInput = this.elements.greetingInput;
 const greetingLabel = this.elements.greetingLabel;
 const modalTitle = this.elements.modalTitle;
 const openMapButton = this.elements.openMapButton;
+const openMapPickerButton = this.elements.openMapPickerButton;
 const deleteGreetingButton = this.elements.deleteGreetingButton;
 modalContent.classList.toggle('add-new-name', isAddingNewName);
 modalTitle.textContent = isAddingNewDestination ? 'Новый пункт назначения' :
@@ -1857,7 +1889,7 @@ isAddingNewName ? 'Добавить новое имя' :
 isEditingStartPoint ? 'Редактировать координаты начальной точки' :
 isMachine ? 'Редактировать координаты машины' : 'Редактировать координаты';
 [nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
-[coordsLabel, coordsHelp, coordsInput, openMapButton].forEach(el => el.style.display = 'block');
+[coordsLabel, coordsHelp, coordsInput, openMapButton, openMapPickerButton].forEach(el => el.style.display = 'block');
 // выбор станций
 const stSel = document.getElementById('stationSelect');
 if (isMachine) {
@@ -2080,6 +2112,117 @@ if (parsed && Math.abs(parsed.lat) <= 90) url += `/place/${parsed.lat},${parsed.
 else url += `/search/${encodeURIComponent(coords)}`;
 }
 window.open(url, '_blank');
+}
+
+// ── Map Picker ────────────────────────────────────────────────────────────────
+async openMapPicker() {
+  const modal = document.getElementById('mapPickerModal');
+  const container = document.getElementById('mapPickerContainer');
+  const coordsSpan = document.getElementById('mapPickerCoords');
+  const confirmBtn = document.getElementById('mapPickerConfirm');
+
+  modal.style.display = 'flex';
+  modal.style.cssText += 'display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);';
+
+  let pickedLat = null, pickedLng = null;
+
+  // Получаем API ключ
+  let apiKey;
+  try {
+    const r = await fetch('/api/maps-key');
+    const d = await r.json();
+    apiKey = d.key;
+  } catch(e) {
+    this.showToast('❌ Не удалось получить API ключ карты');
+    modal.style.display = 'none';
+    return;
+  }
+
+  // Начальная точка — из текущего поля или центр Германии
+  let initLat = 51.5, initLng = 7.0, initZoom = 10;
+  const cur = this.elements.coordsInput.value.trim();
+  const m = cur.match(/([-+]?\d{1,3}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+  if (m) { initLat = +m[1]; initLng = +m[2]; initZoom = 15; }
+
+  // Загружаем Google Maps JS API если ещё не загружен
+  const initMap = () => {
+    const map = new google.maps.Map(container, {
+      center: { lat: initLat, lng: initLng },
+      zoom: initZoom,
+      mapTypeControl: false,
+      streetViewControl: false,
+      fullscreenControl: false,
+    });
+
+    // Поиск в карте
+    const searchBox = new google.maps.places.SearchBox(
+      Object.assign(document.createElement('input'), {
+        type: 'text',
+        placeholder: 'Поиск адреса…',
+        style: 'margin:10px;padding:8px 12px;width:280px;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.3);font-size:14px;outline:none;'
+      })
+    );
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchBox.getInputElement ? searchBox.getInputElement() : searchBox.input);
+    searchBox.addListener('places_changed', () => {
+      const places = searchBox.getPlaces();
+      if (!places?.length) return;
+      const loc = places[0].geometry.location;
+      map.panTo(loc); map.setZoom(16);
+    });
+
+    let marker = null;
+
+    // Если уже есть координаты — ставим маркер
+    if (m) {
+      marker = new google.maps.Marker({ position: { lat: initLat, lng: initLng }, map, draggable: true });
+      pickedLat = initLat; pickedLng = initLng;
+      coordsSpan.textContent = `${initLat.toFixed(6)}, ${initLng.toFixed(6)}`;
+      confirmBtn.disabled = false;
+      marker.addListener('dragend', e => {
+        pickedLat = e.latLng.lat(); pickedLng = e.latLng.lng();
+        coordsSpan.textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+      });
+    }
+
+    // Клик по карте — ставим / перемещаем маркер
+    map.addListener('click', e => {
+      pickedLat = e.latLng.lat(); pickedLng = e.latLng.lng();
+      coordsSpan.textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+      confirmBtn.disabled = false;
+      if (marker) marker.setPosition(e.latLng);
+      else {
+        marker = new google.maps.Marker({ position: e.latLng, map, draggable: true, animation: google.maps.Animation.DROP });
+        marker.addListener('dragend', ev => {
+          pickedLat = ev.latLng.lat(); pickedLng = ev.latLng.lng();
+          coordsSpan.textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+        });
+      }
+    });
+  };
+
+  if (window.google?.maps) {
+    container.innerHTML = '';
+    initMap();
+  } else {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">⏳ Загрузка карты…</div>';
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=__mapPickerInit`;
+    script.async = true;
+    window.__mapPickerInit = () => { container.innerHTML = ''; initMap(); };
+    document.head.appendChild(script);
+  }
+
+  // Подтвердить
+  confirmBtn.onclick = () => {
+    if (pickedLat === null) return;
+    this.elements.coordsInput.value = `${pickedLat.toFixed(6)},${pickedLng.toFixed(6)}`;
+    modal.style.display = 'none';
+  };
+
+  // Закрыть
+  const close = () => { modal.style.display = 'none'; pickedLat = null; };
+  document.getElementById('mapPickerClose').onclick = close;
+  document.getElementById('mapPickerCancel').onclick = close;
 }
 addParticipant() {
 this.openAddTypeModal();
