@@ -275,28 +275,36 @@ background: var(--surface);
 color: var(--text);
 }
 
-/* крестикудаления участников */
+/* крестик удаления участников */
 .sub-participant .remove-sub-btn {
-width: 18px;
-height: 18px;
-background: var(--danger-color);
-color: white;
+width: 24px;
+height: 24px;
+background: transparent;
+color: var(--danger-color);
 border: none;
-border-radius: 50%;
+border-radius: 4px;
+font-size: 14px;
+font-weight: 700;
+display: flex;
+align-items: center;
+justify-content: center;
 cursor: pointer;
-font-size: 12px;
-line-height: 1;
 flex-shrink: 0;
+line-height: 1;
+padding: 0;
 align-self: flex-start;
-margin-top: -4px;
+transform: translate(5px, -10px);
+margin-left: auto;
+opacity: .7;
+transition: opacity .15s, transform .12s;
 }
 .sub-participant .remove-sub-btn::before {
   content: "✖";
-  position: relative;
-  top: -1px;
 }
 .sub-participant .remove-sub-btn:hover {
-background: #c82333;
+background: transparent;
+opacity: 1;
+transform: translate(5px, -10px) scale(1.2);
 }
 .sub-participant .drag-handle-sub {
 cursor: grab;
