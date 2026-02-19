@@ -848,6 +848,28 @@ margin-top: var(--spacing-unit);
 margin-bottom: var(--spacing-unit);
 background: var(--primary-color);
 }
+#mapBtnsRow .map-button,
+#mapBtnsRow .modal-btn {
+width: 52px;
+height: 40px;
+min-width: 0;
+padding: 0;
+margin: 0;
+font-size: 20px;
+display: flex;
+align-items: center;
+justify-content: center;
+border-radius: var(--border-radius, 6px);
+}
+#mapBtnsRow #openMap {
+background: var(--info-color, #607d8b) !important;
+}
+#mapBtnsRow #cancelCoords {
+background: var(--danger-color, #e53935) !important;
+color: #fff !important;
+font-weight: 900;
+font-size: 22px;
+}
 #result {
 font-family: Arial, sans-serif;
 font-size: 16px;
@@ -1161,29 +1183,25 @@ placeholder="51.452013,7.021455 или https://maps.app.goo.gl/..." />
 <select id="stationSelect" style="display:none; margin-top:6px; width:100%; padding:var(--small-spacing); border:1px solid #ddd; border-radius:4px; font-size:1em; box-sizing:border-box; background:var(--surface); color:var(--text);">
 <option value="">– Выбрать из списка –</option>
 </select>
-<button class="map-button" id="openMap" style="display:none">
+<div id="mapBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:20px;margin-bottom:4px;">
+<button class="map-button" id="openMap" title="Открыть карту">
 <svg width="24" height="24" viewBox="0 0 90 90" fill="currentColor">
-<path
-d="M89 79.382H1c-.355 0-.683-.188-.863-.494-.179-.306-.183-.685-.01-.994L15.174 49.373c.177-.315.511-.512.873-.512h22.326c.552 0 1 .447 1 1s-.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-.553 0-1-.447-1-1s.447-1 1-1h22.325c.362 0 .696.196.873.512l15.947 28.521c.173.31.169.688-.011.994s-.778.484-1.132.484z" />
-<path
-d="M45 60.554L30.514 43.493C27.603 40.063 26 35.701 26 31.213c0-10.477 8.523-19 19-19s19 8.523 19 19c0 4.489-1.603 8.851-4.514 12.28L45 60.554zM45 15.713c-8.28 0-15.016 6.736-15.016 15.016 0 3.778 1.35 7.45 3.801 10.339L45 45.875l12.199-14.367C59.65 38.619 61 34.948 61 31.169c0-8.822-7.177-16-16-16z" />
-<path
-d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649s3.88-8.649 8.649-8.649 8.649 3.88 8.649 8.649-3.88 8.649-8.649 8.649zm0-15.298c-3.666 0-6.649 2.983-6.649 6.649s2.983 6.649 6.649 6.649 6.649-2.983 6.649-6.649-2.983-6.649-6.649-6.649z" />
-<path
-d="M1 79.382c-.441 0-.845-.294-.965-.74-.143-.533.173-1.082.706-1.226l76.501-20.565c.531-.145 1.082.172 1.226.706.144.533-.173 1.082-.706 1.226L1.26 79.348c-.087.023-.175.034-.26.034z" />
-<path
-d="M63.521 73.279c-.286 0-.569-.121-.767-.357l-7.332-8.733c-.355-.423-.301-1.054.123-1.408.423-.355 1.056-.301 1.408.123l7.332 8.733c.355.423.301 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
-<path
-d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.123-1.408.424-.354 1.054-.301 1.409.123l10.047 11.966c.355.423.3 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
+<path d="M89 79.382H1c-.355 0-.683-.188-.863-.494-.179-.306-.183-.685-.01-.994L15.174 49.373c.177-.315.511-.512.873-.512h22.326c.552 0 1 .447 1 1s-.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-.553 0-1-.447-1-1s.447-1 1-1h22.325c.362 0 .696.196.873.512l15.947 28.521c.173.31.169.688-.011.994s-.778.484-1.132.484z" />
+<path d="M45 60.554L30.514 43.493C27.603 40.063 26 35.701 26 31.213c0-10.477 8.523-19 19-19s19 8.523 19 19c0 4.489-1.603 8.851-4.514 12.28L45 60.554zM45 15.713c-8.28 0-15.016 6.736-15.016 15.016 0 3.778 1.35 7.45 3.801 10.339L45 45.875l12.199-14.367C59.65 38.619 61 34.948 61 31.169c0-8.822-7.177-16-16-16z" />
+<path d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649s3.88-8.649 8.649-8.649 8.649 3.88 8.649 8.649-3.88 8.649-8.649 8.649zm0-15.298c-3.666 0-6.649 2.983-6.649 6.649s2.983 6.649 6.649 6.649 6.649-2.983 6.649-6.649-2.983-6.649-6.649-6.649z" />
+<path d="M1 79.382c-.441 0-.845-.294-.965-.74-.143-.533.173-1.082.706-1.226l76.501-20.565c.531-.145 1.082.172 1.226.706.144.533-.173 1.082-.706 1.226L1.26 79.348c-.087.023-.175.034-.26.034z" />
+<path d="M63.521 73.279c-.286 0-.569-.121-.767-.357l-7.332-8.733c-.355-.423-.301-1.054.123-1.408.423-.355 1.056-.301 1.408.123l7.332 8.733c.355.423.301 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
+<path d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.123-1.408.424-.354 1.054-.301 1.409.123l10.047 11.966c.355.423.3 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
 </svg>
 </button>
-<button class="map-button" id="openMapPicker" style="display:none" title="Выбрать точку на карте">
-  📍 Выбрать на карте
+<button class="map-button" id="openMapPicker" title="Выбрать точку на карте">
+<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 469 512.42" width="22" height="22" fill="currentColor"><path fill-rule="nonzero" d="M191.82 93.36c27.85 0 53.07 11.31 71.31 29.54 18.23 18.23 29.53 43.46 29.53 71.3 0 27.85-11.3 53.07-29.53 71.31-18.24 18.23-43.46 29.53-71.31 29.53-27.84 0-53.07-11.3-71.3-29.53-18.23-18.24-29.54-43.46-29.54-71.31 0-27.84 11.31-53.07 29.54-71.3 18.23-18.23 43.46-29.54 71.3-29.54zm210.56 289.21v17.66c0 4.16-3.48 7.63-7.62 7.63h-30.32v30.32c0 4.15-3.47 7.62-7.62 7.62h-17.67c-4.13 0-7.62-3.43-7.62-7.62v-30.32h-30.34c-4.14 0-7.6-3.43-7.6-7.63v-17.66c0-4.19 3.42-7.62 7.6-7.62h30.34v-30.32c0-4.2 3.43-7.62 7.62-7.62h17.67c4.19 0 7.62 3.48 7.62 7.62v30.32h30.32c4.2 0 7.62 3.53 7.62 7.62zM348 270.39c33.39 0 63.66 13.55 85.55 35.44l.61.65c21.53 21.84 34.84 51.85 34.84 84.91 0 33.4-13.55 63.68-35.45 85.58l-.65.61c-21.83 21.52-51.84 34.84-84.9 34.84-33.4 0-63.65-13.57-85.54-35.45-21.94-21.9-35.49-52.18-35.49-85.58 0-33.37 13.57-63.62 35.45-85.52 21.89-21.93 52.18-35.48 85.58-35.48zm69.05 51.95c-17.66-17.67-42.1-28.6-69.05-28.6-26.96 0-51.42 10.93-69.08 28.6-17.65 17.64-28.59 42.1-28.59 69.05 0 26.96 10.92 51.42 28.59 69.08 17.64 17.64 42.1 28.59 69.08 28.59 26.7 0 50.94-10.73 68.56-28.06l.49-.53c17.67-17.66 28.6-42.12 28.6-69.08 0-26.7-10.74-50.94-28.07-68.56l-.53-.49zM197.53 485.87c7.56-4.8 14.91-9.92 22.02-15.28a149.47 149.47 0 0 0 13.51 18.57c-9.26 6.93-18.87 13.49-28.85 19.57-3.7 2.74-8.88 3.08-13 .48-44.87-28.52-82.58-62.92-112.28-100.19C38.05 357.7 12.26 300.79 3.44 246.01c-8.96-55.55-.56-109.03 27.07-152.51C41.4 76.35 55.34 60.72 72.37 47.15 111.36 16.08 156-.37 200.29.01c42.69.35 84.97 16.28 121.48 49.6 12.8 11.7 23.59 24.97 32.37 39.46 26.56 43.85 34.52 98.6 26.54 154.99-7.4-1.63-14.96-2.72-22.72-3.23 7.27-51.33.26-100.76-23.43-139.87-7.6-12.52-17-24.08-28.24-34.34-32.14-29.32-69.08-43.36-106.2-43.65-38.97-.32-78.53 14.37-113.42 42.18C71.78 77 59.56 90.73 49.97 105.83c-24.52 38.59-31.92 86.5-23.85 136.6 8.19 50.88 32.39 104.07 70.81 152.29 26.78 33.59 60.51 64.79 100.6 91.15zm49.33-346.7c-14.06-14.06-33.55-22.81-55.04-22.81-21.48 0-40.97 8.75-55.03 22.81-14.06 14.06-22.81 33.55-22.81 55.03 0 21.49 8.75 40.98 22.81 55.04 14.06 14.06 33.55 22.8 55.03 22.8 21.49 0 40.98-8.74 55.04-22.8 14.06-14.06 22.8-33.55 22.8-55.04 0-21.48-8.74-40.97-22.8-55.03z"/></svg>
 </button>
-<div class="modal-buttons">
-<button class="modal-btn save-button"   id="saveCoords">Сохранить</button>
-<button class="modal-btn cancel-button" id="cancelCoords">Отмена</button>
-<button class="modal-btn delete-greeting-btn" id="deleteGreeting">Удалить</button>
+<button class="modal-btn save-button"   id="saveCoords"   title="Сохранить">✔</button>
+<button class="modal-btn cancel-button" id="cancelCoords" title="Отмена">✕</button>
+</div>
+<div style="display:flex;justify-content:center;margin-top:8px;">
+<button class="modal-btn delete-greeting-btn" id="deleteGreeting" title="Удалить">🗑 Удалить</button>
 </div>
 </div>
 </div>
@@ -1218,7 +1236,7 @@ d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.
     <!-- Кнопки подтверждения -->
     <div style="padding:8px 12px;display:flex;gap:8px;justify-content:flex-end;background:var(--modal-bg,#fff);border-top:1px solid #eee;">
       <button id="mapPickerCancel"  class="modal-btn cancel-button">Отмена</button>
-      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>✔ Подтвердить</button>
+      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>OK</button>
     </div>
   </div>
 </div>
@@ -1277,7 +1295,8 @@ saveCoordsButton: document.getElementById('saveCoords'),
 deleteGreetingButton: document.getElementById('deleteGreeting'),
 cancelCoordsButton: document.getElementById('cancelCoords'),
 openMapButton: document.getElementById('openMap'),
-openMapPickerButton: document.getElementById('openMapPicker')
+openMapPickerButton: document.getElementById('openMapPicker'),
+mapBtnsRow: document.getElementById('mapBtnsRow')
 };
 this.currentEditIndex = null;
 this.currentMainParticipantIndex = null;
@@ -1898,7 +1917,8 @@ isAddingNewName ? 'Добавить новое имя' :
 isEditingStartPoint ? 'Редактировать координаты начальной точки' :
 isMachine ? 'Редактировать координаты машины' : 'Редактировать координаты';
 [nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
-[coordsLabel, coordsHelp, coordsInput, openMapButton, openMapPickerButton].forEach(el => el.style.display = 'block');
+[coordsLabel, coordsHelp, coordsInput, this.elements.mapBtnsRow].forEach(el => el.style.display = 'block');
+this.elements.mapBtnsRow.style.display = 'flex';
 // выбор станций
 const stSel = document.getElementById('stationSelect');
 if (isMachine) {
@@ -1946,7 +1966,7 @@ const modal = this.elements.coordsModal;
 const modalContent = this.elements.modalContent;
 modalContent.classList.remove('add-new-name');
 this.elements.modalTitle.textContent = isAddingNewGreeting ? 'Добавить новое приветствие' : 'Редактировать приветствие';
-['coordsLabel', 'coordsHelp', 'coordsInput', 'openMapButton', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
+['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
 this.elements.greetingLabel.style.display = 'block';
 this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = this.greeting;
