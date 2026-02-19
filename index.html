@@ -1189,35 +1189,36 @@ d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.
 </div>
 <!-- ═══ MAP PICKER MODAL ═══ -->
 <div id="mapPickerModal" class="modal" style="display:none;">
-  <div class="modal-content" style="
+  <div id="mapPickerSheet" class="modal-content" style="
     max-width: 95vw; width: 600px; padding: 0;
     background: var(--modal-bg, #fff) !important;
     border-radius: 12px; overflow: hidden;
+    transition: all .2s ease;
   ">
     <!-- Шапка -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary-color);color:#fff;">
       <span style="font-weight:600;font-size:1em;">📍 Выберите место на карте</span>
       <div style="display:flex;gap:6px;align-items:center;">
-        <!-- Тип карты -->
-        <button id="mapTypeRoad" title="Схема" style="background:rgba(255,255,255,.25);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:600;">🗺 Схема</button>
-        <button id="mapTypeSat"  title="Спутник" style="background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:600;">🛰 Спутник</button>
-        <!-- Геолокация -->
-        <button id="mapGeoBtn" title="Моё местоположение" style="background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:16px;">📡</button>
-        <!-- Закрыть -->
+        <button id="mapFullscreenBtn" title="Развернуть на весь экран" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;">⛶</button>
         <button id="mapPickerClose" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 2px;">✕</button>
       </div>
     </div>
-    <!-- Подсказка -->
-    <div id="mapPickerHint" style="padding:6px 14px;font-size:.82em;color:#666;background:#f5f5f5;border-bottom:1px solid #ddd;">
-      Нажмите на карту чтобы поставить метку · маркер можно перетащить
-    </div>
     <!-- Карта -->
     <div id="mapPickerContainer" style="width:100%;height:55vh;min-height:300px;"></div>
-    <!-- Координаты + кнопки -->
-    <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--modal-bg,#fff);">
-      <span id="mapPickerCoords" style="flex:1;font-size:.85em;font-family:monospace;color:#444;">—</span>
+    <!-- Панель инструментов снизу -->
+    <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--modal-bg,#fff);border-top:1px solid #e0e0e0;">
+      <!-- Тип карты -->
+      <button id="mapTypeRoad" style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;">🗺 Схема</button>
+      <button id="mapTypeSat"  style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;">🛰 Спутник</button>
+      <!-- Геолокация -->
+      <button id="mapGeoBtn" title="Моё местоположение" style="border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;">📡 Моё место</button>
+      <!-- Координаты -->
+      <span id="mapPickerCoords" style="flex:1;font-size:.82em;font-family:monospace;color:#555;text-align:right;min-width:120px;">—</span>
+    </div>
+    <!-- Кнопки подтверждения -->
+    <div style="padding:8px 12px;display:flex;gap:8px;justify-content:flex-end;background:var(--modal-bg,#fff);border-top:1px solid #eee;">
+      <button id="mapPickerCancel"  class="modal-btn cancel-button">Отмена</button>
       <button id="mapPickerConfirm" class="modal-btn save-button" disabled>✔ Подтвердить</button>
-      <button id="mapPickerCancel" class="modal-btn cancel-button">Отмена</button>
     </div>
   </div>
 </div>
@@ -2163,57 +2164,79 @@ async openMapPicker() {
       fullscreenControl: false,
     });
 
+    // ── Полноэкранный режим ───────────────────────────────────────────────
+    const sheet = document.getElementById('mapPickerSheet');
+    let isFullscreen = false;
+    document.getElementById('mapFullscreenBtn').onclick = () => {
+      isFullscreen = !isFullscreen;
+      if (isFullscreen) {
+        sheet.style.cssText = 'position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;border-radius:0;padding:0;display:flex;flex-direction:column;';
+        container.style.height = 'auto';
+        container.style.flex = '1';
+        document.getElementById('mapFullscreenBtn').textContent = '⊡';
+        document.getElementById('mapFullscreenBtn').title = 'Свернуть';
+      } else {
+        sheet.style.cssText = 'max-width:95vw;width:600px;padding:0;background:var(--modal-bg,#fff) !important;border-radius:12px;overflow:hidden;transition:all .2s ease;';
+        container.style.height = '55vh';
+        container.style.flex = '';
+        document.getElementById('mapFullscreenBtn').textContent = '⛶';
+        document.getElementById('mapFullscreenBtn').title = 'Развернуть на весь экран';
+      }
+      google.maps.event.trigger(map, 'resize');
+    };
+
     // ── Смена типа карты ──────────────────────────────────────────────────
     const btnRoad = document.getElementById('mapTypeRoad');
     const btnSat  = document.getElementById('mapTypeSat');
-    const activeStyle  = 'background:rgba(255,255,255,.35);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:700;';
-    const normalStyle  = 'background:rgba(255,255,255,.1);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px;font-weight:600;';
-    btnRoad.style.cssText = activeStyle;
-    btnRoad.onclick = () => { map.setMapTypeId('roadmap');  btnRoad.style.cssText = activeStyle; btnSat.style.cssText = normalStyle; };
-    btnSat.onclick  = () => { map.setMapTypeId('satellite'); btnSat.style.cssText = activeStyle; btnRoad.style.cssText = normalStyle; };
+    const setActive = (active, inactive) => {
+      active.style.cssText   = 'border:2px solid var(--primary-color,#1976d2);background:#e8f0fe;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:700;color:var(--primary-color,#1976d2);';
+      inactive.style.cssText = 'border:1px solid #ccc;background:#fff;border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;color:#333;';
+    };
+    setActive(btnRoad, btnSat);
+    btnRoad.onclick = () => { map.setMapTypeId('roadmap');   setActive(btnRoad, btnSat); };
+    btnSat.onclick  = () => { map.setMapTypeId('satellite'); setActive(btnSat, btnRoad); };
 
     // ── Геолокация ────────────────────────────────────────────────────────
     let geoMarker = null;
     document.getElementById('mapGeoBtn').onclick = () => {
       if (!navigator.geolocation) { alert('Геолокация не поддерживается'); return; }
       const btn = document.getElementById('mapGeoBtn');
-      btn.textContent = '⏳';
+      btn.textContent = '⏳ …';
       navigator.geolocation.getCurrentPosition(
         pos => {
-          btn.textContent = '📡';
+          btn.textContent = '📡 Моё место';
           const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
           map.panTo(loc); map.setZoom(16);
-          // Синяя точка "моё место"
           if (geoMarker) geoMarker.setPosition(loc);
           else geoMarker = new google.maps.Marker({
             position: loc, map,
             icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
-            title: 'Моё местоположение',
-            zIndex: 1
+            title: 'Моё местоположение', zIndex: 1
           });
         },
-        err => { btn.textContent = '📡'; alert('Не удалось определить местоположение: ' + err.message); },
+        err => { btn.textContent = '📡 Моё место'; alert('Не удалось определить местоположение: ' + err.message); },
         { enableHighAccuracy: true, timeout: 10000 }
       );
     };
 
     // ── Поиск ─────────────────────────────────────────────────────────────
     const searchInput = Object.assign(document.createElement('input'), {
-      type: 'text',
-      placeholder: '🔍 Поиск адреса…',
+      type: 'text', placeholder: '🔍 Поиск адреса…',
     });
-    searchInput.style.cssText = 'margin:8px;padding:7px 12px;width:260px;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.3);font-size:14px;outline:none;';
+    searchInput.style.cssText = 'margin:8px;padding:7px 12px;width:240px;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.3);font-size:14px;outline:none;';
     const searchBox = new google.maps.places.SearchBox(searchInput);
     map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchInput);
     searchBox.addListener('places_changed', () => {
       const places = searchBox.getPlaces();
       if (!places?.length) return;
-      const loc = places[0].geometry.location;
-      map.panTo(loc); map.setZoom(16);
+      map.panTo(places[0].geometry.location);
+      map.setZoom(16);
     });
 
     // ── Маркер ────────────────────────────────────────────────────────────
     let marker = null;
+    const coordsSpan = document.getElementById('mapPickerCoords');
+    const confirmBtn = document.getElementById('mapPickerConfirm');
 
     const placeMarker = (latLng) => {
       pickedLat = latLng.lat(); pickedLng = latLng.lng();
@@ -2229,10 +2252,7 @@ async openMapPicker() {
       }
     };
 
-    // Если уже есть координаты — ставим маркер сразу
     if (m) placeMarker(new google.maps.LatLng(initLat, initLng));
-
-    // Клик по карте
     map.addListener('click', e => placeMarker(e.latLng));
   };
 
