@@ -930,10 +930,10 @@ body {
     <div class="modal-handle"></div>
     <div class="modal-title" id="selectModalTitle">Добавить участника</div>
 
-    <!-- Переключатель тип -->
-    <div style="display:flex;gap:8px;margin-bottom:12px;" id="selectTypeBtns">
-      <button id="selectTypeParticipant" class="mbtn mbtn-confirm" style="flex:1;height:36px;font-size:.85rem;">👤 Участник</button>
-      <button id="selectTypeTreff"       class="mbtn mbtn-cancel"  style="flex:1;height:36px;font-size:.85rem;">📍 Место встречи</button>
+    <!-- Переключатель тип (показывается только при добавлении нового элемента) -->
+    <div id="selectTypeBtns" style="display:none;gap:8px;margin-bottom:12px;">
+      <button id="selectTypeParticipant" class="mbtn mbtn-confirm" style="flex:1;height:36px;font-size:.85rem;">👤 Коллега</button>
+      <button id="selectTypeTreff"       class="mbtn mbtn-cancel"  style="flex:1;height:36px;font-size:.85rem;">📍 Treffpunkt</button>
     </div>
 
     <!-- Список участников -->
@@ -967,13 +967,6 @@ body {
 
     <div class="gh-section-title" style="margin-top:16px">Загрузить stations.js</div>
     <button class="mbtn mbtn-confirm" id="ghSendStationsBtn" style="width:100%;height:46px;">⬆️ Отправить stations.js</button>
-
-    <hr class="gh-divider">
-
-    <div class="gh-section-title">Обновить stations.js в index.html</div>
-    <div style="font-size:.78rem;color:var(--text2);margin-bottom:8px;">Скачает index.html с GitHub, вставит новые данные из stations.js и загрузит обратно</div>
-    <button class="mbtn" id="ghPatchIndexBtn" style="width:100%;height:46px;background:var(--accent);color:#fff;">🔄 Обновить index.html</button>
-    <div id="ghPatchStatus" style="font-size:.78rem;color:var(--text2);margin-top:6px;min-height:18px;"></div>
 
     <hr class="gh-divider">
 
@@ -1326,9 +1319,27 @@ function render() {
           div.style.borderLeft = '3px solid #ff9800';
           const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
           nm.textContent = `${idx + 1}. 📍 ${item.treffpunkt}`; div.appendChild(nm);
+          const subBtn = mkAddSubBtn();
+          subBtn.title = 'Добавить кто ждёт здесь';
+          subBtn.onclick = e => { e.stopPropagation(); triggerAddTreffPerson(driver, idx, item.treffpunkt, drivers); };
+          div.appendChild(subBtn);
           div.appendChild(mkHandle());
           div.appendChild(mkDelBtn(() => { order.splice(idx, 1); rebuildList(); showMsg('Удалено'); }));
           listBox.appendChild(div);
+          // Коллеги которые ждут у этого Treffpunkt
+          if (item.persons?.length) {
+            const indent = document.createElement('div'); indent.className = 'group-indent';
+            item.persons.forEach((person, pi) => {
+              const sd = mkCard(false, idx);
+              sd.classList.add('sub-card');
+              const arrow = document.createElement('span'); arrow.textContent = '↳'; arrow.style.cssText = 'color:var(--text2);font-size:.8rem;flex-shrink:0;';
+              const nm2 = document.createElement('span'); nm2.className = 'card-name'; nm2.style.cursor = 'default'; nm2.textContent = person;
+              sd.appendChild(arrow); sd.appendChild(nm2);
+              sd.appendChild(mkDelBtn(() => { item.persons.splice(pi, 1); rebuildList(); showMsg('Удалено'); }));
+              indent.appendChild(sd);
+            });
+            listBox.appendChild(indent);
+          }
         } else if (item?.main) {
           const div = mkCard(true, idx);
           const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
@@ -1632,13 +1643,12 @@ function emptyState(icon, text) {
 //  participantOrders modals
 // ═══════════════════════════════════════
 
-// Переключатель Участник / Место встречи
+// Переключатель Коллега / Treffpunkt
 (function() {
   const btnP = document.getElementById('selectTypeParticipant');
   const btnT = document.getElementById('selectTypeTreff');
   const wrapP = document.getElementById('selectParticipantWrap');
   const wrapT = document.getElementById('selectTreffWrap');
-  const activeStyle = '';   // mbtn-confirm уже активный
   function showParticipant() {
     wrapP.style.display = ''; wrapT.style.display = 'none';
     btnP.className = 'mbtn mbtn-confirm'; btnT.className = 'mbtn mbtn-cancel';
@@ -1655,25 +1665,42 @@ function emptyState(icon, text) {
   window._showTreffTab = showTreff;
 })();
 
+function getAllUsedNamesGlobal() {
+  const used = new Set();
+  Object.keys(participantOrders).forEach(driver => {
+    if (driver.startsWith('_')) return;
+    (participantOrders[driver] || []).forEach(item => {
+      if (typeof item === 'string') used.add(item);
+      else if (item?.main) { used.add(item.main); (item.subParticipants || []).forEach(s => used.add(s)); }
+    });
+  });
+  return used;
+}
+
 function triggerAddOrder(driver, drivers) {
-  const used = getAllUsedNames(driver);
+  const used = getAllUsedNamesGlobal();
   const avail = drivers.filter(n => n !== driver && !used.has(n));
-  // Заполняем оба списка
+  const treffKeys = Object.keys(treffpunkt);
+  const hasTreff = treffKeys.length > 0;
+
+  if (!avail.length && !hasTreff) { showMsg('Все участники уже добавлены'); return; }
+
+  // Заполняем список участников
   const sel = document.getElementById('selectParticipant');
   sel.innerHTML = '';
   avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
 
+  // Заполняем список treffpunkt
   const treffSel = document.getElementById('selectTreff');
   treffSel.innerHTML = '';
-  Object.keys(treffpunkt).forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; treffSel.appendChild(o); });
+  treffKeys.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; treffSel.appendChild(o); });
 
-  // Показываем кнопки типа — если нет treffpunkt скрываем переключатель
-  const hasTreff = Object.keys(treffpunkt).length > 0;
-  document.getElementById('selectTypeBtns').style.display = hasTreff ? 'flex' : 'none';
+  // Показываем переключатель только при добавлении нового элемента
+  const typeBtns = document.getElementById('selectTypeBtns');
+  typeBtns.style.display = hasTreff ? 'flex' : 'none';
 
-  if (!avail.length && !hasTreff) { showMsg('Все участники уже добавлены'); return; }
-  if (!avail.length) { window._showTreffTab(); }
-  else { window._showParticipantTab(); }
+  if (!avail.length) window._showTreffTab();
+  else window._showParticipantTab();
 
   window._modalCtx = { mode: 'add', driver };
   document.getElementById('selectModalTitle').textContent = `Добавить к ${driver}`;
@@ -1681,7 +1708,7 @@ function triggerAddOrder(driver, drivers) {
 }
 
 function triggerConvertToGroup(driver, idx, mainName, drivers) {
-  const used = getAllUsedNames(driver);
+  const used = getAllUsedNamesGlobal();
   const avail = drivers.filter(n => n !== driver && !used.has(n));
   if (!avail.length) { showMsg('Нет доступных участников'); return; }
   const sel = document.getElementById('selectParticipant');
@@ -1695,7 +1722,7 @@ function triggerConvertToGroup(driver, idx, mainName, drivers) {
 }
 
 function triggerAddToGroup(driver, groupIdx, groupMain, drivers) {
-  const used = getAllUsedNames(driver);
+  const used = getAllUsedNamesGlobal();
   const avail = drivers.filter(n => n !== driver && !used.has(n));
   if (!avail.length) { showMsg('Нет доступных участников'); return; }
   const sel = document.getElementById('selectParticipant');
@@ -1708,17 +1735,29 @@ function triggerAddToGroup(driver, groupIdx, groupMain, drivers) {
   openModal('selectModal');
 }
 
+function triggerAddTreffPerson(driver, treffIdx, treffName, drivers) {
+  const used = getAllUsedNamesGlobal();
+  const avail = drivers.filter(n => n !== driver && !used.has(n));
+  if (!avail.length) { showMsg('Нет доступных участников'); return; }
+  const sel = document.getElementById('selectParticipant');
+  sel.innerHTML = '';
+  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+  document.getElementById('selectTypeBtns').style.display = 'none';
+  window._showParticipantTab();
+  window._modalCtx = { mode: 'addTreffPerson', driver, treffIdx, treffName };
+  document.getElementById('selectModalTitle').textContent = `Кто ждёт у ${treffName}`;
+  openModal('selectModal');
+}
+
 document.getElementById('selectConfirm').onclick = () => {
   const ctx = window._modalCtx;
   const mode = window._selectMode || 'participant';
 
   if (mode === 'treff') {
-    // Добавляем место встречи как treffpunkt-участника
     const name = document.getElementById('selectTreff').value;
     if (!name) return;
     if (!participantOrders[ctx.driver]) participantOrders[ctx.driver] = [];
-    // Сохраняем как объект с флагом isTreffpunkt
-    participantOrders[ctx.driver].push({ treffpunkt: name });
+    participantOrders[ctx.driver].push({ treffpunkt: name, persons: [] });
     participantOrders._lastDriver = ctx.driver;
     closeModal('selectModal');
     render(); showMsg('Место встречи добавлено ✓');
@@ -1736,6 +1775,10 @@ document.getElementById('selectConfirm').onclick = () => {
   } else if (ctx.mode === 'addToGroup') {
     const g = participantOrders[ctx.driver][ctx.groupIdx];
     if (g?.subParticipants) g.subParticipants.push(name);
+  } else if (ctx.mode === 'addTreffPerson') {
+    const t = participantOrders[ctx.driver][ctx.treffIdx];
+    if (t?.persons) t.persons.push(name);
+    else if (t) t.persons = [name];
   }
   closeModal('selectModal');
   render(); showMsg('Добавлено ✓');
@@ -2000,92 +2043,6 @@ document.getElementById('ghSendStationsBtn').onclick = async () => {
   if (!token) { showMsg('Введите токен'); return; }
   await uploadToGitHub(token, GH_FILE, buildExportText());
 };
-
-// ── Обновить stations.js внутри index.html на GitHub ─────────────────────────
-document.getElementById('ghPatchIndexBtn').onclick = async () => {
-  const token = document.getElementById('ghTokenInp').value.trim();
-  if (!token) { showMsg('Введите токен'); return; }
-
-  const statusEl = document.getElementById('ghPatchStatus');
-  const setStatus = t => { statusEl.textContent = t; };
-
-  try {
-    // 1. Ищем index.html в репозитории
-    setStatus('🔍 Ищу index.html…');
-    const listResp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    if (!listResp.ok) throw new Error('Нет доступа к репозиторию');
-    const files = await listResp.json();
-    const indexFile = files.find(f => f.name === 'index.html' || f.name.endsWith('index.html'));
-    if (!indexFile) throw new Error('index.html не найден в корне репозитория');
-
-    // 2. Скачиваем index.html
-    setStatus('⬇️ Скачиваю index.html…');
-    const rawResp = await fetch(indexFile.download_url + '?t=' + Date.now(), { cache: 'no-store' });
-    if (!rawResp.ok) throw new Error('Не удалось скачать index.html');
-    let html = await rawResp.text();
-
-    // 3. Заменяем блок stations.js
-    // stations.js встроен как: const stations = { ... } или this.nameToCoordinates = {...}
-    // или загружается через <script src="stations.js">
-    const newStations = buildExportText();
-
-    // Вариант А: встроенный тег <script src="stations.js">
-    // Вариант Б: содержимое stations.js инлайн внутри <script>…</script>
-    // Мы обновляем как отдельный файл — сначала загружаем stations.js
-    setStatus('⬆️ Обновляю stations.js…');
-    await uploadToGitHubSilent(token, GH_FILE, newStations);
-
-    // 4. Проверяем что index.html ссылается на stations.js через <script src>
-    if (html.includes('stations.js')) {
-      // Уже подключён через src — нам достаточно обновить stations.js (шаг 3)
-      setStatus('✅ stations.js обновлён. index.html подключает его через <script src> — всё готово!');
-      showMsg('stations.js обновлён в GitHub ✅', 3000);
-    } else {
-      // Stations.js встроен инлайном — ищем и заменяем блок
-      // Ищем паттерн: this.nameToCoordinates = { ... } или window.stationsData = { ... }
-      const patterns = [
-        /(this\.nameToCoordinates\s*=\s*\{[\s\S]*?\};)/,
-        /(this\.travelTimes\s*=\s*\{[\s\S]*?\};)/,
-      ];
-      let patched = false;
-      for (const pat of patterns) {
-        if (pat.test(html)) {
-          // Вставляем всё содержимое нового stations.js перед закрывающим </script> основного блока
-          // Сложный кейс — предупреждаем пользователя
-          patched = true;
-          break;
-        }
-      }
-      if (!patched) {
-        setStatus('⚠️ stations.js обновлён, но в index.html данные встроены иначе. Обновите вручную.');
-      } else {
-        setStatus('⚠️ stations.js встроен в index.html инлайн. Рекомендуем подключить его через <script src="stations.js">');
-      }
-    }
-  } catch(e) {
-    setStatus('❌ ' + e.message);
-    showMsg('Ошибка: ' + e.message, 4000);
-  }
-};
-
-async function uploadToGitHubSilent(token, path, text) {
-  const base64 = btoa(unescape(encodeURIComponent(text)));
-  let sha;
-  try {
-    const h = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    if (h.ok) sha = (await h.json()).sha;
-  } catch {}
-  const resp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
-    method: 'PUT',
-    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: `web-update ${path}`, content: base64, sha })
-  });
-  if (!resp.ok) { const e = await resp.json(); throw new Error(e.message); }
-}
 document.getElementById('ghSendAnyBtn').onclick = async () => {
   const token = document.getElementById('ghTokenInp').value.trim();
   if (!token) { showMsg('Введите токен'); return; }
