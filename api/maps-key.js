@@ -2,7 +2,7 @@
 // Ключ хранится в Vercel env: GOOGLE_MAPS_API_KEY
 
 module.exports = (req, res) => {
-  const key = process.env.GOOGLE_MAPS_API_KEY;
+  const key = process.env.GOOGLE_API_KEY;
   if (!key) {
     return res.status(500).json({ error: 'GOOGLE_MAPS_API_KEY не задан в Vercel env' });
   }
