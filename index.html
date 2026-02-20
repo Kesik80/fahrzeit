@@ -618,18 +618,19 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
 }
 .toast {
 position: fixed;
-top: 50%;
+top: 16px;
 left: 50%;
-transform: translate(-50%, -50%);
-background: var(--danger-color);
+transform: translateX(-50%);
+background: rgba(30,30,30,0.88);
 color: white;
-padding: 12px 24px;
-border-radius: 8px;
-font-size: 1.2em;
+padding: 10px 22px;
+border-radius: 24px;
+font-size: 0.97em;
 display: none;
-z-index: 1000;
-box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
-text-align: center
+z-index: 9999;
+box-shadow: 0 4px 16px rgba(0,0,0,.25);
+text-align: center;
+white-space: nowrap;
 }
 /* Модальное окно для пароля God Mode */
 .god-modal {
@@ -2005,9 +2006,6 @@ this.elements.greetingInput.focus();
 }
 async saveCoordinates() {
 const saveButton = this.elements.saveCoordsButton;
-const original = saveButton.textContent;
-saveButton.textContent = 'Загрузка...';
-saveButton.disabled = true;
 try {
 if (this.isAddingNewGreeting || this.isEditingGreeting) {
 const newGreeting = this.elements.greetingInput.value.trim();
@@ -2125,7 +2123,8 @@ this.updateParticipantTimes();
 }
 else if (this.isEditingMachine) {
 this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
-this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); 
+this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable();
+this.showToast('✅ Koordinaten gespeichert');
 // Автоматически рассчитываем время после сохранения координат машины
 setTimeout(() => this.calculateTravelTimeToMachine(), 500);
 return; // Выходим, чтобы не дублировать вызовы ниже
@@ -2139,10 +2138,10 @@ this.participants[this.currentEditIndex].timeManuallyEdited = false;
 this.updateParticipantTimes();
 }
 this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+this.showToast('✅ Koordinaten gespeichert');
 }
-} finally {
-saveButton.textContent = original;
-saveButton.disabled = false;
+} catch(e) {
+  this.showToast('⚠️ ' + e.message);
 }
 }
 deleteGreeting() {
@@ -3136,8 +3135,8 @@ this.showToast("Нечего копировать — сначала рассч�
 return;
 }
 navigator.clipboard.writeText(text)
-.then(() => this.showToast("Результат скопирован в буфер обмена!"))
-.catch(() => this.showToast("Не удалось скопировать — разрешите доступ к буферу обмена."));
+.then(() => this.showToast("📋 Скопировано"))
+.catch(() => this.showToast("⚠️ Не удалось скопировать — разрешите доступ к буферу обмена."));
 }
 removeParticipant(index) {
 this.participants.splice(index, 1);
