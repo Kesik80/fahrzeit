@@ -1201,13 +1201,19 @@ async function loadFromGitHub() {
   try {
     const resp = await fetch(GH_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    parseStationsText(await resp.text());
+    const text = await resp.text();
+    showMsg(`📥 Получено ${text.length} байт`, 4000);
+    parseStationsText(text);
+    const dc = Object.keys(data.defaultCoords).length;
+    const st = Object.keys(data.stations).length;
+    showMsg(`✅ defaultCoords:${dc} stations:${st}`, 4000);
     setStatus('ok', 'stations.js загружен с GitHub', '✅');
     document.getElementById('ghUploadBtn').disabled = false;
     updateHeaderSub();
     render();
   } catch(e) {
-    setStatus('err', 'Не удалось загрузить: ' + e.message, '❌');
+    setStatus('err', '❌ ' + e.message, '❌');
+    showMsg('❌ ' + e.message, 6000);
   }
 }
 
@@ -1218,7 +1224,8 @@ function parseStationsText(text) {
   const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
   const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-  // Для participantOrders используем bracket-counting т.к. внутри вложенные {}
+  showMsg(`🔍 def:${!!defM} st:${!!stM} tm:${!!tmM}`, 5000);
+
   function extractBraces(str, keyword) {
     const ki = str.indexOf(keyword);
     if (ki === -1) return null;
@@ -1231,6 +1238,7 @@ function parseStationsText(text) {
     }
     return null;
   }
+
   const ordB = extractBraces(text, 'this.participantOrders');
   const ordM = ordB ? [null, ordB] : null;
   const trfM = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
@@ -1679,28 +1687,88 @@ function emptyState(icon, text) {
   window._showTreffTab = showTreff;
 })();
 
-function getAllUsedNamesGlobal() {
+function getUsedByDriver(driver) {
   const used = new Set();
-  Object.keys(participantOrders).forEach(driver => {
-    if (driver.startsWith('_')) return;
-    (participantOrders[driver] || []).forEach(item => {
-      if (typeof item === 'string') used.add(item);
-      else if (item?.main) { used.add(item.main); (item.subParticipants || []).forEach(s => used.add(s)); }
-    });
+  used.add(driver); // сам водитель не добавляется к себе
+  (participantOrders[driver] || []).forEach(item => {
+    if (typeof item === 'string') used.add(item);
+    else if (item?.main) { used.add(item.main); (item.subParticipants || []).forEach(s => used.add(s)); }
+    else if (item?.treffpunkt) { (item.persons || []).forEach(s => used.add(s)); }
   });
   return used;
 }
 
+function getAllNames() {
+  return Object.keys(data.defaultCoords || {}).sort();
+}
+
 function triggerAddOrder(driver, drivers) {
-  const used = getAllUsedNamesGlobal();
-  const avail = drivers.filter(n => n !== driver && !used.has(n));
+  const used = getUsedByDriver(driver);
+  const avail = getAllNames().filter(n => !used.has(n));
   const treffKeys = Object.keys(treffpunkt);
   const hasTreff = treffKeys.length > 0;
 
   if (!avail.length && !hasTreff) { showMsg('Все участники уже добавлены'); return; }
 
-  // Заполняем список участников
   const sel = document.getElementById('selectParticipant');
+  sel.innerHTML = '';
+  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+
+  const treffSel = document.getElementById('selectTreff');
+  treffSel.innerHTML = '';
+  treffKeys.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; treffSel.appendChild(o); });
+
+  document.getElementById('selectTypeBtns').style.display = hasTreff ? 'flex' : 'none';
+
+  if (!avail.length) window._showTreffTab();
+  else window._showParticipantTab();
+
+  window._modalCtx = { mode: 'add', driver };
+  document.getElementById('selectModalTitle').textContent = `Добавить к ${driver}`;
+  openModal('selectModal');
+}
+
+function triggerConvertToGroup(driver, idx, mainName, drivers) {
+  const used = getUsedByDriver(driver);
+  const avail = getAllNames().filter(n => !used.has(n));
+  if (!avail.length) { showMsg('Нет доступных участников'); return; }
+  const sel = document.getElementById('selectParticipant');
+  sel.innerHTML = '';
+  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+  document.getElementById('selectTypeBtns').style.display = 'none';
+  window._showParticipantTab();
+  window._modalCtx = { mode: 'convertToGroup', driver, idx, mainName };
+  document.getElementById('selectModalTitle').textContent = `Добавить к ${mainName}`;
+  openModal('selectModal');
+}
+
+function triggerAddToGroup(driver, groupIdx, groupMain, drivers) {
+  const used = getUsedByDriver(driver);
+  const avail = getAllNames().filter(n => !used.has(n));
+  if (!avail.length) { showMsg('Нет доступных участников'); return; }
+  const sel = document.getElementById('selectParticipant');
+  sel.innerHTML = '';
+  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+  document.getElementById('selectTypeBtns').style.display = 'none';
+  window._showParticipantTab();
+  window._modalCtx = { mode: 'addToGroup', driver, groupIdx, groupMain };
+  document.getElementById('selectModalTitle').textContent = `Добавить в группу ${groupMain}`;
+  openModal('selectModal');
+}
+
+function triggerAddTreffPerson(driver, treffIdx, treffName, drivers) {
+  const used = getUsedByDriver(driver);
+  const avail = getAllNames().filter(n => !used.has(n));
+  if (!avail.length) { showMsg('Нет доступных участников'); return; }
+  const sel = document.getElementById('selectParticipant');
+  sel.innerHTML = '';
+  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+  document.getElementById('selectTypeBtns').style.display = 'none';
+  window._showParticipantTab();
+  window._modalCtx = { mode: 'addTreffPerson', driver, treffIdx, treffName };
+  document.getElementById('selectModalTitle').textContent = `Кто ждёт у ${treffName}`;
+  openModal('selectModal');
+}
   sel.innerHTML = '';
   avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
 
@@ -1721,47 +1789,6 @@ function triggerAddOrder(driver, drivers) {
   openModal('selectModal');
 }
 
-function triggerConvertToGroup(driver, idx, mainName, drivers) {
-  const used = getAllUsedNamesGlobal();
-  const avail = drivers.filter(n => n !== driver && !used.has(n));
-  if (!avail.length) { showMsg('Нет доступных участников'); return; }
-  const sel = document.getElementById('selectParticipant');
-  sel.innerHTML = '';
-  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
-  document.getElementById('selectTypeBtns').style.display = 'none';
-  window._showParticipantTab();
-  window._modalCtx = { mode: 'convertToGroup', driver, idx, mainName };
-  document.getElementById('selectModalTitle').textContent = `Добавить к ${mainName}`;
-  openModal('selectModal');
-}
-
-function triggerAddToGroup(driver, groupIdx, groupMain, drivers) {
-  const used = getAllUsedNamesGlobal();
-  const avail = drivers.filter(n => n !== driver && !used.has(n));
-  if (!avail.length) { showMsg('Нет доступных участников'); return; }
-  const sel = document.getElementById('selectParticipant');
-  sel.innerHTML = '';
-  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
-  document.getElementById('selectTypeBtns').style.display = 'none';
-  window._showParticipantTab();
-  window._modalCtx = { mode: 'addToGroup', driver, groupIdx, groupMain };
-  document.getElementById('selectModalTitle').textContent = `Добавить в группу ${groupMain}`;
-  openModal('selectModal');
-}
-
-function triggerAddTreffPerson(driver, treffIdx, treffName, drivers) {
-  const used = getAllUsedNamesGlobal();
-  const avail = drivers.filter(n => n !== driver && !used.has(n));
-  if (!avail.length) { showMsg('Нет доступных участников'); return; }
-  const sel = document.getElementById('selectParticipant');
-  sel.innerHTML = '';
-  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
-  document.getElementById('selectTypeBtns').style.display = 'none';
-  window._showParticipantTab();
-  window._modalCtx = { mode: 'addTreffPerson', driver, treffIdx, treffName };
-  document.getElementById('selectModalTitle').textContent = `Кто ждёт у ${treffName}`;
-  openModal('selectModal');
-}
 
 document.getElementById('selectConfirm').onclick = () => {
   const ctx = window._modalCtx;
