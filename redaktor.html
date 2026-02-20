@@ -1201,19 +1201,13 @@ async function loadFromGitHub() {
   try {
     const resp = await fetch(GH_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const text = await resp.text();
-    showMsg(`📥 Получено ${text.length} байт`, 4000);
-    parseStationsText(text);
-    const dc = Object.keys(data.defaultCoords).length;
-    const st = Object.keys(data.stations).length;
-    showMsg(`✅ defaultCoords:${dc} stations:${st}`, 4000);
+    parseStationsText(await resp.text());
     setStatus('ok', 'stations.js загружен с GitHub', '✅');
     document.getElementById('ghUploadBtn').disabled = false;
     updateHeaderSub();
     render();
   } catch(e) {
-    setStatus('err', '❌ ' + e.message, '❌');
-    showMsg('❌ ' + e.message, 6000);
+    setStatus('err', 'Не удалось загрузить: ' + e.message, '❌');
   }
 }
 
@@ -1769,26 +1763,6 @@ function triggerAddTreffPerson(driver, treffIdx, treffName, drivers) {
   document.getElementById('selectModalTitle').textContent = `Кто ждёт у ${treffName}`;
   openModal('selectModal');
 }
-  sel.innerHTML = '';
-  avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
-
-  // Заполняем список treffpunkt
-  const treffSel = document.getElementById('selectTreff');
-  treffSel.innerHTML = '';
-  treffKeys.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; treffSel.appendChild(o); });
-
-  // Показываем переключатель только при добавлении нового элемента
-  const typeBtns = document.getElementById('selectTypeBtns');
-  typeBtns.style.display = hasTreff ? 'flex' : 'none';
-
-  if (!avail.length) window._showTreffTab();
-  else window._showParticipantTab();
-
-  window._modalCtx = { mode: 'add', driver };
-  document.getElementById('selectModalTitle').textContent = `Добавить к ${driver}`;
-  openModal('selectModal');
-}
-
 
 document.getElementById('selectConfirm').onclick = () => {
   const ctx = window._modalCtx;
