@@ -3188,12 +3188,23 @@ const cancelBtn = document.getElementById('godCancelBtn');
 
 if (!link) { console.error('godL не найден'); return; }
 
-// Открытие модального окна
+// Если уже авторизован в этой сессии — сразу переходим без модалки
 link.addEventListener('click', (e) => {
 e.preventDefault();
+if (sessionStorage.getItem('godAuth') === '1') {
+  window.location.href = link.href;
+  return;
+}
 modal.classList.add('show');
 input.value = '';
 input.classList.remove('error');
+submitBtn.innerHTML = 'Войти';
+submitBtn.disabled = false;
+});
+
+// При возврате назад (bfcache) — закрываем модалку если вдруг открыта
+window.addEventListener('pageshow', () => {
+  modal.classList.remove('show');
 });
 
 // Закрытие модального окна
@@ -3234,6 +3245,7 @@ try {
 const ok = await bcrypt.compare(pwd, GOD_HASH);
 if (ok) {
 submitBtn.innerHTML = '✅ Успешно!';
+sessionStorage.setItem('godAuth', '1');
 setTimeout(() => {
 window.location.href = link.href;
 }, 500);
