@@ -98,7 +98,7 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок
 this.participantOrders = {
-  'Sergii': [],
+  'Sergii': ["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]},{"treffpunkt":"OLGA-Park","persons":["Dima","Andrii","Marvin"]}],
   'Anatolii': ["Sergii","Andrii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
