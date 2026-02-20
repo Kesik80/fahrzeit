@@ -1218,7 +1218,21 @@ function parseStationsText(text) {
   const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
   const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-  const ordM = text.match(/this\.participantOrders\s*=\s*({[\s\S]*?});/);
+  // Для participantOrders используем bracket-counting т.к. внутри вложенные {}
+  function extractBraces(str, keyword) {
+    const ki = str.indexOf(keyword);
+    if (ki === -1) return null;
+    const start = str.indexOf('{', ki);
+    if (start === -1) return null;
+    let depth = 0;
+    for (let i = start; i < str.length; i++) {
+      if (str[i] === '{') depth++;
+      else if (str[i] === '}') { if (--depth === 0) return str.slice(start, i + 1); }
+    }
+    return null;
+  }
+  const ordB = extractBraces(text, 'this.participantOrders');
+  const ordM = ordB ? [null, ordB] : null;
   const trfM = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
   const trtM = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
   if (!defM && !stM) throw new Error('Не найдены блоки данных');
@@ -2016,11 +2030,11 @@ ${L(trefftravelTimes, ([p,t]) => `  '${p}': ${t}`)}
 // Приоритетные списки остановок
 this.participantOrders = {
 ${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => {
-  // Сохраняем структуру как есть — объекты {main, subParticipants} и строки
-  const arr = (participantOrders[s] || []).map(item =>
-    typeof item === 'string' ? `"${item}"` :
-    `{"main":"${item.main}","subParticipants":${JSON.stringify(item.subParticipants || [])}}`
-  );
+  const arr = (participantOrders[s] || []).map(item => {
+    if (typeof item === 'string') return `"${item}"`;
+    if (item?.treffpunkt) return `{"treffpunkt":"${item.treffpunkt}","persons":${JSON.stringify(item.persons || [])}}`;
+    return `{"main":"${item.main}","subParticipants":${JSON.stringify(item.subParticipants || [])}}`;
+  });
   return `  '${s}': [${arr.join(',')}]`;
 }).join(',\n')}
 };`;
