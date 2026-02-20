@@ -1334,9 +1334,7 @@ try {
   const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
   const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-  const trfM  = text.match(/this\.treffpunkt\s*=\s*({[\s\S]*?});/);
-  const trtM  = text.match(/this\.trefftravelTimes\s*=\s*({[\s\S]*?});/);
-  // participantOrders может содержать вложенные объекты — используем счётчик скобок
+  // Блоки с вложенными {} — используем счётчик скобок
   function extractBlock(str, keyword) {
     const idx = str.indexOf(keyword);
     if (idx === -1) return null;
@@ -1349,6 +1347,8 @@ try {
     }
     return null;
   }
+  const trfBlock = extractBlock(text, 'this.treffpunkt');
+  const trtBlock = extractBlock(text, 'this.trefftravelTimes');
   const ordBlock = extractBlock(text, 'this.participantOrders');
   if (defM)  {
     const coords = Function('"use strict";return (' + defM[1] + ')')();
@@ -1357,8 +1357,8 @@ try {
   }
   if (stM)  this.stations          = Function('"use strict";return (' + stM[1]  + ')')();
   if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
-  if (trfM) this.treffpunkt        = Function('"use strict";return (' + trfM[1] + ')')();
-  if (trtM) this.trefftravelTimes  = Function('"use strict";return (' + trtM[1] + ')')();
+  if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
+  if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
   if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
   // После загрузки данных — пересчитываем и рендерим
   this.syncCoordinates();
@@ -1561,13 +1561,34 @@ this.startPoint = value;
 const startCoords = this.nameToCoordinates[value];
 this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
 const order = this.participantOrders[value] || [];
-// Строим плоский список имён для расчёта времени (только main-имена по порядку)
-const flatNames = order.map(item => typeof item === 'string' ? item : item.main);
+// Строим плоский список имён для расчёта времени
+const flatNames = order.map(item => {
+  if (typeof item === 'string') return item;
+  if (item?.treffpunkt) return item.treffpunkt;
+  return item.main;
+});
 this.participants = order.map((item, idx) => {
-const name = typeof item === 'string' ? item : item.main;
-const subs = typeof item === 'object' && item.subParticipants ? item.subParticipants : [];
-const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
 const prev = idx === 0 ? this.startPoint : flatNames[idx - 1];
+// Элемент Treffpunkt — место встречи с ожидающими
+if (item?.treffpunkt) {
+  const treffName = item.treffpunkt;
+  const coords = this.treffpunkt[treffName] || { lat: null, lng: null };
+  const treffTime = this.trefftravelTimes?.[`${treffName}-${value}`] ?? this.getTravelTime(prev, treffName);
+  return {
+    name: treffName,
+    time: treffTime,
+    lat: coords.lat,
+    lng: coords.lng,
+    timeManuallyEdited: false,
+    isTreffpunkt: true,
+    subParticipants: [],
+    treffpunktPersons: item.persons || []
+  };
+}
+// Обычный участник или группа
+const name = typeof item === 'string' ? item : item.main;
+const subs = item?.subParticipants || [];
+const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
 return {
 name,
 time: this.getTravelTime(prev, name),
@@ -1585,6 +1606,17 @@ this.renderParticipants();
 this.initSortable();
 this.calculate();
 }
+}
+// Возвращает Set всех занятых имён (исключая optionalExclude)
+getAllUsedNames(optionalExclude = null) {
+  const used = new Set();
+  if (this.startPoint) used.add(this.startPoint);
+  this.participants.forEach(p => {
+    if (p.name && p.name !== optionalExclude) used.add(p.name);
+    (p.subParticipants || []).forEach(n => { if (n !== optionalExclude) used.add(n); });
+    (p.treffpunktPersons || []).forEach(n => { if (n !== optionalExclude) used.add(n); });
+  });
+  return used;
 }
 renderParticipants() {
 const container = this.elements.participantsContainer;
@@ -1645,16 +1677,7 @@ subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', personIdx);
 
-const usedInTreff = new Set(p.treffpunktPersons.filter((_, idx) => idx !== personIdx));
-this.participants.forEach((other, idx) => {
-if (idx !== i) {
-(other.subParticipants || []).forEach(n => usedInTreff.add(n));
-(other.treffpunktPersons || []).forEach(n => usedInTreff.add(n));
-if (other.name) usedInTreff.add(other.name);
-}
-});
-if (this.startPoint) usedInTreff.add(this.startPoint);
-
+const usedInTreff = this.getAllUsedNames(personName);
 const personOptions = Object.keys(this.nameToCoordinates)
 .filter(n => !usedInTreff.has(n) || n === personName)
 .sort()
@@ -1674,7 +1697,9 @@ groupDiv.appendChild(subDiv);
 
 } else {
 // ===== Рендер обычного участника (оригинальный код) =====
-const participantNameOptions = Object.keys(this.nameToCoordinates).filter(n => n !== this.startPoint)
+const usedForMain = this.getAllUsedNames(p.name);
+const participantNameOptions = Object.keys(this.nameToCoordinates)
+.filter(n => n !== this.startPoint && (!usedForMain.has(n) || n === p.name))
 .map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join('');
 const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
 div.innerHTML = `
@@ -1703,11 +1728,7 @@ const subDiv = document.createElement('div');
 subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', subIdx);
-const usedInSub = new Set([p.name]);
-p.subParticipants.forEach((n, idx) => { if (idx !== subIdx) usedInSub.add(n); });
-this.participants.forEach((other, idx) => {
-if (idx !== i) { (other.subParticipants || []).forEach(n => usedInSub.add(n)); }
-});
+const usedInSub = this.getAllUsedNames(subName);
 const subNameOptions = Object.keys(this.nameToCoordinates)
 .filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === subName))
 .sort()
@@ -2332,10 +2353,9 @@ newTreffOpt.textContent = '➕ Neuer Treffpunkt…';
 treffSelect.appendChild(newTreffOpt);
 
 // Заполняем список коллег
-const usedMainNames = this.participants.filter(p => !p.isTreffpunkt).map(p => p.name).filter(n => n);
 kollegeSelect.innerHTML = '<option value="">– Kollege wählen –</option>';
 Object.keys(this.nameToCoordinates)
-.filter(name => name !== this.startPoint && !usedMainNames.includes(name) && !this.treffpunkt[name])
+.filter(name => !this.getAllUsedNames().has(name) && !this.treffpunkt[name])
 .sort()
 .forEach(name => {
 const opt = document.createElement('option');
@@ -2600,18 +2620,11 @@ newSubNameRow.classList.remove('visible');
 newSubNameInput.value = '';
 
 // Собираем занятые имена
-const usedNames = new Set();
-usedNames.add(mainParticipant.name);
-(mainParticipant.subParticipants || []).forEach(n => usedNames.add(n));
-this.participants.forEach((p, idx) => {
-if (idx !== mainIndex) {
-(p.subParticipants || []).forEach(n => usedNames.add(n));
-}
-});
+const usedNames = this.getAllUsedNames();
 
 select.innerHTML = '<option value="">Выберите участника</option>';
 Object.keys(this.nameToCoordinates)
-.filter(name => !usedNames.has(name) && name !== this.startPoint)
+.filter(name => !usedNames.has(name))
 .sort()
 .forEach(name => {
 const option = document.createElement('option');
@@ -2741,16 +2754,7 @@ newSubNameRow.classList.remove('visible');
 newSubNameInput.value = '';
 
 // Собираем занятые имена
-const usedNames = new Set();
-(mainParticipant.treffpunktPersons || []).forEach(n => usedNames.add(n));
-this.participants.forEach((p, idx) => {
-if (idx !== mainIndex) {
-if (p.name) usedNames.add(p.name);
-(p.subParticipants || []).forEach(n => usedNames.add(n));
-(p.treffpunktPersons || []).forEach(n => usedNames.add(n));
-}
-});
-if (this.startPoint) usedNames.add(this.startPoint);
+const usedNames = this.getAllUsedNames();
 
 select.innerHTML = '<option value="">Person auswählen</option>';
 Object.keys(this.nameToCoordinates)
