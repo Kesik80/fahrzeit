@@ -1417,16 +1417,22 @@ if (coords) { p.lat = coords.lat; p.lng = coords.lng; }
 const startCoords = this.nameToCoordinates[this.startPoint];
 this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
 }
+profileKey(key) {
+const p = this.startPoint || '';
+return p ? `fahrzeitRechner_${p}_${key}` : `fahrzeitRechner${key.charAt(0).toUpperCase() + key.slice(1)}`;
+}
 saveData() {
-localStorage.setItem('fahrzeitRechnerGreeting', this.greeting);
-localStorage.setItem('fahrzeitRechnerGreetings', JSON.stringify(this.greetings));
-localStorage.setItem('fahrzeitRechnerParticipants', JSON.stringify(this.participants));
-localStorage.setItem('fahrzeitRechnerMachineStop', JSON.stringify(this.machineStop));
-localStorage.setItem('fahrzeitRechnerMachineDestinations', JSON.stringify(this.machineDestinations));
-localStorage.setItem('fahrzeitRechnerNameToCoordinates', JSON.stringify(this.nameToCoordinates));
-localStorage.setItem('fahrzeitRechnerStartPoint', this.startPoint);
-localStorage.setItem('fahrzeitRechnerUseUhrBei', this.useUhrBei);
-localStorage.setItem('fahrzeitRechnerUseSuperscript', this.useSuperscriptTime);
+const k = (key) => this.profileKey(key);
+if (this.startPoint) localStorage.setItem('fahrzeitLastDriver', this.startPoint);
+localStorage.setItem(k('greeting'), this.greeting);
+localStorage.setItem(k('greetings'), JSON.stringify(this.greetings));
+localStorage.setItem(k('participants'), JSON.stringify(this.participants));
+localStorage.setItem(k('machineStop'), JSON.stringify(this.machineStop));
+localStorage.setItem(k('machineDestinations'), JSON.stringify(this.machineDestinations));
+localStorage.setItem(k('nameToCoordinates'), JSON.stringify(this.nameToCoordinates));
+localStorage.setItem(k('startPoint'), this.startPoint);
+localStorage.setItem(k('useUhrBei'), this.useUhrBei);
+localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 }
 resetToDefaults() {
 this.greeting = 'Moin zusammen';
@@ -1445,9 +1451,9 @@ this.useSuperscriptTime = false;
 this.saveData();
 }
 clearLocalStorage() {
-['fahrzeitRechnerGreeting', 'fahrzeitRechnerGreetings', 'fahrzeitRechnerParticipants',
-'fahrzeitRechnerMachineStop', 'fahrzeitRechnerNameToCoordinates', 'fahrzeitRechnerStartPoint',
-'fahrzeitRechnerUseSuperscript'].forEach(k => localStorage.removeItem(k));
+['greeting','greetings','participants','machineStop','machineDestinations',
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript']
+.forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.showToast("Данные сброшены.");
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
@@ -1456,16 +1462,21 @@ this.initSortable();
 }
 loadData() {
 try {
+// Сначала восстанавливаем последнего водителя чтобы profileKey работал правильно
+const lastDriver = localStorage.getItem('fahrzeitLastDriver') || '';
+if (lastDriver) this.startPoint = lastDriver;
+
+const k = (key) => this.profileKey(key);
 const saved = {
-greeting: localStorage.getItem('fahrzeitRechnerGreeting'),
-greetings: localStorage.getItem('fahrzeitRechnerGreetings'),
-participants: localStorage.getItem('fahrzeitRechnerParticipants'),
-machineStop: localStorage.getItem('fahrzeitRechnerMachineStop'),
-machineDestinations: localStorage.getItem('fahrzeitRechnerMachineDestinations'),
-nameToCoordinates: localStorage.getItem('fahrzeitRechnerNameToCoordinates'),
-startPoint: localStorage.getItem('fahrzeitRechnerStartPoint'),
-useUhrBei: localStorage.getItem('fahrzeitRechnerUseUhrBei'),
-useSuperscript: localStorage.getItem('fahrzeitRechnerUseSuperscript')
+greeting: localStorage.getItem(k('greeting')),
+greetings: localStorage.getItem(k('greetings')),
+participants: localStorage.getItem(k('participants')),
+machineStop: localStorage.getItem(k('machineStop')),
+machineDestinations: localStorage.getItem(k('machineDestinations')),
+nameToCoordinates: localStorage.getItem(k('nameToCoordinates')),
+startPoint: localStorage.getItem(k('startPoint')),
+useUhrBei: localStorage.getItem(k('useUhrBei')),
+useSuperscript: localStorage.getItem(k('useSuperscript'))
 };
 if (saved.greeting) this.greeting = saved.greeting;
 if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
@@ -3226,7 +3237,10 @@ this.calculate();
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+
+// ── ПРОФИЛИ ──────────────────────────────────────────────
 const app = new FahrzeitRechner();
+window._appInstance = app;
 app.loadStations();
 // ---------- тема ----------
 const switcher = document.getElementById('themeSwitch');
