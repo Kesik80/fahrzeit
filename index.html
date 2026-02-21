@@ -1370,26 +1370,11 @@ try {
   if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
   if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
   if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
-  // После загрузки stations — восстанавливаем участников из сохранённого профиля
+  // Синхронизируем координаты участников из обновлённых данных stations
   this.syncCoordinates();
-  if (this.startPoint) {
-    // Если в localStorage есть сохранённый список — восстанавливаем его
-    const savedParticipants = localStorage.getItem(this.profileKey('participants'));
-    if (savedParticipants) {
-      try {
-        this.participants = JSON.parse(savedParticipants).map(p => ({
-          ...p,
-          timeManuallyEdited: p.timeManuallyEdited || false,
-          subParticipants: p.subParticipants || [],
-          isTreffpunkt: p.isTreffpunkt || false,
-          treffpunktPersons: p.treffpunktPersons || []
-        }));
-        this.syncCoordinates();
-      } catch { this.updateStartPoint(this.startPoint); }
-    } else {
-      // Нет сохранённого — загружаем из participantOrders
-      this.updateStartPoint(this.startPoint);
-    }
+  // Если у водителя нет сохранённого списка — загружаем из participantOrders
+  if (this.startPoint && this.participants.length === 0) {
+    this.updateStartPoint(this.startPoint);
   }
   this.updateParticipantTimes();
   this.renderParticipants();
@@ -1523,7 +1508,9 @@ if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscrip
 } catch {
 this.resetToDefaults();
 }
-this.updateStartPoint(this.startPoint);
+// НЕ вызываем updateStartPoint — он перезапишет participants из participantOrders
+// Просто синхронизируем координаты из nameToCoordinates
+this.syncCoordinates();
 }
 addEventListeners() {
 this.elements.greetingSelect.addEventListener('change', e => {
