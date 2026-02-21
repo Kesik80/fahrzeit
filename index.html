@@ -1370,8 +1370,27 @@ try {
   if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
   if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
   if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
-  // После загрузки данных — пересчитываем и рендерим
+  // После загрузки stations — восстанавливаем участников из сохранённого профиля
   this.syncCoordinates();
+  if (this.startPoint) {
+    // Если в localStorage есть сохранённый список — восстанавливаем его
+    const savedParticipants = localStorage.getItem(this.profileKey('participants'));
+    if (savedParticipants) {
+      try {
+        this.participants = JSON.parse(savedParticipants).map(p => ({
+          ...p,
+          timeManuallyEdited: p.timeManuallyEdited || false,
+          subParticipants: p.subParticipants || [],
+          isTreffpunkt: p.isTreffpunkt || false,
+          treffpunktPersons: p.treffpunktPersons || []
+        }));
+        this.syncCoordinates();
+      } catch { this.updateStartPoint(this.startPoint); }
+    } else {
+      // Нет сохранённого — загружаем из participantOrders
+      this.updateStartPoint(this.startPoint);
+    }
+  }
   this.updateParticipantTimes();
   this.renderParticipants();
   this.calculate();
