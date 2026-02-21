@@ -2530,6 +2530,7 @@ totalMinutes = parseInt(value) || 0;
 }
 this.participants[index].time = Math.max(1, Math.min(999, totalMinutes));
 this.participants[index].timeManuallyEdited = true;
+this.participants[index].routeCalculated = false;
 input.remove();
 displayElement.classList.remove('editing');
 this.saveData();
@@ -2618,6 +2619,7 @@ updateTime(index, value) {
 const time = parseInt(value) || 5;
 this.participants[index].time = Math.max(1, Math.min(120, time));
 this.participants[index].timeManuallyEdited = true;
+this.participants[index].routeCalculated = false;
 this.saveData();
 this.renderParticipants();
 this.calculate();
