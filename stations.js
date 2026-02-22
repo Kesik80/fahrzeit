@@ -18,7 +18,8 @@ this.stations = {
   'Hagen': {lat: 51.373517, lng: 7.461144},
   'Essen West': {lat: 51.4539273, lng: 6.9794622},
   'Gelsenkirchen Horst': {lat: 51.5415351, lng: 7.0202811},
-  'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119}
+  'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119},
+  'Mehrhoog': {lat: 51.739037, lng: 6.518518}
 };
 
 // Время в пути между участниками
@@ -61,9 +62,9 @@ this.travelTimes = {
   'Vasyl-René': 15,
   'Alex-Sergii': 15,
   'Alex-Anatolii': 10,
-  'Alex-Andrii': 10,
-  'Alex-Sergio': 5,
-  'Alex-Dima': 30,
+  'Alex-Andrii': 9,
+  'Alex-Sergio': 3,
+  'Alex-Dima': 27,
   'Alex-René': 15,
   'Alex-Marvin': 20,
   'Alex-Vasyl': 0,
