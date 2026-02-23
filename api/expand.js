@@ -11,95 +11,61 @@ export default async function handler(req, res) {
   try {
     const decodedUrl = decodeURIComponent(url);
 
+    try { new URL(decodedUrl); }
+    catch { return res.status(400).json({ error: 'Некорректный URL' }); }
+
+    const UA = 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36';
+
+    // ── Шаг 1: HEAD для быстрого редиректа ──────────────────────────────
+    let expandedUrl = decodedUrl;
     try {
-      new URL(decodedUrl);
-    } catch {
-      return res.status(400).json({ error: 'Некорректный URL' });
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 8000);
+      const r = await fetch(decodedUrl, {
+        method: 'HEAD', redirect: 'follow',
+        signal: ctrl.signal, headers: { 'User-Agent': UA }
+      });
+      clearTimeout(t);
+      expandedUrl = r.url;
+    } catch { /* продолжаем с GET */ }
+
+    // Если координаты уже в URL — возвращаем сразу
+    if (extractCoordsFromUrl(expandedUrl)) {
+      return res.status(200).json({ original: url, expanded: expandedUrl });
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
-
-    // Шаг 1: HEAD-запрос для получения первого редиректа
-    const headResponse = await fetch(decodedUrl, {
-      method: 'HEAD',
-      redirect: 'follow',
-      signal: controller.signal,
+    // ── Шаг 2: GET + парсинг HTML ────────────────────────────────────────
+    const ctrl2 = new AbortController();
+    const t2 = setTimeout(() => ctrl2.abort(), 10000);
+    const getResp = await fetch(decodedUrl, {
+      method: 'GET', redirect: 'follow',
+      signal: ctrl2.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36'
+        'User-Agent': UA,
+        'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
+        'Accept': 'text/html,application/xhtml+xml'
       }
     });
+    clearTimeout(t2);
 
-    clearTimeout(timeout);
+    const finalUrl = getResp.url;
 
-    const expandedUrl = headResponse.url;
-
-    // Шаг 2: Пробуем извлечь координаты из URL редиректа
-    const coordsFromUrl = extractCoordsFromUrl(expandedUrl);
-    if (coordsFromUrl) {
-      return res.status(200).json({
-        original: url,
-        expanded: expandedUrl,
-        status: headResponse.status
-      });
+    // Координаты в финальном URL после GET (часто там уже есть @lat,lng)
+    if (extractCoordsFromUrl(finalUrl)) {
+      return res.status(200).json({ original: url, expanded: finalUrl });
     }
 
-    // Шаг 3: Если координат нет в URL (maps.app.goo.gl отдаёт URL без @lat,lng),
-    // делаем GET и парсим HTML — там координаты есть в meta/og:title или в теле страницы
-    if (isMapsAppGooGl(decodedUrl) || isMapsAppGooGl(expandedUrl)) {
-      const controller2 = new AbortController();
-      const timeout2 = setTimeout(() => controller2.abort(), 10000);
+    // Парсим HTML
+    const html = await getResp.text();
+    const coords = extractCoordsFromHtml(html);
 
-      const getResponse = await fetch(decodedUrl, {
-        method: 'GET',
-        redirect: 'follow',
-        signal: controller2.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36',
-          'Accept-Language': 'de-DE,de;q=0.9'
-        }
-      });
-
-      clearTimeout(timeout2);
-
-      const finalUrl = getResponse.url;
-      const html = await getResponse.text();
-
-      // Ищем координаты в финальном URL после GET
-      const coordsFromFinalUrl = extractCoordsFromUrl(finalUrl);
-      if (coordsFromFinalUrl) {
-        return res.status(200).json({
-          original: url,
-          expanded: finalUrl,
-          status: getResponse.status
-        });
-      }
-
-      // Ищем координаты в HTML: window.APP_INITIALIZATION_STATE, og:url, canonical
-      const coordsFromHtml = extractCoordsFromHtml(html);
-      if (coordsFromHtml) {
-        // Строим нормальный maps URL с координатами
-        const mapsUrl = `https://www.google.com/maps/@${coordsFromHtml.lat},${coordsFromHtml.lng},17z`;
-        return res.status(200).json({
-          original: url,
-          expanded: mapsUrl,
-          status: getResponse.status
-        });
-      }
-
-      // Отдаём финальный URL как есть — parseCoords на клиенте попробует ещё раз
-      return res.status(200).json({
-        original: url,
-        expanded: finalUrl,
-        status: getResponse.status
-      });
+    if (coords) {
+      const mapsUrl = `https://www.google.com/maps/@${coords.lat},${coords.lng},17z`;
+      return res.status(200).json({ original: url, expanded: mapsUrl });
     }
 
-    return res.status(200).json({
-      original: url,
-      expanded: expandedUrl,
-      status: headResponse.status
-    });
+    // Ничего не нашли — отдаём финальный URL как есть
+    return res.status(200).json({ original: url, expanded: finalUrl });
 
   } catch (err) {
     console.error('Expand error:', err.message);
@@ -110,55 +76,62 @@ export default async function handler(req, res) {
   }
 }
 
-// Извлекает @lat,lng из любого Google Maps URL
+// ── Парсинг координат из URL ─────────────────────────────────────────────────
 function extractCoordsFromUrl(url) {
   if (!url) return null;
-  // Формат: @51.4520134,7.0214553,17z  или  @51.4520134,7.0214553,17m
-  const match = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (match) {
-    return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-  }
-  // Формат: ll=51.452,7.021
-  const llMatch = url.match(/[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  if (llMatch) {
-    return { lat: parseFloat(llMatch[1]), lng: parseFloat(llMatch[2]) };
-  }
+  // @51.452013,7.021455,17z
+  let m = url.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  // ll=51.452,7.021
+  m = url.match(/[?&]ll=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
+  // q=51.452,7.021
+  m = url.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+  if (m) return { lat: +m[1], lng: +m[2] };
   return null;
 }
 
-// Ищет координаты в HTML-коде Google Maps страницы
+// ── Парсинг координат из HTML ────────────────────────────────────────────────
 function extractCoordsFromHtml(html) {
   if (!html) return null;
 
-  // 1. og:url или canonical содержат @lat,lng
-  const ogUrlMatch = html.match(/og:url[^>]*content="([^"]+)"/);
-  if (ogUrlMatch) {
-    const c = extractCoordsFromUrl(ogUrlMatch[1]);
-    if (c) return c;
+  // 1. og:url / canonical
+  for (const pattern of [
+    /property="og:url"\s+content="([^"]+)"/,
+    /content="([^"]+)"\s+property="og:url"/,
+    /rel="canonical"\s+href="([^"]+)"/,
+    /href="([^"]+)"\s+rel="canonical"/,
+  ]) {
+    const m = html.match(pattern);
+    if (m) {
+      const c = extractCoordsFromUrl(m[1]);
+      if (c) return c;
+    }
   }
 
-  // 2. meta canonical
-  const canonicalMatch = html.match(/rel="canonical"[^>]*href="([^"]+)"/);
-  if (canonicalMatch) {
-    const c = extractCoordsFromUrl(canonicalMatch[1]);
-    if (c) return c;
+  // 2. JSON-массивы [lat, lng] с высокой точностью
+  const jsonCoords = html.match(/\[(-?\d{2,3}\.\d{5,}),(-?\d{1,3}\.\d{5,})\]/g);
+  if (jsonCoords) {
+    for (const pair of jsonCoords) {
+      const m = pair.match(/\[(-?\d{2,3}\.\d{5,}),(-?\d{1,3}\.\d{5,})\]/);
+      if (m) {
+        const lat = +m[1], lng = +m[2];
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+          return { lat, lng };
+        }
+      }
+    }
   }
 
-  // 3. JSON в APP_INITIALIZATION_STATE — координаты встречаются как [lat, lng]
-  // Ищем пары чисел похожих на координаты Германии/Европы
-  const coordPattern = /(5[0-5]\.\d{4,}),((?:[5-9]|1[0-5])\.\d{4,})/g;
-  const matches = [...html.matchAll(coordPattern)];
-  if (matches.length > 0) {
-    // Берём первое совпадение
-    return { lat: parseFloat(matches[0][1]), lng: parseFloat(matches[0][2]) };
-  }
+  // 3. JSON-поля "lat" / "lng"
+  const mLat = html.match(/"lat"\s*:\s*(-?\d{1,3}\.\d+)/);
+  const mLng = html.match(/"lng"\s*:\s*(-?\d{1,3}\.\d+)/);
+  if (mLat && mLng) return { lat: +mLat[1], lng: +mLng[1] };
+
+  // 4. itemprop latitude/longitude
+  const iLat = html.match(/itemprop="latitude"\s+content="(-?\d+\.\d+)"/);
+  const iLng = html.match(/itemprop="longitude"\s+content="(-?\d+\.\d+)"/);
+  if (iLat && iLng) return { lat: +iLat[1], lng: +iLng[1] };
 
   return null;
-}
-
-function isMapsAppGooGl(url) {
-  return url && (
-    url.includes('maps.app.goo.gl') ||
-    url.includes('goo.gl/maps')
-  );
 }

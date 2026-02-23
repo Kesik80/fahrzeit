@@ -12,12 +12,13 @@ function fetchUrl(url, redirectCount = 0) {
     const mod = url.startsWith('https') ? https : http;
     const req = mod.get(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; CoordsParser/1.0)',
-        'Accept': 'text/html,application/xhtml+xml,*/*'
+        // Нормальный браузерный User-Agent — Google отдаёт другой ответ для ботов
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,*/*',
+        'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
       },
-      timeout: 8000
+      timeout: 10000
     }, res => {
-      // Следуем за редиректом
       if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location) {
         const next = res.headers.location.startsWith('http')
           ? res.headers.location
@@ -27,7 +28,7 @@ function fetchUrl(url, redirectCount = 0) {
       }
       let body = '';
       res.on('data', chunk => body += chunk);
-      res.on('end', () => resolve({ url, body, status: res.statusCode }));
+      res.on('end', () => resolve({ url: res.url || url, finalUrl: url, body, status: res.statusCode }));
     });
     req.on('error', reject);
     req.on('timeout', () => { req.destroy(); reject(new Error('Timeout')); });
@@ -87,15 +88,56 @@ function parseText(s) {
   return null;
 }
 
-// ── Поиск координат в HTML-тексте страницы ───────────────────────────────────
+// ── Поиск координат в HTML Google Maps ───────────────────────────────────────
 function parseCoordsFromBody(body) {
   let m;
+
+  // 1. "lat":... "lng":... (старый формат)
   m = body.match(/"lat"\s*:\s*([-+]?\d+\.\d+)\s*,\s*"lng"\s*:\s*([-+]?\d+\.\d+)/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
-  m = body.match(/[?&]q=([-+]?\d+\.\d+),([-+]?\d+\.\d+)/);
-  if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
+
+  // 2. og:url или canonical — часто содержат @lat,lng
+  for (const pattern of [
+    /property="og:url"\s+content="([^"]+)"/,
+    /content="([^"]+)"\s+property="og:url"/,
+    /rel="canonical"\s+href="([^"]+)"/,
+  ]) {
+    m = body.match(pattern);
+    if (m) {
+      const c = parseCoords(m[1]);
+      if (c) return c;
+    }
+  }
+
+  // 3. Главный формат Google Maps: JSON-массивы с координатами высокой точности
+  // Google хранит координаты как [lat, lng] внутри вложенных массивов APP_INITIALIZATION_STATE
+  // Ищем пары вида [51.45201340, 7.02145530] — не менее 6 знаков после запятой
+  const pairs = body.match(/\[([-+]?\d{2,3}\.\d{6,}),([-+]?\d{1,3}\.\d{6,})\]/g);
+  if (pairs) {
+    for (const pair of pairs) {
+      m = pair.match(/\[([-+]?\d{2,3}\.\d{6,}),([-+]?\d{1,3}\.\d{6,})\]/);
+      if (m) {
+        const lat = +m[1], lng = +m[2];
+        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+          return { lat, lng };
+        }
+      }
+    }
+  }
+
+  // 4. Координаты в теле как просто два числа с высокой точностью
   m = body.match(/([-+]?\d{1,3}\.\d{5,}),\s*([-+]?\d{1,3}\.\d{5,})/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
+
+  // 5. itemprop latitude/longitude (Schema.org)
+  const iLat = body.match(/itemprop="latitude"\s+content="([-+]?\d+\.\d+)"/);
+  const iLng = body.match(/itemprop="longitude"\s+content="([-+]?\d+\.\d+)"/);
+  if (iLat && iLng) return { lat: +iLat[1], lng: +iLng[1] };
+
+  // 6. ?q=lat,lng в теле
+  m = body.match(/[?&]q=([-+]?\d+\.\d+),([-+]?\d+\.\d+)/);
+  if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
+
   return null;
 }
 
@@ -120,10 +162,12 @@ module.exports = async (req, res) => {
       return res.status(422).json({ success: false, error: 'Координаты не распознаны' });
     }
 
-    // 2. Ссылка — следуем за редиректами (раскрывает goo.gl, maps.app.goo.gl и др.)
-    const { url: finalUrl, body } = await fetchUrl(input);
+    // 2. Ссылка — следуем за редиректами
+    const result = await fetchUrl(input);
+    const finalUrl = result.finalUrl || result.url;
+    const body = result.body;
 
-    // Пробуем вытащить координаты из финального URL
+    // Пробуем из финального URL
     const fromUrl = parseCoords(finalUrl);
     if (fromUrl) return res.json({ success: true, ...fromUrl, source: 'url' });
 
