@@ -76,7 +76,7 @@ this.travelTimes = {
 // Пункты встречи (Treffpunkt)
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
-  'Gelsenkirchen-Treffpunkt': {lat: 51.530304, lng: 7.110901}
+  'Gelsenkirchen-Treffpunkt': {lat: 51.535695, lng: 7.096155}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -90,15 +90,15 @@ this.trefftravelTimes = {
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 10,
   'OLGA-Park-Vasyl': 10,
-  'Gelsenkirchen-Treffpunkt-Sergii': 30,
-  'Gelsenkirchen-Treffpunkt-Andrii': 30,
-  'Gelsenkirchen-Treffpunkt-Anatolii': 30,
-  'Gelsenkirchen-Treffpunkt-Sergio': 25,
+  'Gelsenkirchen-Treffpunkt-Sergii': 20,
+  'Gelsenkirchen-Treffpunkt-Andrii': 20,
+  'Gelsenkirchen-Treffpunkt-Anatolii': 20,
+  'Gelsenkirchen-Treffpunkt-Sergio': 10,
   'Gelsenkirchen-Treffpunkt-Dima': 10,
-  'Gelsenkirchen-Treffpunkt-Marvin': 20,
-  'Gelsenkirchen-Treffpunkt-Maikel': 20,
-  'Gelsenkirchen-Treffpunkt-René': 35,
-  'Gelsenkirchen-Treffpunkt-Vasyl': 25
+  'Gelsenkirchen-Treffpunkt-Marvin': 25,
+  'Gelsenkirchen-Treffpunkt-Maikel': 15,
+  'Gelsenkirchen-Treffpunkt-René': 20,
+  'Gelsenkirchen-Treffpunkt-Vasyl': 20
 };
 
 // Приоритетные списки остановок
