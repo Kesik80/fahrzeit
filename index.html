@@ -283,14 +283,13 @@ color: var(--text);
 
 /* крестик удаления участников */
 .sub-participant .remove-sub-btn {
-width: 24px;
-height: 24px;
+width: 20px;
+height: 20px;
 background: transparent;
-color: var(--danger-color);
+color: #dc3545;
 border: none;
 border-radius: 4px;
-font-size: 14px;
-font-weight: 700;
+font-size: 16px;
 display: flex;
 align-items: center;
 justify-content: center;
@@ -299,18 +298,18 @@ flex-shrink: 0;
 line-height: 1;
 padding: 0;
 align-self: flex-start;
-transform: translate(5px, -10px);
+transform: translate(5px, -18px);
 margin-left: auto;
-opacity: .7;
-transition: opacity .15s, transform .12s;
+transition: transform .12s;
 }
 .sub-participant .remove-sub-btn::before {
   content: "✖";
+  position: relative;
+  top: -1px;
 }
 .sub-participant .remove-sub-btn:hover {
 background: transparent;
-opacity: 1;
-transform: translate(5px, -10px) scale(1.2);
+transform: translate(5px, -18px) scale(1.1);
 }
 .sub-participant .drag-handle-sub {
 cursor: grab;
@@ -530,7 +529,8 @@ margin-right: -7px;
 }
 /* красные крестики ВСЕГДА */
 .time-remove,
-.remove-btn {
+.remove-btn,
+.remove-sub-btn {
 background: transparent !important;   /* фон прозрачный */
 color: #dc3545 !important;            /* красный крестик */
 border: none !important;
@@ -551,7 +551,6 @@ line-height: 1;
 background: var(--surface);
 color: var(--text);
 border: 2px solid var(--border);
-padding: var(--small-spacing);
 }
 .time-icon,
 .coords-icon,
@@ -907,7 +906,7 @@ gap: var(--small-spacing);
 margin-top: var(--spacing-unit);
 justify-content: flex-end;
 }
-/* /* ----------  СВЕТЛАЯ (уже есть) ---------- */
+/* ----------  СВЕТЛАЯ (уже есть) ---------- */
 :root {
 --bg: #f0f0f0;
 --text: #333333;
@@ -1692,6 +1691,9 @@ ${Object.keys(this.treffpunkt).filter(n => n !== p.name).map(n => `<option value
 <div class="time-display" data-index="${i}" data-type="participant-time-display" title="Нажмите для изменения">
 ${this.formatMinutes(p.time)}
 </div>
+<button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Рассчитать время в пути" title="Рассчитать время от предыдущего участника">
+  ${p.routeCalculated ? coloredMapSvg : grayMapSvg}
+</button>
 <button class="add-sub-btn" data-index="${i}" title="Person hinzufügen" style="background:#28a745;">+</button>
 <div class="right-section">
 <span class="material-symbols-outlined" aria-label="Переместить">
@@ -1896,7 +1898,6 @@ machineTimeDisplay.addEventListener('click', () => this.editMachineTime(machineT
 }
 machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
 machineDiv.querySelector('[data-type="calc-route"]').addEventListener('click', () => this.calculateTravelTimeToMachine());
-container.appendChild(machineDiv);
 // Добавляем новый контейнер для чекбоксов
 const checkboxContainer = document.createElement('div');
 checkboxContainer.className = 'checkbox-container';
@@ -1907,7 +1908,7 @@ checkboxContainer.innerHTML = `
 <label>
 <input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²
 </label>
-<label class="theme-toggle">
+<label class="theme-toggle"></label>
 `;
 container.appendChild(checkboxContainer);
 // Обработчики событий для чекбоксов
@@ -2374,14 +2375,19 @@ const kollegeSelect = document.getElementById('kollegeSelect');
 const newKollegeRow = document.getElementById('newKollegeRow');
 const newKollegeName = document.getElementById('newKollegeName');
 
-// Заполняем список Treffpunkt
+// Заполняем список Treffpunkt — только те, что ещё не добавлены
+const usedTreffpunkte = new Set(
+  this.participants.filter(p => p.isTreffpunkt).map(p => p.name)
+);
 treffSelect.innerHTML = '<option value="">– Treffpunkt wählen –</option>';
-Object.keys(this.treffpunkt).forEach(name => {
-const opt = document.createElement('option');
-opt.value = name;
-opt.textContent = name;
-treffSelect.appendChild(opt);
-});
+Object.keys(this.treffpunkt)
+  .filter(name => !usedTreffpunkte.has(name))
+  .forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    treffSelect.appendChild(opt);
+  });
 const newTreffOpt = document.createElement('option');
 newTreffOpt.value = 'add-new-treff';
 newTreffOpt.textContent = '➕ Neuer Treffpunkt…';
