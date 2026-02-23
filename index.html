@@ -1250,38 +1250,60 @@ einige Sekunden verarbeitet.</p>
     <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--modal-bg,#fff);border-top:1px solid #e0e0e0;">
       <!-- Тип карты -->
       <!-- Karte -->
-      <button id="mapTypeRoad" title="Karte" style="border:2px solid #1a73e8;background:#fff;border-radius:8px;padding:0;cursor:pointer;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;position:relative;">
-        <svg width="52" height="38" viewBox="0 0 52 38" style="position:absolute;top:0;left:0;" xmlns="http://www.w3.org/2000/svg">
-          <rect width="52" height="38" fill="#e8f0d8"/>
-          <rect x="0" y="14" width="52" height="5" fill="#fff" opacity=".9"/>
-          <rect x="20" y="0" width="4" height="38" fill="#fff" opacity=".9"/>
-          <rect x="0" y="24" width="52" height="3" fill="#fcc" opacity=".7"/>
-          <rect x="5"  y="4" width="10" height="7" rx="1" fill="#c8e6c9"/>
-          <rect x="32" y="18" width="14" height="9" rx="1" fill="#c8e6c9"/>
+      <button id="mapTypeRoad" title="Karte" style="border:3px solid #1a73e8;border-radius:10px;padding:0;cursor:pointer;width:64px;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;position:relative;background:#e8ead3;flex-shrink:0;">
+        <!-- Схематическая карта в стиле Google -->
+        <svg width="64" height="54" viewBox="0 0 64 54" style="position:absolute;top:0;left:0;" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="54" fill="#e8ead3"/>
+          <!-- Зелёные зоны -->
+          <rect x="2" y="2" width="22" height="18" rx="2" fill="#c8dba0"/>
+          <rect x="36" y="28" width="26" height="24" rx="2" fill="#c8dba0"/>
+          <rect x="2" y="36" width="16" height="16" rx="2" fill="#d4e8a8"/>
+          <!-- Голубая вода -->
+          <rect x="44" y="2" width="18" height="10" rx="2" fill="#aedcf0"/>
+          <!-- Главные дороги (белые) -->
+          <rect x="0" y="22" width="64" height="6" fill="#fff"/>
+          <rect x="26" y="0" width="6" height="54" fill="#fff"/>
+          <!-- Второстепенные дороги -->
+          <rect x="0" y="34" width="64" height="3" fill="#f5f5f5"/>
+          <rect x="14" y="0" width="3" height="54" fill="#f5f5f5"/>
+          <rect x="44" y="0" width="3" height="54" fill="#f5f5f5"/>
+          <!-- Жёлтая дорога -->
+          <rect x="0" y="14" width="26" height="4" fill="#fde293"/>
+          <rect x="32" y="28" width="32" height="4" fill="#fde293"/>
+          <!-- Здания -->
+          <rect x="4" y="26" width="8" height="5" fill="#ddd"/>
+          <rect x="34" y="26" width="6" height="4" fill="#ddd"/>
+          <rect x="48" y="14" width="10" height="6" fill="#ddd"/>
         </svg>
-        <span style="position:relative;z-index:1;font-size:10px;font-weight:700;color:#1a73e8;background:#fff;width:100%;text-align:center;padding:2px 0;">Karte</span>
+        <span style="position:relative;z-index:1;font-size:11px;font-weight:700;color:#1a73e8;background:rgba(255,255,255,0.95);width:100%;text-align:center;padding:3px 0;letter-spacing:.01em;">Karte</span>
       </button>
       <!-- Satellit -->
-      <button id="mapTypeSat" title="Satellit" style="border:2px solid #ccc;background:#fff;border-radius:8px;padding:0;cursor:pointer;width:52px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;position:relative;">
-        <svg width="52" height="38" viewBox="0 0 52 38" style="position:absolute;top:0;left:0;" xmlns="http://www.w3.org/2000/svg">
-          <rect width="52" height="38" fill="#2d4a1e"/>
-          <rect x="0"  y="0"  width="18" height="16" fill="#3a5c28" opacity=".8"/>
-          <rect x="20" y="5"  width="14" height="10" fill="#4a6e34" opacity=".7"/>
-          <rect x="36" y="0"  width="16" height="20" fill="#253d18" opacity=".9"/>
-          <rect x="0"  y="20" width="30" height="18" fill="#354f22" opacity=".8"/>
-          <rect x="32" y="22" width="20" height="16" fill="#2a4419" opacity=".9"/>
-          <rect x="10" y="12" width="8"  height="5"  fill="#6b8f52" opacity=".6"/>
-          <rect x="0"  y="17" width="52" height="2" fill="#aaa" opacity=".4"/>
-          <rect x="18" y="0"  width="2"  height="38" fill="#aaa" opacity=".4"/>
+      <button id="mapTypeSat" title="Satellit" style="border:3px solid #ddd;border-radius:10px;padding:0;cursor:pointer;width:64px;height:72px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;overflow:hidden;position:relative;background:#2a3d1a;flex-shrink:0;">
+        <!-- Спутниковый снимок -->
+        <svg width="64" height="54" viewBox="0 0 64 54" style="position:absolute;top:0;left:0;" xmlns="http://www.w3.org/2000/svg">
+          <rect width="64" height="54" fill="#2a3d1a"/>
+          <rect x="0"  y="0"  width="30" height="22" fill="#3a5228" opacity=".9"/>
+          <rect x="32" y="0"  width="32" height="18" fill="#2d4520" opacity=".9"/>
+          <rect x="0"  y="24" width="20" height="30" fill="#38502a" opacity=".8"/>
+          <rect x="22" y="28" width="42" height="26" fill="#243818" opacity=".95"/>
+          <rect x="8"  y="8"  width="16" height="10" fill="#4a6832" opacity=".7"/>
+          <rect x="36" y="6"  width="20" height="8"  fill="#3e5e2a" opacity=".6"/>
+          <rect x="2"  y="30" width="14" height="20" fill="#4d6e34" opacity=".6"/>
+          <!-- Светлые пятна — поля/постройки -->
+          <rect x="28" y="20" width="10" height="6"  fill="#8aab6a" opacity=".5"/>
+          <rect x="44" y="30" width="8"  height="12" fill="#6a8c50" opacity=".4"/>
+          <!-- Дороги тёмные -->
+          <rect x="0"  y="20" width="64" height="2"  fill="#1a2810" opacity=".8"/>
+          <rect x="26" y="0"  width="2"  height="54" fill="#1a2810" opacity=".7"/>
         </svg>
-        <span style="position:relative;z-index:1;font-size:10px;font-weight:700;color:#333;background:#fff;width:100%;text-align:center;padding:2px 0;">Satellit</span>
+        <span style="position:relative;z-index:1;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,0.55);width:100%;text-align:center;padding:3px 0;letter-spacing:.01em;">Satellit</span>
       </button>
       <!-- Геолокация — круглая как в Google Maps -->
-      <button id="mapGeoBtn" title="Mein Standort" style="border:1px solid #ddd;background:#fff;border-radius:50%;padding:0;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-left:2px;flex-shrink:0;">
+      <button id="mapGeoBtn" title="Mein Standort" style="border:1px solid #ddd;background:#fff;border-radius:50%;padding:0;cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.2);margin-left:4px;flex-shrink:0;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="4" fill="#1a73e8"/>
           <circle cx="12" cy="12" r="7" stroke="#1a73e8" stroke-width="1.5" fill="none"/>
-          <line x1="12" y1="1" x2="12" y2="5"   stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="12" y1="1"  x2="12" y2="5"  stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="12" y1="19" x2="12" y2="23" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="1"  y1="12" x2="5"  y2="12" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round"/>
           <line x1="19" y1="12" x2="23" y2="12" stroke="#1a73e8" stroke-width="1.5" stroke-linecap="round"/>
