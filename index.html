@@ -3173,32 +3173,40 @@ overlay.style.cssText = `
   display:flex;align-items:center;justify-content:center;
 `;
 
+// Определяем цвета в зависимости от темы
+const isDark = document.body.classList.contains('dark') || localStorage.theme === 'dark';
+const bg      = isDark ? '#1e1e1e' : '#ffffff';
+const bgFade  = isDark ? 'rgba(30,30,30,' : 'rgba(255,255,255,';
+const textCol = isDark ? '#e0e0e0' : '#222222';
+const btnBg   = isDark ? '#2a2a2a' : '#f0f0f0';
+const accent  = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#1976d2';
+
 overlay.innerHTML = `
-  <div style="background:#fff;border-radius:20px;padding:24px;
-    box-shadow:0 8px 40px rgba(0,0,0,.35);width:280px;text-align:center;
+  <div style="background:${bg};border-radius:20px;padding:24px;
+    box-shadow:0 8px 40px rgba(0,0,0,.5);width:280px;text-align:center;
     font-family:inherit;">
-    <div style="font-size:.8em;font-weight:700;color:#888;letter-spacing:.08em;
+    <div style="font-size:.8em;font-weight:700;color:${isDark?'#aaa':'#888'};letter-spacing:.08em;
       margin-bottom:16px;text-transform:uppercase;">Ankunftszeit</div>
 
     <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
       <!-- Барабан часов -->
       <div style="position:relative;width:80px;height:230px;overflow:hidden;">
         <div style="position:absolute;inset:0;pointer-events:none;z-index:2;
-          background:linear-gradient(to bottom,rgba(255,255,255,.9) 0%,transparent 28%,transparent 72%,rgba(255,255,255,.9) 100%);"></div>
+          background:linear-gradient(to bottom,${bgFade}.92) 0%,${bgFade}0) 28%,${bgFade}0) 72%,${bgFade}.92) 100%);"></div>
         <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
-          height:46px;border-top:2px solid #1976d2;border-bottom:2px solid #1976d2;
+          height:46px;border-top:2px solid ${accent};border-bottom:2px solid ${accent};
           pointer-events:none;z-index:1;"></div>
         <div id="tpHDrum" style="position:absolute;left:0;right:0;top:0;cursor:grab;touch-action:none;"></div>
       </div>
 
-      <div style="font-size:2em;font-weight:700;color:#222;padding-bottom:4px;">:</div>
+      <div style="font-size:2em;font-weight:700;color:${textCol};padding-bottom:4px;">:</div>
 
       <!-- Барабан минут -->
       <div style="position:relative;width:80px;height:230px;overflow:hidden;">
         <div style="position:absolute;inset:0;pointer-events:none;z-index:2;
-          background:linear-gradient(to bottom,rgba(255,255,255,.9) 0%,transparent 28%,transparent 72%,rgba(255,255,255,.9) 100%);"></div>
+          background:linear-gradient(to bottom,${bgFade}.92) 0%,${bgFade}0) 28%,${bgFade}0) 72%,${bgFade}.92) 100%);"></div>
         <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
-          height:46px;border-top:2px solid #1976d2;border-bottom:2px solid #1976d2;
+          height:46px;border-top:2px solid ${accent};border-bottom:2px solid ${accent};
           pointer-events:none;z-index:1;"></div>
         <div id="tpMDrum" style="position:absolute;left:0;right:0;top:0;cursor:grab;touch-action:none;"></div>
       </div>
@@ -3206,11 +3214,11 @@ overlay.innerHTML = `
 
     <div style="display:flex;gap:10px;margin-top:22px;">
       <button id="tpClear" style="flex:1;padding:12px;border:none;border-radius:50px;
-        background:#f0f0f0;color:#d32f2f;font-size:1em;font-weight:600;cursor:pointer;">
+        background:${btnBg};color:#d32f2f;font-size:1em;font-weight:600;cursor:pointer;">
         Löschen
       </button>
       <button id="tpSave" style="flex:2;padding:12px;border:none;border-radius:50px;
-        background:#1976d2;color:#fff;font-size:1em;font-weight:700;cursor:pointer;">
+        background:${accent};color:#fff;font-size:1em;font-weight:700;cursor:pointer;">
         Fertig
       </button>
     </div>
@@ -3229,7 +3237,7 @@ function makeDrum(el, count, current, onChange) {
     for (let i = 0; i < count; i++) {
       const d = document.createElement('div');
       d.style.cssText = `height:${ITEM_H}px;line-height:${ITEM_H}px;text-align:center;
-        font-size:1.9em;font-weight:700;color:#bbb;user-select:none;transition:color .15s,font-size .15s;`;
+        font-size:1.9em;font-weight:700;color:${isDark?'#555':'#bbb'};user-select:none;transition:color .15s,font-size .15s;`;
       d.textContent = String(i).padStart(2,'0');
       el.appendChild(d);
       items.push(d);
@@ -3243,7 +3251,7 @@ function makeDrum(el, count, current, onChange) {
   // Подсвечиваем текущее значение сразу при старте
   el.querySelectorAll('div').forEach((item, i) => {
     const isSel = ((i % count) + count) % count === current;
-    item.style.color = isSel ? '#111' : '#bbb';
+    item.style.color = isSel ? (isDark?'#fff':'#111') : (isDark?'#555':'#bbb');
     item.style.fontSize = isSel ? '2em' : '1.9em';
   });
 
@@ -3277,7 +3285,7 @@ function makeDrum(el, count, current, onChange) {
     const allItems = el.querySelectorAll('div');
     allItems.forEach((item, i) => {
       const isSel = ((i % count) + count) % count === val;
-      item.style.color = isSel ? '#111' : '#bbb';
+      item.style.color = isSel ? (isDark?'#fff':'#111') : (isDark?'#555':'#bbb');
       item.style.fontSize = isSel ? '2em' : '1.9em';
     });
     setTimeout(normalize, 250);
