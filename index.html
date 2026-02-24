@@ -1295,8 +1295,8 @@ einige Sekunden verarbeitet.</p>
     </div>
     <!-- Кнопки подтверждения -->
     <div style="padding:8px 12px;display:flex;gap:8px;justify-content:flex-end;background:var(--modal-bg,#fff);border-top:1px solid #eee;">
-      <button id="mapPickerCancel"  class="modal-btn cancel-button">Abbrechen</button>
-      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>OK</button>
+      <button id="mapPickerCancel"  class="modal-btn cancel-button" style="border-radius:24px;">Abbrechen</button>
+      <button id="mapPickerConfirm" class="modal-btn save-button" style="border-radius:24px;" disabled>OK</button>
     </div>
   </div>
 </div>
@@ -2358,6 +2358,7 @@ async openMapPicker() {
       },
       streetViewControl: false,
       fullscreenControl: false,
+      zoomControl: false,
     });
 
     // ── Полноэкранный режим ───────────────────────────────────────────────
