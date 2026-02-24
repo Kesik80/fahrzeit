@@ -909,6 +909,17 @@ gap: var(--small-spacing);
 margin-top: var(--spacing-unit);
 justify-content: flex-end;
 }
+/* Шапка карты в цвет темы */
+body.dark #mapPickerSheet [style*="background:var(--primary-color)"],
+body.dark .map-picker-header {
+  background: var(--surface-color, #1e1e1e) !important;
+  border-bottom: 1px solid #444;
+}
+
+/* Скрыть "Условия использования" и копирайт на карте */
+.gm-style-cc { display: none !important; }
+a[href*="maps.google.com/maps"] { display: none !important; }
+
 /* ----------  СВЕТЛАЯ (уже есть) ---------- */
 :root {
 --bg: #f0f0f0;
@@ -934,8 +945,14 @@ body.dark {
 --danger-color: #dc3545;
 --route-back-color: #6f42c1;
 /* модальное окно*/
---modal-bg: #121212;   /* тёмно-серый ночью */
+--modal-bg: #121212;
 --modal-text: #fff;
+--map-header-bg: #1e1e1e;
+--map-header-color: #e1e1e1;
+}
+body:not(.dark) {
+--map-header-bg: var(--primary-color, #007bff);
+--map-header-color: #fff;
 }
 body.dark .participant.machine {
 background: var(--surface);
@@ -1237,7 +1254,7 @@ einige Sekunden verarbeitet.</p>
     transition: all .2s ease;
   ">
     <!-- Шапка -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--primary-color);color:#fff;">
+    <div class="map-picker-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--map-header-bg,#007bff);color:var(--map-header-color,#fff);">
       <span style="font-weight:600;font-size:1em;">📍 Ort auf Karte wählen</span>
       <div style="display:flex;gap:6px;align-items:center;">
         <button id="mapFullscreenBtn" title="Vollbild" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;">⛶</button>
@@ -2434,7 +2451,7 @@ async openMapPicker() {
   } else {
     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">⏳ Karte wird geladen…</div>';
     const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=__mapPickerInit`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__mapPickerInit`;
     script.async = true;
     window.__mapPickerInit = () => { container.innerHTML = ''; initMap(); };
     document.head.appendChild(script);
