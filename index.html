@@ -831,6 +831,11 @@ border-radius: 4px;
 font-size: 1em;
 box-sizing: border-box
 }
+.modal-content input[type=text]:focus {
+outline: none;
+border-color: #007bff;
+box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
 .modal-buttons {
 display: flex;
 flex-direction: row;
@@ -861,6 +866,10 @@ background: var(--info-color)
 }
 .modal-content .delete-greeting-btn {
 background: var(--danger-color)
+}
+.modal-content .trash-btn {
+background: #6d4c41 !important;
+color: #fff !important;
 }
 .modal-content .map-button {
 display: block;
@@ -1043,6 +1052,7 @@ margin: 0 !important;
 .modal-btn.cancel-button         { background: var(--info-color)    !important; }
 .modal-btn.map-button            { background: var(--primary-color) !important; }
 .modal-btn.delete-greeting-btn   { background: var(--danger-color)  !important; }
+.modal-btn.trash-btn              { background: #6d4c41 !important; }
 /* фон модалки – переключается вместе с темой */
 .modal-content                   { background: #aaaaaa !important; color: #000 !important; }
 body.dark .modal-content        { background: #444444 !important; color: #fff !important
@@ -1278,7 +1288,7 @@ einige Sekunden verarbeitet.</p>
 <button class="modal-btn cancel-button" id="cancelCoords" title="Abbrechen">✕</button>
 </div>
 <div style="display:flex;justify-content:center;margin-top:8px;">
-<button class="modal-btn delete-greeting-btn" id="deleteGreeting" title="Löschen">🗑 Löschen</button>
+<button class="modal-btn trash-btn" id="deleteGreeting" title="Löschen">🗑 Löschen</button>
 </div>
 <div id="greetingBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:12px;">
 <button class="modal-btn delete-greeting-btn" id="cancelGreeting" title="Abbrechen">✕</button>
@@ -1556,30 +1566,22 @@ startPassengers: localStorage.getItem(k('startPassengers'))
 if (saved.greeting) this.greeting = saved.greeting;
 if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
 if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false, subParticipants: p.subParticipants || [], isTreffpunkt: p.isTreffpunkt || false, treffpunktPersons: p.treffpunktPersons || [] })); } catch { this.participants = []; }
-if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
-this.machineDestinations = [
-  { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
-]; }
+if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; }
 if (saved.machineDestinations) try {
   const parsed = JSON.parse(saved.machineDestinations);
   const fromStorage = parsed.map(d =>
     typeof d === 'string' ? { name: d, lat: null, lng: null } : d
   );
-  // Мерж: дефолты с координатами имеют приоритет, пользовательские добавляются
-  const defaults = this.machineDestinations;
-  const merged = [...defaults];
-  fromStorage.forEach(d => {
-    if (!merged.some(m => m.name === d.name)) merged.push(d);
-  });
-  // Дедупликация по имени
-  const seen = new Set();
-  this.machineDestinations = merged.filter(d => {
-    if (seen.has(d.name)) return false;
-    seen.add(d.name);
-    return true;
-  });
+  // Дефолтные имена — всегда с правильными координатами
+  const defaults = [
+    { name: 'an der Maschine', lat: null, lng: null },
+    { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
+    { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
+  ];
+  // Только пользовательские (не дефолтные) из storage
+  const defaultNames = new Set(defaults.map(d => d.name));
+  const userDefined = fromStorage.filter(d => !defaultNames.has(d.name));
+  this.machineDestinations = [...defaults, ...userDefined];
 } catch { /* use default */ }
 if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
 if (saved.startPoint) {
@@ -2168,6 +2170,7 @@ const modalContent = this.elements.modalContent;
 modalContent.classList.remove('add-new-name');
 this.elements.modalTitle.textContent = isAddingNewGreeting ? 'Neue Begrüßung hinzufügen' : 'Begrüßung bearbeiten';
 ['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
+document.getElementById('stationSelect').style.display = 'none';
 this.elements.greetingLabel.style.display = 'block';
 this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = this.greeting;
