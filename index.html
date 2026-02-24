@@ -1280,6 +1280,10 @@ einige Sekunden verarbeitet.</p>
 <div style="display:flex;justify-content:center;margin-top:8px;">
 <button class="modal-btn delete-greeting-btn" id="deleteGreeting" title="Löschen">🗑 Löschen</button>
 </div>
+<div id="greetingBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:12px;">
+<button class="modal-btn delete-greeting-btn" id="cancelGreeting" title="Abbrechen">✕</button>
+<button class="modal-btn save-button"   id="saveGreeting"   title="Speichern">✔</button>
+</div>
 </div>
 </div>
 <!-- ═══ MAP PICKER MODAL ═══ -->
@@ -1368,6 +1372,9 @@ greetingLabel: document.getElementById('greetingLabel'),
 modalTitle: document.getElementById('modalTitle'),
 saveCoordsButton: document.getElementById('saveCoords'),
 deleteGreetingButton: document.getElementById('deleteGreeting'),
+greetingBtnsRow: document.getElementById('greetingBtnsRow'),
+cancelGreetingButton: document.getElementById('cancelGreeting'),
+saveGreetingButton: document.getElementById('saveGreeting'),
 cancelCoordsButton: document.getElementById('cancelCoords'),
 openMapButton: document.getElementById('openMap'),
 openMapPickerButton: document.getElementById('openMapPicker'),
@@ -1595,6 +1602,8 @@ this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage
 this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
 this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
 this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
+this.elements.saveGreetingButton.addEventListener('click', () => this.saveCoordinates());
+this.elements.cancelGreetingButton.addEventListener('click', () => this.closeModal());
 this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
 this.elements.openMapPickerButton.addEventListener('click', () => this.openMapPicker());
 // Add-type modal handlers
@@ -2093,6 +2102,7 @@ isAddingNewName ? 'Neuen Namen hinzufügen' :
 isEditingStartPoint ? 'Startpunkt-Koordinaten bearbeiten' :
 isMachine ? 'Maschinenkoordinaten bearbeiten' : 'Koordinaten bearbeiten';
 [nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
+this.elements.greetingBtnsRow.style.display = 'none';
 [coordsLabel, coordsHelp, coordsInput, this.elements.mapBtnsRow].forEach(el => el.style.display = 'block');
 this.elements.mapBtnsRow.style.display = 'flex';
 // выбор станций
@@ -2147,6 +2157,7 @@ this.elements.greetingLabel.style.display = 'block';
 this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = this.greeting;
 this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
+this.elements.greetingBtnsRow.style.display = 'flex';
 modal.style.display = 'flex';
 this.elements.greetingInput.focus();
 }
