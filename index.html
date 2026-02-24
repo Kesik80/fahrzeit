@@ -945,6 +945,17 @@ a[href*="maps.google.com/maps"] { display: none !important; }
 /* Скрыть ромбик навигации (pan/tilt control) */
 .gm-bundled-control { display: none !important; }
 .gm-bundled-control-on-bottom { display: none !important; }
+/* Закругление нативных кнопок Google Maps */
+/* Контейнер кнопок типа карты */
+.gm-style .gm-style-mtc-bbw { border-radius: 8px !important; overflow: hidden !important; }
+/* Кнопка "Karte" — только левые углы */
+.gm-style .gm-style-mtc-bbw button:first-child {
+  border-radius: 8px 0 0 8px !important;
+}
+/* Кнопка "Satellit" — только правые углы */
+.gm-style .gm-style-mtc-bbw button:last-child {
+  border-radius: 0 8px 8px 0 !important;
+}
 
 /* ----------  СВЕТЛАЯ (уже есть) ---------- */
 :root {
