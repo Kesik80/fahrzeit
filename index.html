@@ -948,7 +948,11 @@ a[href*="maps.google.com/maps"] { display: none !important; }
 /* Закругление нативных кнопок Google Maps */
 /* Контейнер кнопок типа карты */
 .gm-style .gm-style-mtc-bbw { border-radius: 8px !important; overflow: hidden !important; }
-/* Все кнопки типа карты — скруглены со всех сторон */
+/* Все кнопки типа карты — скруглены + отступ между ними */
+.gm-style .gm-style-mtc-bbw {
+  gap: 4px !important;
+  display: flex !important;
+}
 .gm-style .gm-style-mtc-bbw button {
   border-radius: 8px !important;
 }
