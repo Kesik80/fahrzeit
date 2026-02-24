@@ -843,7 +843,7 @@ flex: 1;
 max-width: 120px;
 padding: 10px;
 margin: 0;
-border-radius: 4px;
+border-radius: 20px;
 font-size: 1em;
 color: white;
 border: none;
@@ -942,6 +942,9 @@ body.dark #mapPickerSheet .modal-btn.cancel-button {
 /* Скрыть "Условия использования" и копирайт на карте */
 .gm-style-cc { display: none !important; }
 a[href*="maps.google.com/maps"] { display: none !important; }
+/* Скрыть ромбик навигации (pan/tilt control) */
+.gm-bundled-control { display: none !important; }
+.gm-bundled-control-on-bottom { display: none !important; }
 
 /* ----------  СВЕТЛАЯ (уже есть) ---------- */
 :root {
@@ -1295,8 +1298,8 @@ einige Sekunden verarbeitet.</p>
     </div>
     <!-- Кнопки подтверждения -->
     <div style="padding:8px 12px;display:flex;gap:8px;justify-content:flex-end;background:var(--modal-bg,#fff);border-top:1px solid #eee;">
-      <button id="mapPickerCancel"  class="modal-btn cancel-button" style="border-radius:24px;">Abbrechen</button>
-      <button id="mapPickerConfirm" class="modal-btn save-button" style="border-radius:24px;" disabled>OK</button>
+      <button id="mapPickerCancel"  class="modal-btn cancel-button">Abbrechen</button>
+      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>OK</button>
     </div>
   </div>
 </div>
