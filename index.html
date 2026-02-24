@@ -1342,7 +1342,8 @@ this.startPointPassengers = [];
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
 this.machineDestinations = [
   { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
 ];
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
@@ -1515,7 +1516,8 @@ this.nameToCoordinates = { ...this.defaultCoordinates };
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
 this.machineDestinations = [
   { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
 ];
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
@@ -1557,14 +1559,27 @@ if (saved.participants) try { this.participants = JSON.parse(saved.participants)
 if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
 this.machineDestinations = [
   { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 }
+  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
 ]; }
 if (saved.machineDestinations) try {
   const parsed = JSON.parse(saved.machineDestinations);
-  // Конвертируем старый формат (массив строк) в новый (массив объектов)
-  this.machineDestinations = parsed.map(d =>
+  const fromStorage = parsed.map(d =>
     typeof d === 'string' ? { name: d, lat: null, lng: null } : d
   );
+  // Мерж: дефолты с координатами имеют приоритет, пользовательские добавляются
+  const defaults = this.machineDestinations;
+  const merged = [...defaults];
+  fromStorage.forEach(d => {
+    if (!merged.some(m => m.name === d.name)) merged.push(d);
+  });
+  // Дедупликация по имени
+  const seen = new Set();
+  this.machineDestinations = merged.filter(d => {
+    if (seen.has(d.name)) return false;
+    seen.add(d.name);
+    return true;
+  });
 } catch { /* use default */ }
 if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
 if (saved.startPoint) {
@@ -2062,7 +2077,7 @@ try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
 const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
 const d = await resp.json();
-if (d.success) return { lat: d.lat, lng: d.lng };
+if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
 this.showToast(d.error || "Koordinaten nicht erkannt.");
 return null;
 } catch(e) {
@@ -2133,7 +2148,7 @@ coordsInput.value = this.startPointCoords.lat && this.startPointCoords.lng ? `${
 coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
 } else {
 const participant = this.participants[index];
-coordsInput.value = participant.lat && participant.lng ? `${participant.lat},${participant.lng}` : '';
+coordsInput.value = participant.lat && participant.lng ? `${parseFloat(participant.lat.toFixed(6))},${parseFloat(participant.lng.toFixed(6))}` : '';
 }
 modal.style.display = 'flex';
 // Автофокус только при hinzugefügtии нового имени —
@@ -3512,7 +3527,7 @@ if (passengers.length === 0) {
   const allNames = [...passengers];
   let namesStr;
   if (allNames.length === 1) namesStr = `${allNames[0]} und ich`;
-  else namesStr = allNames.slice(0, -1).join(', ') + ' und ich';
+  else namesStr = allNames.join(', ') + ' und ich';
   startLine = this.useUhrBei
     ? `um ${this.formatTime(startTime)} Uhr fahren ${namesStr} los`
     : `${this.formatTime(startTime)}  ${namesStr} fahren los`;
