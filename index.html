@@ -909,11 +909,18 @@ gap: var(--small-spacing);
 margin-top: var(--spacing-unit);
 justify-content: flex-end;
 }
-/* Шапка карты в цвет темы */
-body.dark #mapPickerSheet [style*="background:var(--primary-color)"],
+/* Шапка карты — цвет темы */
+.map-picker-header {
+  background: #007bff;
+  color: #fff;
+}
 body.dark .map-picker-header {
-  background: var(--surface-color, #1e1e1e) !important;
-  border-bottom: 1px solid #444;
+  background: #1a1a1a !important;
+  color: #e1e1e1 !important;
+  border-bottom: 1px solid #333;
+}
+body.dark .map-picker-header button {
+  color: #e1e1e1 !important;
 }
 
 /* Скрыть "Условия использования" и копирайт на карте */
@@ -1254,7 +1261,7 @@ einige Sekunden verarbeitet.</p>
     transition: all .2s ease;
   ">
     <!-- Шапка -->
-    <div class="map-picker-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--map-header-bg,#007bff);color:var(--map-header-color,#fff);">
+    <div class="map-picker-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;">
       <span style="font-weight:600;font-size:1em;">📍 Ort auf Karte wählen</span>
       <div style="display:flex;gap:6px;align-items:center;">
         <button id="mapFullscreenBtn" title="Vollbild" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;">⛶</button>
