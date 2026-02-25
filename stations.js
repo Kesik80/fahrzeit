@@ -108,7 +108,7 @@ this.participantOrders = {
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
   'Dima': ["Anatolii","Sergii","Andrii","Sergio"],
-  'Alex': ["Anatolii"]
+  'Alex': {"startPassengers":["Andrii"],"order":["Anatolii"]}
 };
 
 // Список приветствий
