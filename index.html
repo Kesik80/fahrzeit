@@ -1447,9 +1447,9 @@ try {
     if (!this.greeting) this.greeting = this.defaultGreetings[0];
   }
   // Конечные точки из stations.js
-  const destBlock = extractBlock(text, 'const defaultMachineDestinationsData');
-  if (destBlock) {
-    const freshDefaults = Function('"use strict";return (' + destBlock + ')')();
+  const destM = text.match(/const\s+defaultMachineDestinationsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (destM) {
+    const freshDefaults = Function('"use strict";return (' + destM[1] + ')')();
     const defaultNames = new Set(freshDefaults.map(d => d.name));
     const userDefined = this.machineDestinations.filter(d => !defaultNames.has(d.name));
     this.machineDestinations = [...freshDefaults, ...userDefined];
