@@ -862,6 +862,8 @@ body {
       <button class="tab" data-group="treffpunkt">📍 Treffpunkt</button>
       <button class="tab" data-group="trefftravelTimes">⏱📍 Treff-Время</button>
       <button class="tab" data-group="participantOrders">🔢 Порядок</button>
+      <button class="tab" data-group="greetings">💬 Приветствия</button>
+      <button class="tab" data-group="destinations">🏁 Конечные точки</button>
     </div>
   </div>
 
@@ -1127,6 +1129,9 @@ async function autoCalcPair(key, isTreff) {
 // ═══════════════════════════════════════
 let data = { defaultCoords: {}, stations: {} };
 let travelTimes = {}, participantOrders = {}, treffpunkt = {}, trefftravelTimes = {};
+let defaultGreetings = [];
+let defaultMachineDestinations = [];
+let startPassengers = {}; // { 'DriverName': ['Name1','Name2'] }
 // Флаги: true = рассчитано через Google API, false/undefined = вручную
 let autoCalcFlags = {}; // ключ: "tt:Имя1-Имя2" или "treff:Ключ"
 
@@ -1240,10 +1245,35 @@ function parseStationsText(text) {
   if (!defM && !stM) throw new Error('Не найдены блоки данных');
   if (defM) data.defaultCoords = Function('"use strict";return (' + defM[1] + ')')();
   if (stM)  data.stations      = Function('"use strict";return (' + stM[1]  + ')')();
+  // Приветствия
+  const grM2 = text.match(/const\s+defaultGreetingsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (grM2) defaultGreetings = Function('"use strict";return (' + grM2[1] + ')')();
+  // Конечные точки
+  const destM2 = text.match(/const\s+defaultMachineDestinationsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (destM2) defaultMachineDestinations = Function('"use strict";return (' + destM2[1] + ')')();
+  // Попутчики стартовой точки
+  const spM = text.match(/const\s+defaultStartPassengersData\s*=\s*({[\s\S]*?});/);
+  if (spM) startPassengers = Function('"use strict";return (' + spM[1] + ')')();
   if (tmM)  travelTimes        = Function('"use strict";return (' + tmM[1]  + ')')();
-  if (ordM) participantOrders  = Function('"use strict";return (' + ordM[1] + ')')();
+  if (ordM) {
+    const raw = Function('"use strict";return (' + ordM[1] + ')')();
+    // Новый формат: значение может быть {startPassengers:[...], order:[...]}
+    Object.keys(raw).forEach(driver => {
+      const val = raw[driver];
+      if (val && !Array.isArray(val) && val.order) {
+        participantOrders[driver] = val.order;
+        if (val.startPassengers && val.startPassengers.length) {
+          startPassengers[driver] = val.startPassengers;
+        }
+      } else {
+        participantOrders[driver] = val;
+      }
+    });
+  }
   if (trfM) treffpunkt         = Function('"use strict";return (' + trfM[1] + ')')();
   if (trtM) trefftravelTimes   = Function('"use strict";return (' + trtM[1] + ')')();
+  // Поддержка старого формата defaultStartPassengersData
+  if (spM && Object.keys(startPassengers).length === 0) startPassengers = Function('"use strict";return (' + spM[1] + ')')();
 }
 
 // ═══════════════════════════════════════
@@ -1302,6 +1332,58 @@ function render() {
     addBtn2.onclick = () => triggerAddOrder(driverSel.value, drivers);
     row.appendChild(addBtn2);
     box.appendChild(row);
+
+    // ── Попутчики стартовой точки водителя ──
+    const passRow = document.createElement('div');
+    passRow.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0 12px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-sm);border:1px solid var(--border);';
+
+    function rebuildPassengers() {
+      const driver = driverSel.value;
+      passRow.innerHTML = '';
+      const lbl = document.createElement('span');
+      lbl.textContent = '🚗 Со старта:';
+      lbl.style.cssText = 'font-size:0.85em;color:var(--text2);flex-shrink:0;';
+      passRow.appendChild(lbl);
+
+      const plist = startPassengers[driver] || [];
+      plist.forEach((name, pi) => {
+        const chip = document.createElement('span');
+        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:var(--accent-lt);color:var(--accent);padding:2px 8px;border-radius:20px;font-size:0.85em;';
+        chip.innerHTML = `${name} <button style="background:none;border:none;cursor:pointer;color:inherit;font-size:1em;padding:0;line-height:1;" title="Удалить">×</button>`;
+        chip.querySelector('button').onclick = () => {
+          startPassengers[driver].splice(pi, 1);
+          if (!startPassengers[driver].length) delete startPassengers[driver];
+          rebuildPassengers(); updateRaw();
+        };
+        passRow.appendChild(chip);
+      });
+
+      const addPassBtn = document.createElement('button');
+      addPassBtn.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:1.1em;line-height:1;flex-shrink:0;';
+      addPassBtn.textContent = '+';
+      addPassBtn.title = 'Добавить попутчика со старта';
+      addPassBtn.onclick = () => {
+        const driver = driverSel.value;
+        const allNames = Object.keys(data.defaultCoords).filter(n => n !== driver);
+        const current = startPassengers[driver] || [];
+        const avail = allNames.filter(n => !current.includes(n));
+        if (!avail.length) { showMsg('Все уже добавлены'); return; }
+        // Показываем selectModal
+        const sel = document.getElementById('selectParticipant');
+        sel.innerHTML = '';
+        avail.forEach(n => { const o = document.createElement('option'); o.value = o.textContent = n; sel.appendChild(o); });
+        document.getElementById('selectTypeBtns').style.display = 'none';
+        window._showParticipantTab();
+        window._modalCtx = { mode: 'startPassenger', driver };
+        document.getElementById('selectModalTitle').textContent = `Попутчик ${driver} со старта`;
+        openModal('selectModal');
+      };
+      passRow.appendChild(addPassBtn);
+
+
+    }
+    rebuildPassengers();
+    box.appendChild(passRow);
 
     const listBox = document.createElement('div');
     listBox.id = 'orderList';
@@ -1404,7 +1486,7 @@ function render() {
       updateRaw();
     }
 
-    driverSel.onchange = () => rebuildList();
+    driverSel.onchange = () => { rebuildList(); rebuildPassengers(); };
     rebuildList();
 
     appendRawBlock(box);
@@ -1554,6 +1636,50 @@ function render() {
     box.appendChild(card);
   });
 
+  // ── greetings ──────────────────────────────
+  if (grp === 'greetings') {
+    if (!defaultGreetings.length) box.appendChild(emptyState('💬', 'Список приветствий пуст'));
+    defaultGreetings.forEach((greeting, idx) => {
+      const card = document.createElement('div'); card.className = 'card';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = greeting; inp.className = 'name-input';
+      inp.style.cssText = 'flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.95em;';
+      inp.addEventListener('change', () => { defaultGreetings[idx] = inp.value.trim(); });
+      card.appendChild(inp);
+      card.appendChild(mkDelBtn(() => { defaultGreetings.splice(idx, 1); render(); showMsg('Удалено'); }));
+      box.appendChild(card);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить приветствие';
+    addBtn.style.cssText = 'margin-top:8px;width:100%;';
+    addBtn.onclick = () => { defaultGreetings.push('Новое приветствие'); render(); showMsg('Добавлено ✓'); };
+    box.appendChild(addBtn);
+    return;
+  }
+
+  // ── destinations ───────────────────────────
+  if (grp === 'destinations') {
+    if (!defaultMachineDestinations.length) box.appendChild(emptyState('🏁', 'Список конечных точек пуст'));
+    defaultMachineDestinations.forEach((dest, idx) => {
+      const card = document.createElement('div'); card.className = 'card';
+      const nameInp = document.createElement('input');
+      nameInp.type = 'text'; nameInp.value = dest.name; nameInp.className = 'name-input';
+      nameInp.style.cssText = 'flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.95em;min-width:120px;';
+      nameInp.addEventListener('change', () => { defaultMachineDestinations[idx].name = nameInp.value.trim(); });
+      card.appendChild(nameInp);
+      card.appendChild(mkCoordInput(dest, c => { defaultMachineDestinations[idx].lat = c.lat; defaultMachineDestinations[idx].lng = c.lng; }));
+      card.appendChild(mkDelBtn(() => { defaultMachineDestinations.splice(idx, 1); render(); showMsg('Удалено'); }));
+      box.appendChild(card);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить точку';
+    addBtn.style.cssText = 'margin-top:8px;width:100%;';
+    addBtn.onclick = () => { defaultMachineDestinations.push({ name: 'Новая точка', lat: null, lng: null }); render(); showMsg('Добавлено ✓'); };
+    box.appendChild(addBtn);
+    return;
+  }
+
+
   // Count badge
   const cnt = document.createElement('div');
   cnt.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:4px;';
@@ -1567,6 +1693,7 @@ function render() {
 // ═══════════════════════════════════════
 //  RAW JSON HELPERS
 // ═══════════════════════════════════════
+let _rawWasOpen = false;
 function appendRawBlock(box) {
   const rb = document.createElement('div'); rb.className = 'raw-block';
   rb.innerHTML = `
@@ -1581,9 +1708,12 @@ function appendRawBlock(box) {
 
   const btn = rb.querySelector('#rawToggle');
   const body = rb.querySelector('#rawBody');
+  // Восстановить состояние после render()
+  if (_rawWasOpen) { body.classList.add('open'); btn.classList.add('open'); }
   btn.addEventListener('click', () => {
     const open = body.classList.toggle('open');
     btn.classList.toggle('open', open);
+    _rawWasOpen = open;
   });
 }
 function updateRaw() {
@@ -1591,12 +1721,21 @@ function updateRaw() {
   const el = document.getElementById('rawJson');
   if (!el) return;
   if (grp === 'participantOrders') {
-    const clean = {};
-    Object.keys(participantOrders).filter(k => !k.startsWith('_')).forEach(k => clean[k] = participantOrders[k]);
-    el.value = JSON.stringify(clean, null, 2);
+    const combined = {};
+    Object.keys(participantOrders).filter(k => !k.startsWith('_')).forEach(k => {
+      const sp = startPassengers[k];
+      if (sp && sp.length) {
+        combined[k] = { startPassengers: sp, order: participantOrders[k] };
+      } else {
+        combined[k] = participantOrders[k];
+      }
+    });
+    el.value = JSON.stringify(combined, null, 2);
   } else if (grp === 'travelTimes') el.value = JSON.stringify(travelTimes, null, 2);
   else if (grp === 'trefftravelTimes') el.value = JSON.stringify(trefftravelTimes, null, 2);
   else if (grp === 'treffpunkt') el.value = JSON.stringify(treffpunkt, null, 2);
+  else if (grp === 'greetings') el.value = JSON.stringify(defaultGreetings, null, 2);
+  else if (grp === 'destinations') el.value = JSON.stringify(defaultMachineDestinations, null, 2);
   else el.value = JSON.stringify(data[grp] || {}, null, 2);
 }
 
@@ -1781,6 +1920,13 @@ document.getElementById('selectConfirm').onclick = () => {
 
   const name = document.getElementById('selectParticipant').value;
   if (!name) return;
+  if (ctx.mode === 'startPassenger') {
+    if (!startPassengers[ctx.driver]) startPassengers[ctx.driver] = [];
+    if (!startPassengers[ctx.driver].includes(name)) startPassengers[ctx.driver].push(name);
+    closeModal('selectModal');
+    render(); updateRaw(); showMsg('Попутчик добавлен ✓');
+    return;
+  }
   if (ctx.mode === 'add') {
     if (!participantOrders[ctx.driver]) participantOrders[ctx.driver] = [];
     participantOrders[ctx.driver].push(name);
@@ -2028,7 +2174,7 @@ this.trefftravelTimes = {
 ${L(trefftravelTimes, ([p,t]) => `  '${p}': ${t}`)}
 };
 
-// Приоритетные списки остановок
+// Приоритетные списки остановок и попутчики
 this.participantOrders = {
 ${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => {
   const arr = (participantOrders[s] || []).map(item => {
@@ -2036,9 +2182,21 @@ ${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => {
     if (item?.treffpunkt) return `{"treffpunkt":"${item.treffpunkt}","persons":${JSON.stringify(item.persons || [])}}`;
     return `{"main":"${item.main}","subParticipants":${JSON.stringify(item.subParticipants || [])}}`;
   });
+  const sp = startPassengers[s];
+  if (sp && sp.length) {
+    return `  '${s}': {"startPassengers":[${sp.map(p=>`"${p}"`).join(',')}],"order":[${arr.join(',')}]}`;
+  }
   return `  '${s}': [${arr.join(',')}]`;
 }).join(',\n')}
-};`;
+};
+
+// Список приветствий
+const defaultGreetingsData = ${JSON.stringify(defaultGreetings, null, 2)};
+
+// Конечные точки
+const defaultMachineDestinationsData = [
+${defaultMachineDestinations.map(d => `  { name: '${d.name}', lat: ${d.lat}, lng: ${d.lng} }`).join(',\n')}
+];`;
 }
 
 // ═══════════════════════════════════════
