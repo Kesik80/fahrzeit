@@ -124,5 +124,6 @@ const defaultGreetingsData = [
 const defaultMachineDestinationsData = [
   { name: 'an der Maschine', lat: null, lng: null },
   { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
+  { name: 'Темт', lat: 51.5093, lng: 6.903112 }
 ];
