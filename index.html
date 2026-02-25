@@ -1121,9 +1121,6 @@ title="Bearbeitungsmodus">
 <button class="start-point-coords" title="Startpunkt-Koordinaten bearbeiten"></button>
 <select id="greeting" aria-label="Begrüßung wählen">
 <option value="Moin zusammen" selected>Moin zusammen</option>
-<option value="Hallo zusammen">Hallo zusammen</option>
-<option value="Guten Morgen">Guten Morgen</option>
-<option value="Guten Tag">Guten Tag</option>
 <option value="add-new-greeting">Neue Begrüßung hinzufügen</option>
 </select>
 <button class="edit-greeting-btn pencil-icon" title="Begrüßung bearbeiten">
@@ -1291,7 +1288,7 @@ einige Sekunden verarbeitet.</p>
 <button class="modal-btn trash-btn" id="deleteGreeting" title="Löschen">🗑 Löschen</button>
 </div>
 <div id="greetingBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:12px;">
-<button class="modal-btn delete-greeting-btn" id="cancelGreeting" title="Abbrechen">✕</button>
+<button class="modal-btn cancel-button" id="cancelGreeting" title="Abbrechen">✕</button>
 <button class="modal-btn save-button"   id="saveGreeting"   title="Speichern">✔</button>
 </div>
 </div>
@@ -1333,7 +1330,7 @@ einige Sekunden verarbeitet.</p>
 "use strict";
 class FahrzeitRechner {
 constructor() {
-this.defaultGreetings = ['Moin zusammen', 'Hallo zusammen', 'Guten Morgen', 'Guten Tag'];
+this.defaultGreetings = ['Moin zusammen']; // загружается из stations.js
 this.greetings = [...this.defaultGreetings];
 this.greeting = 'Moin zusammen';
 // Данные загружаются из stations.js — см. метод loadStations()
@@ -1350,11 +1347,7 @@ this.nameToCoordinates = { ...defaultCoords };
 this.participants = [];
 this.startPointPassengers = [];
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
-this.machineDestinations = [
-  { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
-];
+this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.sortable = null;
@@ -1446,6 +1439,21 @@ try {
   if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
   if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
   if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
+  // Приветствия из stations.js
+  const grM = text.match(/const\s+defaultGreetingsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (grM) {
+    this.defaultGreetings = Function('"use strict";return (' + grM[1] + ')')();
+    if (!this.greetings || this.greetings.length === 0) this.greetings = [...this.defaultGreetings];
+    if (!this.greeting) this.greeting = this.defaultGreetings[0];
+  }
+  // Конечные точки из stations.js
+  const destBlock = extractBlock(text, 'const defaultMachineDestinationsData');
+  if (destBlock) {
+    const freshDefaults = Function('"use strict";return (' + destBlock + ')')();
+    const defaultNames = new Set(freshDefaults.map(d => d.name));
+    const userDefined = this.machineDestinations.filter(d => !defaultNames.has(d.name));
+    this.machineDestinations = [...freshDefaults, ...userDefined];
+  }
   // Синхронизируем координаты участников из обновлённых данных stations
   this.syncCoordinates();
   // Если у водителя нет сохранённого списка — загружаем из participantOrders
@@ -1517,18 +1525,14 @@ localStorage.setItem(k('startPassengers'), JSON.stringify(this.startPointPasseng
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 }
 resetToDefaults() {
-this.greeting = 'Moin zusammen';
+this.greeting = this.defaultGreetings[0];
 this.greetings = [...this.defaultGreetings];
 this.startPoint = '';
 this.startPointCoords = { lat: null, lng: null };
 this.participants = [];
 this.nameToCoordinates = { ...this.defaultCoordinates };
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
-this.machineDestinations = [
-  { name: 'an der Maschine', lat: null, lng: null },
-  { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
-];
+this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.startPointPassengers = [];
@@ -1573,11 +1577,7 @@ if (saved.machineDestinations) try {
     typeof d === 'string' ? { name: d, lat: null, lng: null } : d
   );
   // Дефолтные имена — всегда с правильными координатами
-  const defaults = [
-    { name: 'an der Maschine', lat: null, lng: null },
-    { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-    { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
-  ];
+  const defaults = [...defaultMachineDestinationsData];
   // Только пользовательские (не дефолтные) из storage
   const defaultNames = new Set(defaults.map(d => d.name));
   const userDefined = fromStorage.filter(d => !defaultNames.has(d.name));
