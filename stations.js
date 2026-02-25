@@ -103,12 +103,11 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок и попутчики
 this.participantOrders = {
-  'Sergii': {"startPassengers":["Maikel"],"order":["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]}]},
+  'Sergii': {"startPassengers":["Maikel","Marvin"],"order":["Anatolii",{"main":"Vasyl","subParticipants":["Alex","René"]},"Sergio"]},
   'Anatolii': ["Sergii","Andrii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
-  'Dima': ["Anatolii","Sergii","Andrii","Sergio"],
-  'Alex': {"startPassengers":["Andrii"],"order":["Anatolii"]}
+  'Dima': ["Anatolii","Sergii","Andrii","Sergio"]
 };
 
 // Список приветствий
@@ -116,16 +115,12 @@ const defaultGreetingsData = [
   "Moin zusammen",
   "Hallo zusammen",
   "Guten Morgen",
-  "Guten Tag",
-  "Тесттрую",
-  "Новый тест"
+  "Guten Tag"
 ];
 
 // Конечные точки
 const defaultMachineDestinationsData = [
   { name: 'an der Maschine', lat: null, lng: null },
   { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
-  { name: 'Новая', lat: 51.5093, lng: 6.903112 },
-  { name: 'Новая точка', lat: 51.5093, lng: 6.903112 }
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
 ];
