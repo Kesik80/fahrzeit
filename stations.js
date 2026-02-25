@@ -117,7 +117,8 @@ const defaultGreetingsData = [
   "Hallo zusammen",
   "Guten Morgen",
   "Guten Tag",
-  "Тесттрую"
+  "Тесттрую",
+  "Новый тест"
 ];
 
 // Конечные точки
