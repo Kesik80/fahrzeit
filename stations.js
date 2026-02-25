@@ -107,7 +107,8 @@ this.participantOrders = {
   'Anatolii': ["Sergii","Andrii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
-  'Dima': ["Anatolii","Sergii","Andrii","Sergio"]
+  'Dima': ["Anatolii","Sergii","Andrii","Sergio"],
+  'Alex': ["Anatolii"]
 };
 
 // Список приветствий
