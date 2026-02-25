@@ -1346,6 +1346,7 @@ this.defaultCoordinates = defaultCoords;      // для сброса
 this.nameToCoordinates = { ...defaultCoords };
 this.participants = [];
 this.startPointPassengers = [];
+this.defaultStartPassengers = {};
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
 this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
@@ -1438,7 +1439,25 @@ try {
   if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
   if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
   if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
-  if (ordBlock) this.participantOrders = Function('"use strict";return (' + ordBlock + ')')();
+  if (ordBlock) {
+    const rawOrders = Function('"use strict";return (' + ordBlock + ')')();
+    // Новый формат: значение может быть {startPassengers:[...], order:[...]}
+    const cleanOrders = {};
+    const spFromOrders = {};
+    Object.keys(rawOrders).forEach(driver => {
+      const val = rawOrders[driver];
+      if (val && !Array.isArray(val) && val.order) {
+        cleanOrders[driver] = val.order;
+        if (val.startPassengers && val.startPassengers.length) {
+          spFromOrders[driver] = val.startPassengers;
+        }
+      } else {
+        cleanOrders[driver] = val;
+      }
+    });
+    this.participantOrders = cleanOrders;
+    this.defaultStartPassengers = spFromOrders;
+  }
   // Приветствия из stations.js
   const grM = text.match(/const\s+defaultGreetingsData\s*=\s*(\[[\s\S]*?\]);/);
   if (grM) {
@@ -1446,6 +1465,9 @@ try {
     if (!this.greetings || this.greetings.length === 0) this.greetings = [...this.defaultGreetings];
     if (!this.greeting) this.greeting = this.defaultGreetings[0];
   }
+  // Попутчики стартовой точки из stations.js
+  const spM2 = text.match(/const\s+defaultStartPassengersData\s*=\s*({[\s\S]*?});/);
+  if (spM2) this.defaultStartPassengers = Function('"use strict";return (' + spM2[1] + ')')();
   // Конечные точки из stations.js
   const destM = text.match(/const\s+defaultMachineDestinationsData\s*=\s*(\[[\s\S]*?\]);/);
   if (destM) {
@@ -1674,11 +1696,22 @@ if (e.key === 'Escape' && subModal.classList.contains('show')) closeSubModal();
 // --- УДАЛЕНЫ ОБРАБОТЧИКИ ДЛЯ open-map-direct и open-map-return ---
 }
 updateStartPoint(value) {
-this.startPointPassengers = [];
+// Загружаем попутчиков стартовой точки из stations.js
+const defaultSP = (this.defaultStartPassengers || {})[value] || [];
+this.startPointPassengers = [...defaultSP];
 if (value === 'add-new') {
 this.openCoordsModal(null, false, true, true);
 } else {
 this.startPoint = value;
+// Загружаем machineStop из профиля нового водителя
+const savedMachine = localStorage.getItem(`fahrzeitRechner_${value}_machineStop`);
+if (savedMachine) {
+  try { this.machineStop = JSON.parse(savedMachine); } catch {}
+} else {
+  // Нет сохранённого — берём первую конечную точку из списка
+  const firstDest = this.machineDestinations[0];
+  this.machineStop = { name: firstDest ? firstDest.name : 'an der Maschine', time: 20, arrivalTime: '', lat: firstDest?.lat || null, lng: firstDest?.lng || null, autoCalculated: false };
+}
 const startCoords = this.nameToCoordinates[value];
 this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
 const order = this.participantOrders[value] || [];
