@@ -20,7 +20,7 @@ this.stations = {
   'Gelsenkirchen Horst': {lat: 51.5415351, lng: 7.0202811},
   'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119},
   'Dortmund-Lütgendortmund': {lat: 51.497711, lng: 7.3665302},
-  'Köln Kalk Nord': {lat: 51.0869856, lng: 6.9476063}
+  'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018}
 };
 
 // Время в пути между участниками
