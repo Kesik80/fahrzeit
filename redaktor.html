@@ -864,6 +864,7 @@ body {
       <button class="tab" data-group="participantOrders">🔢 Порядок</button>
       <button class="tab" data-group="greetings">💬 Приветствия</button>
       <button class="tab" data-group="destinations">🏁 Конечные точки</button>
+      <button class="tab" data-group="farewell">👋 Прощание</button>
     </div>
   </div>
 
@@ -1131,6 +1132,8 @@ let data = { defaultCoords: {}, stations: {} };
 let travelTimes = {}, participantOrders = {}, treffpunkt = {}, trefftravelTimes = {};
 let defaultGreetings = [];
 let defaultMachineDestinations = [];
+let farewellText = 'Tschüss 👋';
+let farewellList = ['Tschüss 👋', 'Bis bald 👋', 'Bis später 🙂', 'Auf Wiedersehen 👋'];
 let startPassengers = {}; // { 'DriverName': ['Name1','Name2'] }
 // Флаги: true = рассчитано через Google API, false/undefined = вручную
 let autoCalcFlags = {}; // ключ: "tt:Имя1-Имя2" или "treff:Ключ"
@@ -1251,6 +1254,9 @@ function parseStationsText(text) {
   // Конечные точки
   const destM2 = text.match(/const\s+defaultMachineDestinationsData\s*=\s*(\[[\s\S]*?\]);/);
   if (destM2) defaultMachineDestinations = Function('"use strict";return (' + destM2[1] + ')')();
+  // Прощание из stations.js
+  const farewellM2 = text.match(/const\s+defaultFarewellData\s*=\s*({[\s\S]*?});/);
+  if (farewellM2) { const fd = Function('"use strict";return (' + farewellM2[1] + ')')(); farewellText = fd.text || 'Tschüss 👋'; if (fd.list) farewellList = [...fd.list]; }
   // Попутчики стартовой точки
   const spM = text.match(/const\s+defaultStartPassengersData\s*=\s*({[\s\S]*?});/);
   if (spM) startPassengers = Function('"use strict";return (' + spM[1] + ')')();
@@ -1679,6 +1685,37 @@ function render() {
     return;
   }
 
+  // ── farewell ────────────────────────────────────────────────────────────
+  if (grp === 'farewell') {
+    if (!farewellList.length) box.appendChild(emptyState('👋', 'Список пуст'));
+    farewellList.forEach((item, idx) => {
+      const card = document.createElement('div'); card.className = 'card';
+      const inp = document.createElement('input');
+      inp.type = 'text'; inp.value = item; inp.className = 'name-input';
+      inp.style.cssText = 'flex:1;padding:6px 8px;border-radius:6px;border:1px solid var(--border);background:var(--bg2);color:var(--text);font-size:0.95em;';
+      inp.addEventListener('change', () => {
+        farewellList[idx] = inp.value.trim();
+        if (idx === 0) farewellText = farewellList[0];
+      });
+      card.appendChild(inp);
+      // Пометить первый как "по умолчанию"
+      if (idx === 0) {
+        const badge = document.createElement('span');
+        badge.textContent = 'default';
+        badge.style.cssText = 'font-size:0.7em;color:var(--accent);flex-shrink:0;';
+        card.appendChild(badge);
+      }
+      card.appendChild(mkDelBtn(() => { farewellList.splice(idx, 1); render(); showMsg('Удалено'); }));
+      box.appendChild(card);
+    });
+    const addBtn = document.createElement('button');
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить прощание';
+    addBtn.style.cssText = 'margin-top:8px;width:100%;';
+    addBtn.onclick = () => { farewellList.push('Tschüss 👋'); render(); showMsg('Добавлено ✓'); };
+    box.appendChild(addBtn);
+    return;
+  }
+
 
   // Count badge
   const cnt = document.createElement('div');
@@ -1736,6 +1773,7 @@ function updateRaw() {
   else if (grp === 'treffpunkt') el.value = JSON.stringify(treffpunkt, null, 2);
   else if (grp === 'greetings') el.value = JSON.stringify(defaultGreetings, null, 2);
   else if (grp === 'destinations') el.value = JSON.stringify(defaultMachineDestinations, null, 2);
+  else if (grp === 'farewell') el.value = JSON.stringify({ text: farewellList[0] || farewellText, list: farewellList }, null, 2);
   else el.value = JSON.stringify(data[grp] || {}, null, 2);
 }
 
@@ -2189,6 +2227,9 @@ ${Object.keys(participantOrders).filter(k => !k.startsWith('_')).map(s => {
   return `  '${s}': [${arr.join(',')}]`;
 }).join(',\n')}
 };
+
+// Прощание
+const defaultFarewellData = ${JSON.stringify({ text: farewellList[0] || farewellText, list: farewellList }, null, 2)};
 
 // Список приветствий
 const defaultGreetingsData = ${JSON.stringify(defaultGreetings, null, 2)};

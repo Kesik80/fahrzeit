@@ -3160,6 +3160,63 @@ this.machineStop.name = value.trim() || 'an der Maschine';
 this.saveData();
 this.calculate();
 }
+editParticipantTime(index, displayEl) {
+const current = this.participants[index].time;
+const input = document.createElement('input');
+input.type = 'number';
+input.min = '1';
+input.max = '999';
+input.value = current;
+input.className = 'time-display';
+input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+displayEl.replaceWith(input);
+input.focus();
+input.select();
+
+const save = () => {
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    this.participants[index].time = val;
+    this.participants[index].timeManuallyEdited = true;
+    this.participants[index].routeCalculated = false;
+  }
+  this.saveData(); this.renderParticipants(); this.calculate();
+};
+
+input.addEventListener('blur', save);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { input.blur(); }
+  if (e.key === 'Escape') { this.renderParticipants(); }
+});
+}
+editMachineTime(displayEl) {
+const current = this.machineStop.time;
+const input = document.createElement('input');
+input.type = 'number';
+input.min = '1';
+input.max = '999';
+input.value = current;
+input.className = 'time-display';
+input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+displayEl.replaceWith(input);
+input.focus();
+input.select();
+
+const save = () => {
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    this.machineStop.time = val;
+    this.machineStop.autoCalculated = false;
+  }
+  this.saveData(); this.renderParticipants(); this.calculate();
+};
+
+input.addEventListener('blur', save);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { input.blur(); }
+  if (e.key === 'Escape') { this.renderParticipants(); }
+});
+}
 updateMachineTime(value) {
 const time = parseInt(value) || 20;
 this.machineStop.time = Math.max(1, Math.min(720, time));
