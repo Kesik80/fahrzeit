@@ -117,9 +117,7 @@ const defaultGreetingsData = [
   "Moin zusammen",
   "Hallo zusammen",
   "Guten Morgen",
-  "Guten Tag",
-  "Тесттрую",
-  "Новый тест"
+  "Guten Tag"
 ];
 
 // Конечные точки
@@ -130,3 +128,9 @@ const defaultMachineDestinationsData = [
   { name: 'Новая', lat: 51.5093, lng: 6.903112 },
   { name: 'Новая точка', lat: 51.5093, lng: 6.903112 }
 ];
+
+// Прощание
+const defaultFarewellData = {
+  text: 'Tschüss 👋',
+  list: ['Tschüss 👋', 'Bis bald 👋', 'Bis später 👋']
+};
