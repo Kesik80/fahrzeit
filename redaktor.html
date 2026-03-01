@@ -253,15 +253,19 @@ body {
 }
 
 .card.group-card {
-  border-left: 3px solid var(--accent); /* синяя полоска слева — это группа */
+  /* без скобки */
 }
 
 .card.sub-card {
-  margin-left: 10px;               /* отступ слева — визуально вложено */
-  background: var(--surface2);     /* чуть другой фон для вложенных */
-  border-left: 2px solid var(--accent); /* более тонкая синяя полоска */
-  border-radius: var(--r-sm);      /* меньший радиус скругления */
-  padding: 6px 0 6px 10px;         /* без правого padding — крестик у края */
+  margin-left: 10px;
+  background: var(--surface2);
+  border-radius: var(--r-sm);
+  padding: 6px 0 6px 10px;
+}
+
+/* Только попутчики со старта — оранжевая скобка */
+.card.passenger-card {
+  border-left: 3px solid #ff9800;
 }
 
 /* Иконка перетаскивания (drag & drop) */
@@ -432,15 +436,16 @@ body {
 }
 
 .driver-row select {
-  flex: 1;
+  width: 35%;
+  flex: none;
   font-family: var(--font);
-  font-size: 1.05rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text);
   background: var(--surface2);
-  border: 1.5px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--r-sm);
-  padding: 10px 12px;
+  padding: 6px 8px;
   outline: none;
   cursor: pointer;
 }
@@ -1556,9 +1561,25 @@ function render() {
     const addBtn2 = document.createElement('button');
     addBtn2.className = 'add-sub-btn';
     addBtn2.textContent = '+';
-    addBtn2.title = 'Добавить участника';
-    addBtn2.style.cssText = 'width:38px;height:38px;border-radius:var(--r-sm);flex-shrink:0;font-size:1.3rem;';
-    addBtn2.onclick = () => triggerAddOrder(driverSel.value);
+    addBtn2.title = 'Добавить попутчика со старта';
+    addBtn2.style.cssText = 'width:32px;height:32px;border-radius:50%;flex-shrink:0;font-size:1.2rem;margin-left:auto;margin-right:98px;';
+    addBtn2.onclick = () => {
+      const driver = driverSel.value;
+      const allNames = Object.keys(data.defaultCoords).filter(n => n !== driver);
+      const current = startPassengers[driver] || [];
+      const avail = allNames.filter(n => !current.includes(n));
+      if (!avail.length) { showMsg('Все уже добавлены'); return; }
+      bsOpen({
+        title: `Попутчик ${driver} со старта`,
+        items: avail,
+        mode: 'participant',
+        onSelect(name) {
+          if (!startPassengers[driver]) startPassengers[driver] = [];
+          if (!startPassengers[driver].includes(name)) startPassengers[driver].push(name);
+          rebuildPassengers(); updateRaw(); markDirty(); showMsg('Попутчик добавлен ✓');
+        }
+      });
+    };
     row.appendChild(addBtn2);
     box.appendChild(row);
 
@@ -1571,17 +1592,9 @@ function render() {
       passWrap.innerHTML = '';
       const plist = startPassengers[driver] || [];
 
-      if (plist.length) {
-        // Заголовок секции
-        const lbl = document.createElement('div');
-        lbl.style.cssText = 'font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:4px 0 4px 4px;';
-        lbl.textContent = '🚗 Попутчики со старта';
-        passWrap.appendChild(lbl);
-      }
-
       plist.forEach((name, pi) => {
         const sd = document.createElement('div');
-        sd.className = 'card sub-card';
+        sd.className = 'card sub-card passenger-card';
         sd.style.marginBottom = '4px';
         const arrow = document.createElement('span');
         arrow.textContent = '↳';
@@ -1601,30 +1614,9 @@ function render() {
         passWrap.appendChild(sd);
       });
 
-      // Кнопка добавить попутчика — как отдельная sub-card с пунктирной рамкой
-      const addCard = document.createElement('div');
-      addCard.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;margin-bottom:8px;border:1.5px dashed var(--border);border-radius:var(--r-sm);cursor:pointer;color:var(--accent);font-size:.85rem;font-weight:600;transition:all .15s;';
-      addCard.textContent = '＋ Попутчик со старта';
-      addCard.onmouseenter = () => addCard.style.background = 'var(--accent-lt)';
-      addCard.onmouseleave = () => addCard.style.background = '';
-      addCard.onclick = () => {
-        const driver = driverSel.value;
-        const allNames = Object.keys(data.defaultCoords).filter(n => n !== driver);
-        const current = startPassengers[driver] || [];
-        const avail = allNames.filter(n => !current.includes(n));
-        if (!avail.length) { showMsg('Все уже добавлены'); return; }
-        bsOpen({
-          title: `Попутчик ${driver} со старта`,
-          items: avail,
-          mode: 'participant',
-          onSelect(name) {
-            if (!startPassengers[driver]) startPassengers[driver] = [];
-            if (!startPassengers[driver].includes(name)) startPassengers[driver].push(name);
-            rebuildPassengers(); updateRaw(); markDirty(); showMsg('Попутчик добавлен ✓');
-          }
-        });
-      };
-      passWrap.appendChild(addCard);
+      // Отступ после попутчиков перед основным списком
+      if (plist.length) passWrap.style.marginBottom = '8px';
+      else passWrap.style.marginBottom = '0';
     }
     rebuildPassengers();
     box.appendChild(passWrap);
@@ -1658,7 +1650,6 @@ function render() {
         } else if (item?.treffpunkt) {
           // Место встречи
           const div = mkCard(false, idx);
-          div.style.borderLeft = '3px solid #ff9800';
           const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
           nm.textContent = `${idx + 1}. 📍 ${item.treffpunkt}`; div.appendChild(nm);
           const subBtn = mkAddSubBtn();
