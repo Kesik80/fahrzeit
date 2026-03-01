@@ -1522,6 +1522,13 @@ function removeTravelLinks(name) {
     if (k.startsWith(name + '-') || k.endsWith('-' + name)) delete travelTimes[k];
   });
 }
+// При добавлении нового Treffpunkt — создаём пары с каждым участником в trefftravelTimes
+function addTreffLinks(treffName) {
+  Object.keys(data.defaultCoords).forEach(participant => {
+    const key = `${treffName}-${participant}`;
+    if (trefftravelTimes[key] === undefined) trefftravelTimes[key] = DEFAULT_TT;
+  });
+}
 function getAllUsedNames(driver) {
   const used = new Set();
   (participantOrders[driver] || []).forEach(item => {
@@ -2345,6 +2352,12 @@ document.getElementById('addConfirm').onclick = async () => {
     if (treffpunkt[name]) { showMsg('Пункт уже есть'); return; }
     const c = await parseAnyCoords(val) || { lat: 0, lng: 0 };
     treffpunkt[name] = c;
+    // Создаём пары Treff→каждый участник в trefftravelTimes
+    addTreffLinks(name);
+    // Авторасчёт через API для каждой новой пары
+    Object.keys(data.defaultCoords).forEach(participant => {
+      autoCalcPair(`${name}-${participant}`, true);
+    });
   } else {
     if (data[grp]?.[name]) { showMsg('Уже существует'); return; }
     const c = await parseAnyCoords(val) || { lat: 0, lng: 0 };
