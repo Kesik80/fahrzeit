@@ -420,40 +420,31 @@ body {
    СТРОКА ВЫБОРА ВОДИТЕЛЯ (вкладка «Порядок»)
 ══════════════════════════════════════ */
 .driver-row {
-  display: flex;                    /* элементы в ряд */
-  align-items: center;              /* по центру вертикально */
-  gap: 8px;                         /* расстояние между label, select и кнопкой + */
-  margin-bottom: 12px;              /* отступ снизу перед списком */
-  background: var(--surface);       /* белый / тёмный фон */
-  border: 1px solid var(--border);  /* рамка */
-  border-radius: var(--r);          /* скруглённые углы */
-  padding: 10px 12px;               /* внутренние отступы */
-  box-shadow: var(--shadow-s);      /* лёгкая тень */
-}
-
-.driver-row label {
-  font-size: .82rem;        /* мелкий */
-  font-weight: 700;         /* жирный */
-  text-transform: uppercase; /* ЗАГЛАВНЫЕ */
-  letter-spacing: .6px;     /* разрежение букв */
-  color: var(--text2);      /* приглушённый цвет */
-  flex-shrink: 0;           /* не сжимается */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  box-shadow: var(--shadow-s);
 }
 
 .driver-row select {
-  flex: 1;                          /* занимает всё свободное место */
-  font-family: var(--font);         /* основной шрифт */
-  font-size: 1rem;                  /* базовый размер */
-  font-weight: 600;                 /* полужирный */
-  color: var(--text);               /* основной цвет текста */
-  background: var(--surface2);      /* фон поля */
-  border: 1px solid var(--border);  /* рамка */
-  border-radius: var(--r-sm);       /* скруглённые углы */
-  padding: 8px 10px;                /* внутренние отступы */
-  outline: none;                    /* убираем outline браузера */
-  cursor: pointer;                  /* курсор-рука */
+  flex: 1;
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  outline: none;
+  cursor: pointer;
 }
-.driver-row select:focus { border-color: var(--accent); } /* синяя рамка при фокусе */
+.driver-row select:focus { border-color: var(--accent); }
 
 /* ══════════════════════════════════════
    БЛОК JSON (сворачиваемый)
@@ -1552,7 +1543,6 @@ function render() {
 
     const row = document.createElement('div');
     row.className = 'driver-row';
-    row.innerHTML = `<label>Водитель</label>`;
     const driverSel = document.createElement('select');
     driverSel.id = 'driverSel';
     drivers.forEach(d => {
@@ -1567,41 +1557,57 @@ function render() {
     addBtn2.className = 'add-sub-btn';
     addBtn2.textContent = '+';
     addBtn2.title = 'Добавить участника';
-    addBtn2.style.cssText = 'width:34px;height:34px;border-radius:var(--r-sm);flex-shrink:0;';
+    addBtn2.style.cssText = 'width:38px;height:38px;border-radius:var(--r-sm);flex-shrink:0;font-size:1.3rem;';
     addBtn2.onclick = () => triggerAddOrder(driverSel.value);
     row.appendChild(addBtn2);
     box.appendChild(row);
 
-    // ── Попутчики стартовой точки водителя ──
-    const passRow = document.createElement('div');
-    passRow.style.cssText = 'display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0 12px;padding:8px 10px;background:var(--bg2);border-radius:var(--r-sm);border:1px solid var(--border);';
+    // ── Попутчики стартовой точки водителя — как sub-card ──
+    const passWrap = document.createElement('div');
+    passWrap.id = 'passWrap';
 
     function rebuildPassengers() {
       const driver = driverSel.value;
-      passRow.innerHTML = '';
-      const lbl = document.createElement('span');
-      lbl.textContent = '🚗 Со старта:';
-      lbl.style.cssText = 'font-size:0.85em;color:var(--text2);flex-shrink:0;';
-      passRow.appendChild(lbl);
-
+      passWrap.innerHTML = '';
       const plist = startPassengers[driver] || [];
+
+      if (plist.length) {
+        // Заголовок секции
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);margin:4px 0 4px 4px;';
+        lbl.textContent = '🚗 Попутчики со старта';
+        passWrap.appendChild(lbl);
+      }
+
       plist.forEach((name, pi) => {
-        const chip = document.createElement('span');
-        chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px;background:var(--accent-lt);color:var(--accent);padding:2px 8px;border-radius:20px;font-size:0.85em;';
-        chip.innerHTML = `${name} <button style="background:none;border:none;cursor:pointer;color:inherit;font-size:1em;padding:0;line-height:1;" title="Удалить">×</button>`;
-        chip.querySelector('button').onclick = () => {
+        const sd = document.createElement('div');
+        sd.className = 'card sub-card';
+        sd.style.marginBottom = '4px';
+        const arrow = document.createElement('span');
+        arrow.textContent = '↳';
+        arrow.style.cssText = 'color:var(--text2);font-size:.8rem;flex-shrink:0;';
+        const nm = document.createElement('span');
+        nm.className = 'card-name';
+        nm.style.cursor = 'default';
+        nm.textContent = name;
+        const delBtn = mkDelBtn(() => {
           startPassengers[driver].splice(pi, 1);
           if (!startPassengers[driver].length) delete startPassengers[driver];
-          rebuildPassengers(); updateRaw();
-        };
-        passRow.appendChild(chip);
+          rebuildPassengers(); updateRaw(); markDirty();
+        });
+        sd.appendChild(arrow);
+        sd.appendChild(nm);
+        sd.appendChild(delBtn);
+        passWrap.appendChild(sd);
       });
 
-      const addPassBtn = document.createElement('button');
-      addPassBtn.style.cssText = 'width:24px;height:24px;border-radius:50%;background:var(--accent);color:#fff;border:none;cursor:pointer;font-size:1.1em;line-height:1;flex-shrink:0;';
-      addPassBtn.textContent = '+';
-      addPassBtn.title = 'Добавить попутчика со старта';
-      addPassBtn.onclick = () => {
+      // Кнопка добавить попутчика — как отдельная sub-card с пунктирной рамкой
+      const addCard = document.createElement('div');
+      addCard.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;margin-bottom:8px;border:1.5px dashed var(--border);border-radius:var(--r-sm);cursor:pointer;color:var(--accent);font-size:.85rem;font-weight:600;transition:all .15s;';
+      addCard.textContent = '＋ Попутчик со старта';
+      addCard.onmouseenter = () => addCard.style.background = 'var(--accent-lt)';
+      addCard.onmouseleave = () => addCard.style.background = '';
+      addCard.onclick = () => {
         const driver = driverSel.value;
         const allNames = Object.keys(data.defaultCoords).filter(n => n !== driver);
         const current = startPassengers[driver] || [];
@@ -1618,12 +1624,10 @@ function render() {
           }
         });
       };
-      passRow.appendChild(addPassBtn);
-
-
+      passWrap.appendChild(addCard);
     }
     rebuildPassengers();
-    box.appendChild(passRow);
+    box.appendChild(passWrap);
 
     const listBox = document.createElement('div');
     listBox.id = 'orderList';
