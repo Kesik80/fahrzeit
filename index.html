@@ -1413,7 +1413,7 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
     <div class="bs-header">
       <div class="bs-title" id="bsTitle"></div>
       <div class="bs-tabs" id="bsTabs" style="display:none;">
-        <button class="bs-tab active" id="bsTabKollege" onclick="app.bsSwitchTab('kollege')">👤 Коллега</button>
+        <button class="bs-tab active" id="bsTabKollege" onclick="app.bsSwitchTab('kollege')">Kollege</button>
         <button class="bs-tab" id="bsTabTreff" onclick="app.bsSwitchTab('treff')">📍 Treffpunkt</button>
       </div>
     </div>
@@ -3282,7 +3282,7 @@ bsOpen(config) {
       const btn = document.createElement('button');
       const isActive = tab === this._bsActiveTab;
       btn.style.cssText = `flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid ${isActive ? primary : bord};font-size:0.88em;font-weight:600;cursor:pointer;background:${isActive ? primary : 'transparent'};color:${isActive ? '#fff' : txt};display:flex;align-items:center;justify-content:center;gap:5px;`;
-      btn.innerHTML = tab === 'kollege' ? '👤 Коллега' : '📍 Treffpunkt';
+      btn.innerHTML = tab === 'kollege' ? 'Kollege' : '📍 Treffpunkt';
       btn.id = tab === 'kollege' ? 'bsTabKollege' : 'bsTabTreff';
       btn.onclick = () => this.bsSwitchTab(tab);
       tabs.appendChild(btn);
