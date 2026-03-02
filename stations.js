@@ -20,7 +20,9 @@ this.stations = {
   'Gelsenkirchen Horst': {lat: 51.5415351, lng: 7.0202811},
   'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119},
   'Dortmund-Lütgendortmund': {lat: 51.497711, lng: 7.3665302},
-  'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018}
+  'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
+  'Munster(Westf)': {lat: 51.9577014, lng: 7.6369877},
+  'Gutersloh': {lat: 51.907774, lng: 8.3882563}
 };
 
 // Время в пути между участниками
@@ -104,12 +106,22 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок и попутчики
 this.participantOrders = {
-  'Sergii': {"order":["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]}]},
+  'Sergii': ["Anatolii","Sergio",{"main":"Vasyl","subParticipants":["Alex","René"]}],
   'Anatolii': ["Sergii","Andrii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
   'Dima': ["Anatolii","Sergii","Andrii","Sergio"],
   'Alex': {"startPassengers":["Andrii"],"order":["Anatolii"]}
+};
+
+// Прощание
+const defaultFarewellData = {
+  "text": "Tschüss 👋",
+  "list": [
+    "Tschüss 👋",
+    "Bis bald 👋",
+    "Bis später 👋"
+  ]
 };
 
 // Список приветствий
@@ -128,9 +140,3 @@ const defaultMachineDestinationsData = [
   { name: 'Новая', lat: 51.5093, lng: 6.903112 },
   { name: 'Новая точка', lat: 51.5093, lng: 6.903112 }
 ];
-
-// Прощание
-const defaultFarewellData = {
-  text: 'Tschüss 👋',
-  list: ['Tschüss 👋', 'Bis bald 👋', 'Bis später 👋']
-};
