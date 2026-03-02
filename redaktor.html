@@ -259,13 +259,15 @@ body {
 .card.sub-card {
   margin-left: 10px;
   background: var(--surface2);
+  border-left: 2px solid var(--accent);
   border-radius: var(--r-sm);
   padding: 6px 0 6px 10px;
 }
 
-/* Только попутчики со старта — оранжевая скобка */
-.card.passenger-card {
+/* Только попутчики со старта — оранжевая скобка, выравниваем с синими */
+.card.sub-card.passenger-card {
   border-left: 3px solid #ff9800;
+  margin-left: 30px;
 }
 
 /* Иконка перетаскивания (drag & drop) */
@@ -433,6 +435,7 @@ body {
   border-radius: var(--r);
   padding: 10px 12px;
   box-shadow: var(--shadow-s);
+  box-sizing: border-box;
 }
 
 .driver-row select {
@@ -448,6 +451,7 @@ body {
   padding: 6px 8px;
   outline: none;
   cursor: pointer;
+  box-sizing: border-box;
 }
 .driver-row select:focus { border-color: var(--accent); }
 
@@ -1121,31 +1125,31 @@ body {
   <div class="toolbar-center">
     <button class="tbtn" id="loadBtn" title="Открыть файл">
       <span class="tbtn-icon">📂</span>
-      <span class="tbtn-label">Открыть</span>
+      <span class="tbtn-label"></span>
     </button>
     <button class="tbtn" id="copyBtn" title="Копировать JSON">
       <span class="tbtn-icon">📋</span>
-      <span class="tbtn-label">Копировать</span>
-    </button>
-    <button class="tbtn primary" id="addBtn" title="Добавить запись">
-      <span class="tbtn-icon">＋</span>
-      <span class="tbtn-label">Добавить</span>
-    </button>
-    <button class="tbtn" id="recalcBtn" title="Пересчитать время через API">
-      <span class="tbtn-icon">🔄</span>
-      <span class="tbtn-label">Пересчёт</span>
-    </button>
-    <button class="tbtn" id="applyRaw" title="Применить JSON">
-      <span class="tbtn-icon">✔</span>
-      <span class="tbtn-label">Применить</span>
+      <span class="tbtn-label"></span>
     </button>
     <button class="tbtn success" id="saveBtn" title="Скачать stations.js">
       <span class="tbtn-icon">💾</span>
-      <span class="tbtn-label">Сохранить</span>
+      <span class="tbtn-label"></span>
+    </button>
+    <button class="tbtn primary" id="addBtn" title="Добавить запись">
+      <span class="tbtn-icon">＋</span>
+      <span class="tbtn-label"></span>
+    </button>
+    <button class="tbtn" id="recalcBtn" title="Пересчитать время через API">
+      <span class="tbtn-icon">🔄</span>
+      <span class="tbtn-label"></span>
+    </button>
+    <button class="tbtn" id="applyRaw" title="Применить JSON">
+      <span class="tbtn-icon">✔</span>
+      <span class="tbtn-label"></span>
     </button>
     <button class="tbtn" id="ghUploadBtn" title="Загрузить на GitHub" disabled>
       <span class="tbtn-icon">⬆️</span>
-      <span class="tbtn-label">GitHub</span>
+      <span class="tbtn-label"></span>
     </button>
   </div>
 </div>
@@ -1580,7 +1584,11 @@ function render() {
         }
       });
     };
+    addBtn2.style.cssText = 'width:32px;height:32px;border-radius:50%;flex-shrink:0;font-size:1.2rem;margin-left:auto;';
     row.appendChild(addBtn2);
+    const spacer = document.createElement('div');
+    spacer.style.cssText = 'flex-shrink:0;width:87px;';
+    row.appendChild(spacer);
     box.appendChild(row);
 
     // ── Попутчики стартовой точки водителя — как sub-card ──
