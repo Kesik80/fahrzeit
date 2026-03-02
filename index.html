@@ -666,6 +666,18 @@ margin-top: 15px;
 min-height: 50px;
 box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
 }
+/* ── подсказки ── */
+#appHints { padding: 4px 0; }
+.app-hint {
+  display: none;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #555;
+  padding: 5px 0;
+}
+body.dark .app-hint { color: #aaa; }
+.app-hint.visible { display: block; }
 .toast {
 position: fixed;
 top: 16px;
@@ -1367,6 +1379,11 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </button>
 </div>
 <pre id="output"></pre>
+<div id="appHints">
+  <div id="hintDriver" class="app-hint">👤 Выберите водителя</div>
+  <div id="hintPart"   class="app-hint">➕ Добавьте участника</div>
+  <div id="hintTime"   class="app-hint">⏰ Установите время прибытия</div>
+</div>
 <div id="toast" class="toast"></div>
 
 <!-- Add Type Modal: Treffpunkt oder Kollege -->
@@ -1406,25 +1423,7 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </div>
 
 
-<!-- Universal Bottom Sheet -->
-<div id="bsOverlay">
-  <div class="bs-sheet">
-    <div class="bs-handle"></div>
-    <div class="bs-header">
-      <div class="bs-title" id="bsTitle"></div>
-      <div class="bs-tabs" id="bsTabs" style="display:none;">
-        <button class="bs-tab active" id="bsTabKollege" onclick="app.bsSwitchTab('kollege')">Kollege</button>
-        <button class="bs-tab" id="bsTabTreff" onclick="app.bsSwitchTab('treff')">📍 Treffpunkt</button>
-      </div>
-    </div>
-    <div class="bs-divider"></div>
-    <div class="bs-list-label" id="bsListLabel">ВЫБЕРИТЕ УЧАСТНИКА</div>
-    <div class="bs-list" id="bsList"></div>
-    <div class="bs-footer">
-      <button class="bs-btn-cancel" onclick="app.bsClose()">Abbrechen</button>
-    </div>
-  </div>
-</div>
+<!-- Universal Bottom Sheet — создаётся динамически через bsOpen() -->
 
 <!-- God Mode Password Modal -->
 <div id="godModal" class="god-modal">
@@ -1599,6 +1598,7 @@ this.addEventListeners();
 this.renderParticipants();
 this.initSortable();
 this.elements.output.innerHTML = '';
+this.updateHints();
 }
 async loadStations() {
 try {
@@ -2354,7 +2354,7 @@ this.startTimeEdit();
 const timeRemoveBtn = machineDiv.querySelector('.time-remove');
 if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
 this.saveData();
-if (this.machineStop.arrivalTime) this.calculate(); else this.elements.output.innerHTML = '';
+if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this.updateHints(); }
 }
 async parseCoordinates(raw) {
 const s = raw.trim();
@@ -3384,6 +3384,19 @@ bsClose() {
   const ov = document.getElementById('bsOverlay'); if(ov) ov.remove();
 }
 
+updateHints() {
+  const hasDriver = !!this.startPoint;
+  const hasPart   = this.participants.length > 0;
+  const hasTime   = !!this.machineStop.arrivalTime;
+  const hD = document.getElementById('hintDriver');
+  const hP = document.getElementById('hintPart');
+  const hT = document.getElementById('hintTime');
+  if (!hD) return;
+  hD.classList.toggle('visible', !hasDriver);
+  hP.classList.toggle('visible', hasDriver && !hasPart);
+  hT.classList.toggle('visible', hasDriver && hasPart && !hasTime);
+}
+
 editParticipantTime(index, displayEl) {
 const current = this.participants[index].time;
 const input = document.createElement('input');
@@ -3705,7 +3718,7 @@ return `${hours}${superscriptMinutes}`;
 return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 calculate(){
-if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';return}
+if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';this.updateHints();return}
 let out=`${this.greeting},
 `;
 const valid=this.participants.filter(p=>p.name);
@@ -3782,6 +3795,7 @@ out+=this.useUhrBei
 : `${this.formatTime(machineTime)}  ${this.machineStop.name}\n`;
 if (this.farewell) out += this.farewell + '\n';
 this.elements.output.innerHTML=out;
+this.updateHints();
 }
 
 // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ — С УЧЁТОМ ТВОЕГО УТОЧНЕНИЯ
