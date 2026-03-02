@@ -21,7 +21,7 @@ this.stations = {
   'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119},
   'Dortmund-Lütgendortmund': {lat: 51.497711, lng: 7.3665302},
   'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
-  'Munster(Westf)': {lat: 51.9577014, lng: 7.6369877},
+  'Munster(Westf)': {lat: 51.9547178, lng: 7.6363929},
   'Gutersloh': {lat: 51.907774, lng: 8.3882563}
 };
 
