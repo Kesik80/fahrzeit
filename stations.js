@@ -107,7 +107,7 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок и попутчики
 this.participantOrders = {
-  'Sergii': ["Anatolii","Sergio","Aleks",{"main":"Vasyl","subParticipants":["René"]}],
+  'Sergii': ["Anatolii","Aleks","Sergio",{"main":"Vasyl","subParticipants":["René"]}],
   'Anatolii': ["Sergii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
