@@ -22,7 +22,8 @@ this.stations = {
   'Dortmund-Lütgendortmund': {lat: 51.497711, lng: 7.3665302},
   'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
   'Gutersloh': {lat: 51.907774, lng: 8.3882563},
-  'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929}
+  'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929},
+  'Hamm': {lat: 51.6727514, lng: 7.8114577}
 };
 
 // Время в пути между участниками
