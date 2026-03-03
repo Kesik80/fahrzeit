@@ -1452,7 +1452,7 @@ function parseStationsText(text) {
   const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
   const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-  showMsg(`🔍 def:${!!defM} st:${!!stM} tm:${!!tmM}`, 5000);
+
 
   function extractBraces(str, keyword) {
     const ki = str.indexOf(keyword);
@@ -1884,9 +1884,16 @@ function render() {
     box.appendChild(card);
   });
 
-  } // end else
+  // Count badge
+  const cnt = document.createElement('div');
+  cnt.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:4px;';
+  cnt.innerHTML = `<span class="section-count">${entries.length} записей</span>`;
+  if (entries.length) box.insertBefore(cnt, box.firstChild);
 
-  // ── greetings ──────────────────────────────
+  appendRawBlock(box);
+  document.getElementById('rawJson').value = JSON.stringify(src, null, 2);
+
+  } // end else
   if (grp === 'greetings') {
     if (!defaultGreetings.length) box.appendChild(emptyState('💬', 'Noch keine Begrüßungen'));
     defaultGreetings.forEach((greeting, idx) => {
@@ -1966,19 +1973,8 @@ function render() {
     return;
   }
 
+} // end render
 
-  // Count badge
-  const cnt = document.createElement('div');
-  cnt.style.cssText = 'display:flex;justify-content:flex-end;margin-bottom:4px;';
-  cnt.innerHTML = `<span class="section-count">${entries.length} записей</span>`;
-  if (entries.length) box.insertBefore(cnt, box.firstChild);
-
-  appendRawBlock(box);
-  document.getElementById('rawJson').value = JSON.stringify(src, null, 2);
-}
-
-// ═══════════════════════════════════════
-//  RAW JSON HELPERS
 // ═══════════════════════════════════════
 let _rawWasOpen = false;
 function appendRawBlock(box) {
