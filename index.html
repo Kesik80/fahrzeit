@@ -657,6 +657,8 @@ select {
 font-size: 1em
 }
 pre {
+.dest-label { font-style: normal; white-space: nowrap; display: inline; }
+.dest-label--muted { color: #888; }
 background: var(--surface-color);
 padding: var(--spacing-unit);
 border-radius: var(--border-radius);
@@ -1059,6 +1061,12 @@ body.dark .participant.machine {
 background: var(--surface);
 border-color: var(--border);
 }
+.participant.machine select {
+flex: 0 0 35%;
+min-width: 0;
+max-width: 35%;
+width: 35%;
+}
 /* обязательно «покрасить» всё, что было белым/серым */
 body {
 background: var(--bg) !important;
@@ -1073,6 +1081,17 @@ select {
 background: var(--surface) !important;
 color: var(--text) !important;
 border-color: var(--text) !important;
+}
+#stationSelect {
+width: 100%;
+padding: 8px;
+margin: 8px 0;
+border: 1px solid #b0c4de;
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface-color);
+color: var(--text-color);
 }
 /* кнопки сохраняют цвет, но текст перекрашиваем/* обязательно покрасить сами кнопки */
 button.calculate { background: var(--primary-color) !important; }
@@ -1100,6 +1119,7 @@ border: 1px solid #333 !important;
 border-radius: 6px !important;
 padding: 10px !important;
 margin: 0 !important;
+overflow-x: auto;
 }
 /* цветные кнопки модалки – всегда свои */
 .modal-btn                       { color: #fff !important; border: none !important; }
@@ -1380,9 +1400,9 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </div>
 <pre id="output"></pre>
 <div id="appHints">
-  <div id="hintDriver" class="app-hint">👤 Fahrer auswählen</div>
-  <div id="hintPart"   class="app-hint">➕ Teilnehmer hinzufügen</div>
-  <div id="hintTime"   class="app-hint">⏰ Ankunftszeit festlegen</div>
+  <div id="hintDriver" class="app-hint">👤 Выберите водителя</div>
+  <div id="hintPart"   class="app-hint">➕ Добавьте участника</div>
+  <div id="hintTime"   class="app-hint">⏰ Установите время прибытия</div>
 </div>
 <div id="toast" class="toast"></div>
 
@@ -1455,7 +1475,7 @@ style="background: var(--modal-bg, #fff) !important; color: var(--modal-text, #0
 placeholder="51.452013,7.021455 oder https://maps.app.goo.gl/..." />
 <p id="coordsHelp" style="display:none;color:#d32f2f;font-weight:bold">Gekürzte Links werden
 einige Sekunden verarbeitet.</p>
-<select id="stationSelect" style="display:none; margin-top:6px; width:100%; padding:var(--small-spacing); border:1px solid #ddd; border-radius:4px; font-size:1em; box-sizing:border-box; background:var(--surface); color:var(--text);">
+<select id="stationSelect" style="display:none;">
 <option value="">– Aus Liste wählen –</option>
 </select>
 <div id="mapBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:20px;margin-bottom:4px;">
@@ -1544,6 +1564,8 @@ this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: nu
 this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
+this.showDestName = false;
+this.showDestName = false;
 this.sortable = null;
 this.elements = {
 greetingSelect: document.getElementById('greeting'),
@@ -1756,6 +1778,7 @@ localStorage.setItem(k('startPassengers'), JSON.stringify(this.startPointPasseng
 localStorage.setItem(k('farewell'), this.farewell);
 localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
+localStorage.setItem(k('showDestName'), this.showDestName);
 }
 resetToDefaults() {
 this.greeting = this.defaultGreetings[0] || 'Moin zusammen';
@@ -1768,13 +1791,14 @@ this.machineStop = { name: (this.machineDestinations[0] || {}).name || "an der M
 // НЕ сбрасываем machineDestinations — список загружен из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
+this.showDestName = false;
 this.startPointPassengers = [];
 this.farewell = this.defaultFarewellText || 'Tschüss 👋';
 this.saveData();
 }
 clearLocalStorage() {
 ['greeting','greetings','participants','machineStop','machineDestinations',
-'nameToCoordinates','startPoint','useUhrBei','useSuperscript','startPassengers','farewell','farewells']
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','startPassengers','farewell','farewells']
 .forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.showToast("Daten zurückgesetzt.");
 this.resetToDefaults();
@@ -1799,6 +1823,7 @@ nameToCoordinates: localStorage.getItem(k('nameToCoordinates')),
 startPoint: localStorage.getItem(k('startPoint')),
 useUhrBei: localStorage.getItem(k('useUhrBei')),
 useSuperscript: localStorage.getItem(k('useSuperscript')),
+showDestName: localStorage.getItem(k('showDestName')),
 startPassengers: localStorage.getItem(k('startPassengers')),
 farewell: localStorage.getItem(k('farewell')),
 farewells: localStorage.getItem(k('farewells'))
@@ -1829,6 +1854,7 @@ if (saved.startPassengers) try { this.startPointPassengers = JSON.parse(saved.st
 if (saved.farewell) this.farewell = saved.farewell;
 if (saved.farewells) try { this.farewells = JSON.parse(saved.farewells); } catch {}
 if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
+if (saved.showDestName !== null) this.showDestName = saved.showDestName === 'true';
 } catch {
 this.resetToDefaults();
 }
@@ -2305,12 +2331,15 @@ farewellDiv.innerHTML = `
   stroke="currentColor" stroke-width="2" fill="currentColor" />
   </svg>
 </button>
-<div style="margin-left:auto;display:flex;align-items:center;gap:16px;flex-shrink:0;padding-right:4px;">
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:4px;">
+<div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;padding-right:4px;font-size:0.8em;">
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
     <input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei
   </label>
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:4px;">
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
     <input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²
+  </label>
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
+    <input type="checkbox" id="showDestName" ${this.showDestName ? 'checked' : ''}> (...)
   </label>
 </div>
 `;
@@ -2343,6 +2372,12 @@ superscriptCheckbox.addEventListener('change', () => {
   this.saveData();
   this.calculate();
 });
+const showDestNameCb = farewellDiv.querySelector('#showDestName');
+showDestNameCb.addEventListener('change', () => {
+  this.showDestName = showDestNameCb.checked;
+  this.saveData();
+  this.calculate();
+});
 const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
 timeControl.addEventListener('keydown', (e) => {
@@ -2359,9 +2394,17 @@ if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.
 async parseCoordinates(raw) {
 const s = raw.trim();
 if (!s) { this.showToast("Bitte Daten eingeben."); return null; }
+// Локальный парсинг lat,lng
+const localMatch = s.match(/^(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)$/);
+if (localMatch) {
+  const lat = parseFloat(localMatch[1]), lng = parseFloat(localMatch[2]);
+  if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
+}
+// Для сокращённых ссылок — обращаемся к серверу
 try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
 const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
+if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
 const d = await resp.json();
 if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
 this.showToast(d.error || "Koordinaten nicht erkannt.");
@@ -2419,6 +2462,8 @@ const saved = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop
 stSel.value = saved && [...stSel.options].some(o => o.value === saved) ? saved : '';
 stSel.onchange = () => {
 this.elements.coordsInput.value = stSel.value;
+const selOpt = stSel.options[stSel.selectedIndex];
+this.machineStop.stationName = selOpt && selOpt.value ? selOpt.textContent.trim() : '';
 };
 } else {
 stSel.style.display = 'none';
@@ -3298,7 +3343,7 @@ bsOpen(config) {
   const label = document.createElement('div');
   label.id = 'bsListLabel';
   label.style.cssText = `font-size:0.68em;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.35;padding:10px 20px 4px;flex-shrink:0;`;
-  label.textContent = this._bsActiveTab === 'treff' ? 'TREFFPUNKT WÄHLEN' : 'TEILNEHMER WÄHLEN';
+  label.textContent = this._bsActiveTab === 'treff' ? 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ' : 'ВЫБЕРИТЕ УЧАСТНИКА';
 
   // Список
   const list = document.createElement('div');
@@ -3355,7 +3400,7 @@ bsRenderList() {
   const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
 
   const isKollege = this._bsActiveTab === 'kollege';
-  if (label) label.textContent = isKollege ? 'TEILNEHMER WÄHLEN' : 'TREFFPUNKT WÄHLEN';
+  if (label) label.textContent = isKollege ? 'ВЫБЕРИТЕ УЧАСТНИКА' : 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ';
   const items = isKollege ? (cfg.items || []) : (cfg.treffItems || []);
 
   items.forEach((name, i) => {
@@ -3791,8 +3836,8 @@ out += line;
 // Время прибытия к машине
 const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
 out+=this.useUhrBei
-? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}\n`
-: `${this.formatTime(machineTime)}  ${this.machineStop.name}\n`;
+? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}\n`
+: `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}\n`;
 if (this.farewell) out += this.farewell + '\n';
 this.elements.output.innerHTML=out;
 this.updateHints();
@@ -3868,12 +3913,25 @@ openGoogleMaps(returnTrip = false) {
 
 // ❌ УДАЛЕНА ФУНКЦИЯ openGoogleMapsInNewTab
 
+_destLabel() {
+const machineName = this.machineStop.name;
+const stationName = this.machineStop.stationName || '';
+if (machineName !== 'an der Maschine' || !stationName) return '';
+if (this.showDestName) {
+return ` <span class="dest-label">(${stationName})</span>`;
+} else {
+return ` <span class="dest-label dest-label--muted" data-nocopy="1">(${stationName})</span>`;
+}
+}
 copyResult() {
-const text = this.elements.output.textContent.trim();
-if (!text) {
+const el = this.elements.output;
+if (!el || !el.textContent.trim()) {
 this.showToast("Nichts zu kopieren – bitte zuerst Route berechnen.");
 return;
 }
+const clone = el.cloneNode(true);
+clone.querySelectorAll('[data-nocopy]').forEach(s => s.remove());
+const text = clone.textContent.trim();
 navigator.clipboard.writeText(text)
 .then(() => this.showToast("📋 Kopiert"))
 .catch(() => this.showToast("⚠️ Kopieren fehlgeschlagen – Zugriff auf Zwischenablage erlauben."));
