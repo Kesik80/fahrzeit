@@ -65,15 +65,15 @@ this.travelTimes = {
   'Vasyl-René': 15,
   'Maikel-René': 25,
   'Maikel-Vasyl': 20,
-  'Aleks-Sergii': 13,
+  'Aleks-Sergii': 15,
   'Aleks-Anatolii': 10,
-  'Aleks-Andrii': 9,
-  'Aleks-Sergio': 3,
-  'Aleks-Dima': 27,
+  'Aleks-Andrii': 10,
+  'Aleks-Sergio': 5,
+  'Aleks-Dima': 30,
   'Aleks-René': 15,
-  'Aleks-Marvin': 22,
+  'Aleks-Marvin': 25,
   'Aleks-Vasyl': 5,
-  'Aleks-Maikel': 22
+  'Aleks-Maikel': 25
 };
 
 // Пункты встречи (Treffpunkt)
