@@ -72,7 +72,7 @@ this.travelTimes = {
   'Aleks-Dima': 27,
   'Aleks-René': 15,
   'Aleks-Marvin': 22,
-  'Aleks-Vasyl': 0,
+  'Aleks-Vasyl': 5,
   'Aleks-Maikel': 22
 };
 
