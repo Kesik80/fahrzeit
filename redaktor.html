@@ -787,9 +787,9 @@ body {
 ══════════════════════════════════════ */
 #toast {
   position: fixed;                          /* поверх всего */
-  bottom: 72px;                             /* над панелью инструментов */
+  top: 72px;                                /* под шапкой */
   left: 50%;                                /* начинаем с центра */
-  transform: translateX(-50%) translateY(10px); /* центрируем и чуть опускаем (скрыт) */
+  transform: translateX(-50%) translateY(-10px); /* центрируем и чуть поднимаем (скрыт) */
   background: var(--text);                  /* тёмный фон (инвертирован от основного) */
   color: var(--bg);                         /* светлый текст */
   padding: 10px 20px;                       /* внутренние отступы */
@@ -1740,7 +1740,7 @@ function render() {
   // ── treffpunkt ──────────────────────────
   if (grp === 'treffpunkt') {
     const entries = Object.entries(treffpunkt);
-    if (!entries.length) box.appendChild(emptyState('📍', 'Нет пунктов встречи'));
+    if (!entries.length) box.appendChild(emptyState('📍', 'Noch keine Treffpunkte'));
     entries.forEach(([name, coord]) => {
       const card = document.createElement('div'); card.className = 'card';
       const nm = mkNameEl(name, newName => {
@@ -1769,7 +1769,7 @@ function render() {
   if (grp === 'trefftravelTimes' || grp === 'travelTimes') {
     const src = grp === 'travelTimes' ? travelTimes : trefftravelTimes;
     const entries = Object.entries(src);
-    if (!entries.length) box.appendChild(emptyState('⏱', 'Нет записей о времени'));
+    if (!entries.length) box.appendChild(emptyState('⏱', 'Noch keine Zeiteinträge'));
     entries.forEach(([key, val]) => {
       const card = document.createElement('div'); card.className = 'card';
       const nm = document.createElement('span'); nm.className = 'card-name'; nm.style.cursor = 'default';
@@ -1854,10 +1854,15 @@ function render() {
     return;
   }
 
+  // ── greetings / destinations / farewell — не используют data[grp] ──
+  if (grp === 'greetings' || grp === 'destinations' || grp === 'farewell') {
+    // эти группы рендерятся ниже отдельно
+  } else {
+
   // ── defaultCoords / stations ─────────────
   const src = data[grp] || {};
   const entries = Object.entries(src);
-  if (!entries.length) box.appendChild(emptyState(grp === 'stations' ? '🚉' : '👤', 'Список пуст'));
+  if (!entries.length) box.appendChild(emptyState(grp === 'stations' ? '🚉' : '👤', grp === 'stations' ? 'Noch keine Stationen' : 'Noch keine Teilnehmer'));
   entries.forEach(([name, coord]) => {
     const card = document.createElement('div'); card.className = 'card';
     const nm = mkNameEl(name, newName => {
@@ -1879,9 +1884,11 @@ function render() {
     box.appendChild(card);
   });
 
+  } // end else
+
   // ── greetings ──────────────────────────────
   if (grp === 'greetings') {
-    if (!defaultGreetings.length) box.appendChild(emptyState('💬', 'Список приветствий пуст'));
+    if (!defaultGreetings.length) box.appendChild(emptyState('💬', 'Noch keine Begrüßungen'));
     defaultGreetings.forEach((greeting, idx) => {
       const card = document.createElement('div'); card.className = 'card';
       const inp = document.createElement('input');
@@ -1893,16 +1900,18 @@ function render() {
       box.appendChild(card);
     });
     const addBtn = document.createElement('button');
-    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить приветствие';
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Begrüßung hinzufügen';
     addBtn.style.cssText = 'margin-top:8px;width:100%;';
-    addBtn.onclick = () => { defaultGreetings.push('Новое приветствие'); render(); markDirty(); showMsg('Добавлено ✓'); };
+    addBtn.onclick = () => showInputModal({ title: 'Neue Begrüßung', placeholder: 'z. B. Guten Morgen', onConfirm: val => { defaultGreetings.push(val); render(); markDirty(); showMsg('Hinzugefügt ✓'); } });
     box.appendChild(addBtn);
+    appendRawBlock(box);
+    updateRaw();
     return;
   }
 
   // ── destinations ───────────────────────────
   if (grp === 'destinations') {
-    if (!defaultMachineDestinations.length) box.appendChild(emptyState('🏁', 'Список конечных точек пуст'));
+    if (!defaultMachineDestinations.length) box.appendChild(emptyState('🏁', 'Noch keine Zielpunkte'));
     defaultMachineDestinations.forEach((dest, idx) => {
       const card = document.createElement('div'); card.className = 'card';
       const nameInp = document.createElement('input');
@@ -1915,16 +1924,18 @@ function render() {
       box.appendChild(card);
     });
     const addBtn = document.createElement('button');
-    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить точку';
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Zielpunkt hinzufügen';
     addBtn.style.cssText = 'margin-top:8px;width:100%;';
-    addBtn.onclick = () => { defaultMachineDestinations.push({ name: 'Новая точка', lat: null, lng: null }); render(); markDirty(); showMsg('Добавлено ✓'); };
+    addBtn.onclick = () => showDestModal(val => { defaultMachineDestinations.push(val); render(); markDirty(); showMsg('Hinzugefügt ✓'); });
     box.appendChild(addBtn);
+    appendRawBlock(box);
+    updateRaw();
     return;
   }
 
   // ── farewell ────────────────────────────────────────────────────────────
   if (grp === 'farewell') {
-    if (!farewellList.length) box.appendChild(emptyState('👋', 'Список пуст'));
+    if (!farewellList.length) box.appendChild(emptyState('👋', 'Noch keine Verabschiedungen'));
     farewellList.forEach((item, idx) => {
       const card = document.createElement('div'); card.className = 'card';
       const inp = document.createElement('input');
@@ -1946,10 +1957,12 @@ function render() {
       box.appendChild(card);
     });
     const addBtn = document.createElement('button');
-    addBtn.className = 'tbtn'; addBtn.textContent = '+ Добавить прощание';
+    addBtn.className = 'tbtn'; addBtn.textContent = '+ Verabschiedung hinzufügen';
     addBtn.style.cssText = 'margin-top:8px;width:100%;';
-    addBtn.onclick = () => { farewellList.push('Tschüss 👋'); render(); markDirty(); showMsg('Добавлено ✓'); };
+    addBtn.onclick = () => showInputModal({ title: 'Neue Verabschiedung', placeholder: 'z. B. Tschüss 👋', onConfirm: val => { farewellList.push(val); render(); markDirty(); showMsg('Hinzugefügt ✓'); } });
     box.appendChild(addBtn);
+    appendRawBlock(box);
+    updateRaw();
     return;
   }
 
@@ -2067,6 +2080,109 @@ function mkCoordInput(coord, onChange) {
 function emptyState(icon, text) {
   const d = document.createElement('div'); d.className = 'empty-state';
   d.innerHTML = `<div class="empty-state-icon">${icon}</div><p>${text}</p>`; return d;
+}
+function showDestModal(onConfirm) {
+  const isDark = document.body.classList.contains('dark');
+  const surf = isDark ? '#242424' : '#f5f5f5';
+  const txt  = isDark ? '#ececec' : '#111';
+  const bord = isDark ? '#444' : '#ddd';
+  const bg2  = isDark ? '#1a1a1a' : '#fff';
+  let ov = document.getElementById('_destModalOv');
+  if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = '_destModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+
+  const box = document.createElement('div');
+  box.style.cssText = `background:${surf};color:${txt};width:100%;max-width:420px;border-radius:18px;padding:24px 20px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.4);display:flex;flex-direction:column;gap:14px;`;
+
+  const inpStyle = `width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid ${bord};background:${bg2};color:${txt};font-size:1em;box-sizing:border-box;outline:none;`;
+
+  const h = document.createElement('div');
+  h.style.cssText = 'font-size:1.05em;font-weight:700;';
+  h.textContent = 'Neuer Zielpunkt';
+
+  const nameInp = document.createElement('input');
+  nameInp.type = 'text'; nameInp.placeholder = 'Name (z. B. an der Maschine)';
+  nameInp.style.cssText = inpStyle;
+
+  const coordInp = document.createElement('input');
+  coordInp.type = 'text'; coordInp.placeholder = 'Koordinaten oder Google Maps Link (optional)';
+  coordInp.style.cssText = inpStyle;
+
+  const hint = document.createElement('div');
+  hint.style.cssText = `font-size:0.78em;opacity:0.5;margin-top:-8px;`;
+  hint.textContent = 'z. B. 51.5093, 6.9031 oder maps.google.com/…';
+
+  const btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:10px;';
+
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Abbrechen';
+  cancel.style.cssText = `flex:1;padding:11px;border-radius:10px;border:1.5px solid ${bord};background:transparent;color:${txt};font-size:0.95em;cursor:pointer;`;
+  cancel.onclick = () => ov.remove();
+
+  const ok = document.createElement('button');
+  ok.textContent = 'Hinzufügen';
+  ok.style.cssText = 'flex:1;padding:11px;border-radius:10px;border:none;background:var(--accent,#007bff);color:#fff;font-size:0.95em;font-weight:600;cursor:pointer;';
+  ok.onclick = async () => {
+    const name = nameInp.value.trim();
+    if (!name) { nameInp.focus(); nameInp.style.borderColor = 'red'; return; }
+    ok.disabled = true; ok.textContent = '…';
+    let lat = null, lng = null;
+    const coordRaw = coordInp.value.trim();
+    if (coordRaw) {
+      const c = await parseAnyCoords(coordRaw);
+      if (c) { lat = c.lat; lng = c.lng; }
+    }
+    ov.remove();
+    onConfirm({ name, lat, lng });
+  };
+
+  nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') coordInp.focus(); if (e.key === 'Escape') ov.remove(); });
+  coordInp.addEventListener('keydown', e => { if (e.key === 'Enter') ok.click(); if (e.key === 'Escape') ov.remove(); });
+
+  btns.appendChild(cancel); btns.appendChild(ok);
+  box.appendChild(h); box.appendChild(nameInp); box.appendChild(coordInp); box.appendChild(hint); box.appendChild(btns);
+  ov.appendChild(box); document.body.appendChild(ov);
+  setTimeout(() => nameInp.focus(), 50);
+}
+
+function showInputModal({ title, placeholder = '', onConfirm }) {
+  const isDark = document.body.classList.contains('dark');
+  const surf = isDark ? '#242424' : '#f5f5f5';
+  const txt  = isDark ? '#ececec' : '#111';
+  const bord = isDark ? '#444' : '#ddd';
+  let ov = document.getElementById('_inputModalOv');
+  if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = '_inputModalOv';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;';
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  const box = document.createElement('div');
+  box.style.cssText = `background:${surf};color:${txt};width:100%;max-width:420px;border-radius:18px;padding:24px 20px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.4);display:flex;flex-direction:column;gap:14px;`;
+  const h = document.createElement('div');
+  h.style.cssText = 'font-size:1.05em;font-weight:700;';
+  h.textContent = title;
+  const inp = document.createElement('input');
+  inp.type = 'text'; inp.placeholder = placeholder;
+  inp.style.cssText = `width:100%;padding:11px 14px;border-radius:10px;border:1.5px solid ${bord};background:${isDark?'#1a1a1a':'#fff'};color:${txt};font-size:1em;box-sizing:border-box;outline:none;`;
+  const btns = document.createElement('div');
+  btns.style.cssText = 'display:flex;gap:10px;';
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Abbrechen';
+  cancel.style.cssText = `flex:1;padding:11px;border-radius:10px;border:1.5px solid ${bord};background:transparent;color:${txt};font-size:0.95em;cursor:pointer;`;
+  cancel.onclick = () => ov.remove();
+  const ok = document.createElement('button');
+  ok.textContent = 'Hinzufügen';
+  ok.style.cssText = 'flex:1;padding:11px;border-radius:10px;border:none;background:var(--accent,#007bff);color:#fff;font-size:0.95em;font-weight:600;cursor:pointer;';
+  ok.onclick = () => { const val = inp.value.trim(); if (!val) { inp.focus(); inp.style.borderColor='red'; return; } ov.remove(); onConfirm(val); };
+  inp.addEventListener('keydown', e => { if (e.key==='Enter') ok.click(); if (e.key==='Escape') ov.remove(); });
+  btns.appendChild(cancel); btns.appendChild(ok);
+  box.appendChild(h); box.appendChild(inp); box.appendChild(btns);
+  ov.appendChild(box); document.body.appendChild(ov);
+  setTimeout(() => inp.focus(), 50);
 }
 
 // ═══════════════════════════════════════
