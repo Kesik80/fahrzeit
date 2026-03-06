@@ -2403,7 +2403,8 @@ if (localMatch) {
 // Для сокращённых ссылок — обращаемся к серверу
 try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
-const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
+const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
+const resp = await fetch(base + '/api/parse-coords?input=' + encodeURIComponent(s));
 if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
 const d = await resp.json();
 if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
@@ -3176,7 +3177,8 @@ if (index === 0) {
 }
 try {
   this.showToast('🔄 Fahrtzeit wird berechnet…');
-  const response = await fetch('/api/calculate-time', {
+  const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
+  const response = await fetch(base + '/api/calculate-time', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -3236,7 +3238,8 @@ try {
 this.showToast('🔄 Fahrtzeit wird berechnet…');
 
 // Вызываем Vercel serverless function
-const response = await fetch('/api/calculate-time', {
+const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
+const response = await fetch(base + '/api/calculate-time', {
 method: 'POST',
 headers: {
 'Content-Type': 'application/json',
