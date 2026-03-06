@@ -19,7 +19,6 @@ function fetchUrl(url, redirectCount = 0) {
           ? res.headers.location
           : new URL(res.headers.location, url).href;
         res.resume();
-        // Проверяем координаты уже в Location заголовке редиректа
         const fromRedirect = parseCoords(next);
         if (fromRedirect) return resolve({ finalUrl: next, body: '', coords: fromRedirect });
         return resolve(fetchUrl(next, redirectCount + 1));
@@ -58,15 +57,44 @@ function parseCoords(str) {
   m = str.match(/[?&](?:q|query|center|dest)=(-?\d+\.\d+),(-?\d+\.\d+)/);
   if (m) return check(+m[1], +m[2]);
 
-  // pb= параметр с координатами (формат Google Maps)
-  m = str.match(/pb=.*?!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-  if (m) return check(+m[1], +m[2]);
-
   // Просто два числа рядом
   m = str.match(/([-+]?\d{1,3}\.\d{4,})[\s,]+([-+]?\d{1,3}\.\d{4,})/);
   if (m) return check(+m[1], +m[2]);
 
   return null;
+}
+
+// Геокодирование через адрес в URL (когда координат нет напрямую)
+async function geocodeFromUrl(url) {
+  // Извлекаем название места из URL вида /maps/place/NAME/data=...
+  const placeMatch = decodeURIComponent(url).match(/\/maps\/place\/([^/]+)\//);
+  if (!placeMatch) return null;
+  
+  const placeName = placeMatch[1].replace(/\+/g, ' ');
+  
+  // Используем Nominatim OpenStreetMap для геокодирования
+  return new Promise((resolve) => {
+    const q = encodeURIComponent(placeName);
+    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
+    https.get(nominatimUrl, {
+      headers: { 'User-Agent': 'FahrzeitRechner/1.0' }
+    }, res => {
+      let body = '';
+      res.on('data', c => body += c);
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(body);
+          if (data && data[0]) {
+            const lat = parseFloat(data[0].lat);
+            const lng = parseFloat(data[0].lon);
+            if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
+              resolve({ lat, lng });
+            } else resolve(null);
+          } else resolve(null);
+        } catch { resolve(null); }
+      });
+    }).on('error', () => resolve(null));
+  });
 }
 
 function parseText(s) {
@@ -96,11 +124,9 @@ function parseText(s) {
 function parseCoordsFromBody(body) {
   let m;
 
-  // "lat":... "lng":...
   m = body.match(/"lat"\s*:\s*([-+]?\d+\.\d+)\s*,\s*"lng"\s*:\s*([-+]?\d+\.\d+)/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
 
-  // og:url / canonical
   for (const pattern of [
     /property="og:url"\s+content="([^"]+)"/,
     /content="([^"]+)"\s+property="og:url"/,
@@ -113,11 +139,9 @@ function parseCoordsFromBody(body) {
     }
   }
 
-  // !3d<lat>!4d<lng> в теле
   m = body.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
 
-  // JSON-массивы [lat, lng]
   const pairs = body.match(/\[([-+]?\d{2,3}\.\d{6,}),([-+]?\d{1,3}\.\d{6,})\]/g);
   if (pairs) {
     for (const pair of pairs) {
@@ -129,12 +153,10 @@ function parseCoordsFromBody(body) {
     }
   }
 
-  // itemprop
   const iLat = body.match(/itemprop="latitude"\s+content="([-+]?\d+\.\d+)"/);
   const iLng = body.match(/itemprop="longitude"\s+content="([-+]?\d+\.\d+)"/);
   if (iLat && iLng) return { lat: +iLat[1], lng: +iLng[1] };
 
-  // Любая пара с 5+ знаками
   m = body.match(/([-+]?\d{1,3}\.\d{5,}),\s*([-+]?\d{1,3}\.\d{5,})/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
 
@@ -165,13 +187,12 @@ module.exports = async (req, res) => {
 
     const result = await fetchUrl(input);
 
-    // Если координаты найдены уже при редиректе
     if (result.coords) return res.json({ success: true, ...result.coords, source: 'redirect' });
 
     const finalUrl = result.finalUrl;
     const body = result.body;
 
-    // Из финального URL (включая декодированный)
+    // Из финального URL
     const fromUrl = parseCoords(finalUrl) || parseCoords(decodeURIComponent(finalUrl));
     if (fromUrl) return res.json({ success: true, ...fromUrl, source: 'url' });
 
@@ -179,8 +200,11 @@ module.exports = async (req, res) => {
     const fromBody = parseCoordsFromBody(body);
     if (fromBody) return res.json({ success: true, ...fromBody, source: 'body' });
 
-    // Отладка: вернём финальный URL чтобы понять что пришло
-    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке', debug_url: finalUrl.substring(0, 200) });
+    // Геокодирование через название места из URL (Nominatim)
+    const fromGeo = await geocodeFromUrl(finalUrl);
+    if (fromGeo) return res.json({ success: true, ...fromGeo, source: 'geocode' });
+
+    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке' });
 
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
