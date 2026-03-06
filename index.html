@@ -2262,13 +2262,13 @@ const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoo
 const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
 // Строим опции для select пункта назначения
 const destOptions = this.machineDestinations.map(d =>
-  `<option value="${d.name}" ${this.machineStop.name === d.name ? 'selected' : ''}>${d.name}</option>`
+  `<option value="${d.name.replace(/"/g, '&quot;')}" ${this.machineStop.name === d.name ? 'selected' : ''}>${d.name}</option>`
 ).join('');
 const isCustom = !this.machineDestinations.some(d => d.name === this.machineStop.name);
 machineDiv.innerHTML = `
 <select data-type="machine-name" aria-label="Zielort">
   ${destOptions}
-  ${isCustom ? `<option value="${this.machineStop.name}" selected>${this.machineStop.name}</option>` : ''}
+  ${isCustom ? `<option value="${this.machineStop.name.replace(/"/g, '&quot;')}" selected>${this.machineStop.name}</option>` : ''}
   <option value="__add_new__">➕ Ziel hinzufügen…</option>
 </select>
 <button class="coords-icon" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten">${machineCoordsSvg}</button>
@@ -2292,7 +2292,7 @@ machineNameSel.addEventListener('change', e => {
   const val = e.target.value;
   if (val === '__add_new__') {
     // Сбрасываем select обратно на текущее значение — модалка сама сохранит
-    machineNameSel.value = this.machineStop.name;
+    machineNameSel.value = this.machineStop.name.replace(/"/g, '&quot;');
     this.openCoordsModal(null, false, false, false, true); // isAddingNewDestination
   } else {
     // Подставляем координаты если есть
