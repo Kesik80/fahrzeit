@@ -1,0 +1,4139 @@
+<!--
++ 30.09.2025 13:00: при hinzugefügtии нового   участника поле «Координаты» теперь НЕ обязательно;
++ 30.09.2025 14:00: добавил René, OLGA-Park;
++ 06.10.2025 22:00 выпадающий список точек станций
++ 07.10.2025 23:00 переход по паролю на страницу настройки
++ 08.10.2025 22:30 hinzugefügtа консоль
++ 09.10.25 7:00 в github hinzugefügt // /api/expand.js для обработок сокращенных ссылок google
++ 09.10.25 16:00 исправлена проблема старт в Google Maps
++ 04.02.2026: ИСПРАВЛЕНО — маршрут "туда" и "обратно" с реальным местоположением и кнопкой "В путь"
++ 04.02.2026: УДАЛЕНЫ кнопки open-map-direct и open-map-return
++ 13.02.2026: ДОБАВЛЕНО — кнопка "+" открывает модальное окно с выбором "Treffpunkt" или "Kollege";
+              формат вывода: "12:00 René (Olga-Park)" или "12:00 René, Vasyl und Alex (Olga-Park)"
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- иконка для iOS -->
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<!-- иконка для Android / PWA -->
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
+<!-- манифест -->
+<link rel="manifest" href="/icons/manifest.json">
+<!-- цвет статус-бара (опционально) -->
+<meta name="theme-color" content="#007bff" id="theme-meta">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Fahrzeit Rechner</title>
+<link rel="stylesheet"
+href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/latlon-geohash@2.0.0/latlon-geohash.min.js"></script>
+<style>
+:root {
+--primary-color: #007bff;
+--success-color: #28a745;
+--info-color: #6c757d;
+--danger-color: #dc3545;
+--background-color: #f0f0f0;
+--surface-color: white;
+--text-color: #333;
+--border-radius: 6px;
+--spacing-unit: 10px;
+--small-spacing: 6px;
+--button-size: 44px;
+--button-font-size: 0.9em;
+}
+body {
+font-family: sans-serif;
+padding: 10px;
+max-width: 500px;
+margin: auto;
+background: var(--bg) !important;
+color: var(--text) !important;
+}
+h2 {
+text-align: center
+}
+button {
+padding: var(--spacing-unit);
+margin-top: var(--spacing-unit);
+width: 100%;
+border: none;
+border-radius: var(--border-radius);
+color: white;
+cursor: pointer;
+font-size: var(--button-font-size);
+transition: background-color .2s ease, transform .1s ease;
+height: var(--button-size);
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 8px
+}
+button:hover {
+opacity: .9;
+transform: translateY(-1px)
+}
+.calculate {
+background: var(--primary-color)
+}
+.copy {
+background: var(--success-color)
+}
+.add {
+background: var(--info-color)
+}
+.clear {
+background: var(--danger-color)
+}
+.route-back {
+background: #6f42c1
+}
+.greeting-container {
+background: var(--surface-color);
+border-radius: var(--border-radius);
+padding: var(--spacing-unit);
+margin-bottom: var(--spacing-unit);
+box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+display: flex;
+align-items: center;
+gap: var(--spacing-unit);
+flex-wrap: wrap
+}
+.greeting-container select {
+width: 35%;
+padding: var(--small-spacing);
+border: 1px solid #ddd;
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box
+}
+
+.greeting-container .edit-greeting-btn {
+width: 24px;
+height: 24px;
+background: transparent;
+border: none;
+border-radius: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+line-height: 1;
+padding: 0;
+color: var(--text) !important;
+transform: translate(5px, -5px););
+}
+
+.greeting-container .start-point-coords {
+width: 24px;
+height: 24px;
+background: transparent;
+border: none;
+border-radius: 4px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+line-height: 1;
+padding: 0;
+color: var(--text) !important;
+transform: translateY(-5px);
+
+}
+.participant {
+background: var(--surface-color);
+border-radius: var(--border-radius);
+padding: var(--spacing-unit);
+margin-bottom: var(--spacing-unit);
+display: flex;
+align-items: center;
+gap: var(--spacing-unit);
+flex-wrap: nowrap;
+overflow: hidden;
+box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
+}
+.participant select,
+.participant input[type=text] {
+flex: 1;
+min-width: 0;
+max-width: 35%;
+padding: var(--small-spacing);
+border: 1px solid var(--border, #ddd);
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface);
+color: var(--text)
+}
+.participant input[type=number] {
+width: 50px;
+padding: var(--small-spacing);
+border: 1px solid #ddd;
+border-radius: 4px;
+font-size: 1em;
+text-align: center
+}
+.time-display {
+min-width: 35px;
+max-width: 35px;
+padding: 6px 10px;
+border: 2px solid var(--border);
+border-radius: 4px;
+font-size: 0.95em;
+text-align: center;
+background: var(--surface);
+color: var(--text);
+cursor: pointer;
+transition: all 0.2s;
+user-select: none;
+white-space: nowrap;
+
+}
+.time-display:hover {
+border-color: var(--primary-color);
+background: rgba(0, 123, 255, 0.05);
+}
+.time-display.auto-calculated {
+border-color: #ffc107;
+}
+.time-display.auto-calculated:hover {
+border-color: #ff9800;
+}
+.time-display.route-calculated {
+border-color: #1a73e8;
+}
+.time-display.route-calculated:hover {
+border-color: #1558b0;
+}
+.time-display.editing {
+display: none;
+}
+.participant .right-section {
+margin-left: auto;
+display: flex;
+gap: var(--small-spacing);
+align-items: center;
+justify-content: flex-end;
+min-height: 32px;
+}
+.participant .remove-btn {
+width: 20px;
+height: 20px;
+background: var(--danger-color);
+color: white;
+border: none;
+border-radius: 4px;
+font-size: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+line-height: 1;
+padding: 0;
+transform: translate(5px, -18px);
+}
+.participant .remove-btn::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
+}
+/* Кнопка hinzugefügtия дополнительного участника */
+.add-sub-btn {
+width: 22px;
+height: 22px;
+background: var(--primary-color);
+color: white;
+border: none;
+border-radius: 50%;
+cursor: pointer;
+font-size: 16px;
+font-weight: bold;
+line-height: 1;
+transition: all 0.2s;
+display: flex;
+align-items: center;
+justify-content: center;
+flex-shrink: 0;
+transform: translateY(-5px);
+}
+.add-sub-btn:hover {
+background: #0056b3;
+transform: translateY(-5px) scale(1.1);
+}
+/* Группа участников */
+.participant-group {
+margin-bottom: var(--spacing-unit);
+}
+.participant.main-participant {
+margin-bottom: 0;
+}
+/* Дополнительные участники */
+.sub-participant {
+background: var(--surface);
+border-left: 3px solid var(--primary-color);
+border-radius: var(--border-radius);
+padding: 8px var(--spacing-unit);
+margin-left: 30px;
+margin-top: 4px;
+display: flex;
+align-items: center;
+gap: 8px;
+box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
+}
+.sub-participant select {
+flex: 1;
+min-width: 35%;
+max-width: 35%;
+padding: var(--small-spacing);
+border: 1px solid #ddd;
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface);
+color: var(--text);
+}
+
+/* крестик entferntия участников */
+.sub-participant .remove-sub-btn {
+width: 20px;
+height: 20px;
+background: transparent;
+color: #dc3545;
+border: none;
+border-radius: 4px;
+font-size: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+line-height: 1;
+padding: 0;
+align-self: flex-start;
+transform: translate(5px, -18px);
+margin-left: auto;
+transition: transform .12s;
+}
+.sub-participant .remove-sub-btn::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
+}
+.sub-participant .remove-sub-btn:hover {
+background: transparent;
+transform: translate(5px, -18px) scale(1.1);
+}
+.sub-participant .drag-handle-sub {
+cursor: grab;
+color: #999;
+font-size: 16px;
+user-select: none;
+}
+/* Модальное окно выбора типа hinzugefügtия (Treffpunkt / Kollege) */
+.add-type-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+backdrop-filter: blur(4px);
+z-index: 10000;
+}
+.add-type-modal.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.add-type-modal-content {
+background: var(--surface);
+border-radius: 12px;
+padding: 24px;
+max-width: 400px;
+width: 90%;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+animation: slideUp 0.3s ease;
+}
+.add-type-modal-title {
+font-size: 1.2em;
+font-weight: 600;
+margin-bottom: 20px;
+color: var(--text);
+text-align: center;
+}
+.add-type-section {
+margin-bottom: 16px;
+}
+.add-type-section-label {
+font-size: 0.85em;
+font-weight: 600;
+color: var(--info-color);
+text-transform: uppercase;
+letter-spacing: 0.5px;
+margin-bottom: 6px;
+}
+.add-type-select {
+width: 100%;
+padding: 10px;
+border: 2px solid var(--border, #ddd);
+border-radius: 8px;
+font-size: 1em;
+background: var(--surface);
+color: var(--text);
+cursor: pointer;
+transition: border-color 0.2s;
+}
+.add-type-select:focus {
+outline: none;
+border-color: var(--primary-color);
+}
+.add-type-buttons {
+display: flex;
+gap: 8px;
+margin-top: 20px;
+}
+.add-type-btn {
+flex: 1;
+padding: 10px;
+border: none;
+border-radius: 8px;
+font-size: 0.95em;
+cursor: pointer;
+transition: all 0.2s;
+}
+.add-type-btn.primary {
+background: var(--primary-color);
+color: white;
+}
+.add-type-btn.primary:hover { background: #0056b3; }
+.add-type-btn.secondary {
+background: var(--border, #ddd);
+color: var(--text);
+}
+.add-type-btn.secondary:hover { background: #bbb; }
+/* Участник с Treffpunkt — подсветка */
+.participant.has-treffpunkt {
+}
+/* Поле ввода нового имени — inline внутри модалки */
+.new-name-row {
+display: none;
+margin-top: 8px;
+flex-direction: column;
+gap: 4px;
+}
+.new-name-row.visible {
+display: flex;
+}
+.new-name-input {
+width: 100%;
+padding: 10px;
+border: 2px solid var(--primary-color);
+border-radius: 8px;
+font-size: 1em;
+background: var(--surface);
+color: var(--text);
+box-sizing: border-box;
+transition: border-color 0.2s;
+}
+.new-name-input:focus {
+outline: none;
+border-color: #0056b3;
+}
+.new-name-hint {
+font-size: 0.8em;
+color: var(--info-color);
+}
+/* Модальное окно субучастников */
+.sub-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0,0,0,0.55);
+backdrop-filter: blur(4px);
+z-index: 10000;
+align-items: flex-end;
+justify-content: center;
+}
+.sub-modal.show {
+display: flex;
+}
+.sub-modal-content {
+background: var(--surface);
+border-radius: 20px 20px 0 0;
+padding: 0;
+width: 100%;
+max-width: 480px;
+max-height: 75vh;
+display: flex;
+flex-direction: column;
+overflow: hidden;
+box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+}
+.sub-modal-handle {
+width: 40px;
+height: 4px;
+background: var(--text);
+border-radius: 2px;
+opacity: 0.2;
+margin: 12px auto 8px;
+flex-shrink: 0;
+}
+.sub-modal-title {
+font-size: 1.05em;
+font-weight: 700;
+color: var(--text);
+padding: 4px 20px 12px;
+flex-shrink: 0;
+border-bottom: 1px solid var(--border);
+}
+.sub-modal-item {
+width: 100%;
+padding: 15px 20px;
+border: none;
+border-bottom: 1px solid var(--border);
+border-radius: 0;
+font-size: 1em;
+cursor: pointer;
+text-align: left;
+background: transparent;
+color: var(--text);
+display: block;
+transition: background 0.12s;
+box-sizing: border-box;
+}
+.sub-modal-item:last-child { border-bottom: none; }
+.sub-modal-item:active { background: var(--border); }
+.sub-modal-item.add-new {
+color: var(--primary-color);
+font-weight: 500;
+}
+.sub-modal-buttons {
+display: flex;
+gap: 10px;
+padding: 12px 16px 20px;
+flex-shrink: 0;
+border-top: 1px solid var(--border);
+}
+.sub-modal-btn {
+flex: 1;
+padding: 12px;
+border: none;
+border-radius: 12px;
+font-size: 0.95em;
+font-weight: 600;
+cursor: pointer;
+transition: all 0.2s;
+}
+.sub-modal-btn.primary {
+background: var(--primary-color);
+color: white;
+}
+.sub-modal-btn.primary:hover { background: #0056b3; }
+.sub-modal-btn.secondary {
+background: var(--border);
+color: var(--text);
+}
+.sub-modal-btn.secondary:hover { opacity: 0.8; }
+
+/* крестик времени прибытия */
+.time-remove {
+width: 24px;
+height: 24px;
+background: transparent;
+color: var(--danger-color);
+border: none;
+border-radius: 4px;
+font-size: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+flex-shrink: 0;
+line-height: 1;
+transform: translateY(-5px);
+margin-top: -17px;
+margin-right: -7px;
+}
+.time-remove::before {
+  content: "✖";
+  position: relative;
+  top: -1px;
+}
+/* красные крестики ВСЕГДА */
+.time-remove,
+.remove-btn,
+.remove-sub-btn {
+background: transparent !important;   /* фон прозрачный */
+color: #dc3545 !important;            /* красный крестик */
+border: none !important;
+border-radius: 4px;
+cursor: pointer;
+}
+
+.arrival-time {
+font-weight: bold;
+cursor: pointer;
+font-size: 1em;
+display: flex;
+align-items: center;
+justify-content: center;
+padding: var(--small-spacing);
+border-radius: 4px;
+line-height: 1;
+background: var(--surface);
+color: var(--text);
+border: 2px solid var(--border);
+}
+.time-icon,
+.coords-icon,
+.start-point-coords {
+font-size: 24px;
+width: 24px;
+height: 24px;
+border: none;
+background: transparent;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+line-height: 1;
+padding: 0;
+transform: translateY(-5px)
+}
+.coords-icon svg {
+width: 100%;
+height: 100%
+}
+.start-point-coords svg {
+width: 100%;
+height: 100%
+}
+.calc-route-icon {
+width: 24px;
+height: 24px;
+border: none;
+background: transparent;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+padding: 0;
+flex-shrink: 0;
+transform: translateY(-5px);
+transition: transform 0.2s ease;
+}
+.calc-route-icon:hover {
+transform: translateY(-5px) scale(1.1);
+}
+.calc-route-icon:active {
+transform: translateY(-5px) scale(0.95);
+}
+.calc-route-icon svg {
+width: 22px;
+height: 22px;
+}
+.material-symbols-outlined {
+font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+font-size: 24px;
+color: #999;
+cursor: grab
+}
+body:not(.dark) .material-symbols-outlined {
+color: #666;
+}
+input,
+select {
+font-size: 1em
+}
+pre {
+.dest-label { font-style: normal; white-space: nowrap; display: inline; }
+.dest-label--muted { color: #888; }
+background: var(--surface-color);
+padding: var(--spacing-unit);
+border-radius: var(--border-radius);
+white-space: pre-wrap;
+font-size: 1.1em;
+margin-top: 15px;
+min-height: 50px;
+box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
+}
+/* ── подсказки ── */
+#appHints { padding: 4px 0; }
+.app-hint {
+  display: none;
+  font-size: 0.95em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #555;
+  padding: 5px 0;
+}
+body.dark .app-hint { color: #aaa; }
+.app-hint.visible { display: block; }
+.toast {
+position: fixed;
+top: 16px;
+left: 50%;
+transform: translateX(-50%);
+background: rgba(30,30,30,0.88);
+color: white;
+padding: 10px 22px;
+border-radius: 24px;
+font-size: 0.97em;
+display: none;
+z-index: 9999;
+box-shadow: 0 4px 16px rgba(0,0,0,.25);
+text-align: center;
+white-space: normal;
+max-width: calc(100vw - 32px);
+width: max-content;
+word-break: break-word;
+}
+.toast.show {
+display: block;
+}
+/* Модальное окно для пароля God Mode */
+.god-modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, 0.5);
+backdrop-filter: blur(4px);
+z-index: 10000;
+animation: fadeIn 0.2s ease;
+}
+.god-modal.show {
+display: flex;
+align-items: center;
+justify-content: center;
+}
+.god-modal-content {
+background: var(--surface);
+border-radius: 12px;
+padding: 24px;
+max-width: 320px;
+width: 90%;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+animation: slideUp 0.3s ease;
+}
+.god-modal-title {
+font-size: 1.2em;
+font-weight: 600;
+margin-bottom: 16px;
+color: var(--text);
+text-align: center;
+}
+.god-modal-input {
+width: 100%;
+padding: 12px;
+border: 2px solid var(--border);
+border-radius: 8px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface);
+color: var(--text);
+margin-bottom: 16px;
+transition: border-color 0.2s;
+text-align: center;
+letter-spacing: 2px;
+font-family: monospace;
+}
+.god-modal-input:focus {
+outline: none;
+border-color: var(--primary-color);
+}
+.god-modal-input.error {
+border-color: var(--danger-color);
+animation: shake 0.4s;
+}
+.god-modal-buttons {
+display: flex;
+gap: 8px;
+}
+.god-modal-btn {
+flex: 1;
+padding: 12px;
+border: none;
+border-radius: 8px;
+font-size: 0.95em;
+cursor: pointer;
+transition: all 0.2s;
+}
+.god-modal-btn.primary {
+background: var(--primary-color);
+color: white;
+}
+.god-modal-btn.primary:hover {
+background: #0056b3;
+transform: translateY(-1px);
+}
+.god-modal-btn.secondary {
+background: var(--border);
+color: var(--text);
+}
+.god-modal-btn.secondary:hover {
+background: #bbb;
+}
+.god-loader {
+display: inline-block;
+width: 14px;
+height: 14px;
+border: 2px solid rgba(255,255,255,.3);
+border-top-color: white;
+border-radius: 50%;
+animation: spin 0.6s linear infinite;
+margin-left: 8px;
+}
+@keyframes fadeIn {
+from { opacity: 0; }
+to { opacity: 1; }
+}
+@keyframes slideUp {
+from {
+opacity: 0;
+transform: translateY(20px);
+}
+to {
+opacity: 1;
+transform: translateY(0);
+}
+}
+@keyframes shake {
+0%, 100% { transform: translateX(0); }
+25% { transform: translateX(-10px); }
+75% { transform: translateX(10px); }
+}
+@keyframes spin {
+to { transform: rotate(360deg); }
+}
+.sortable-ghost {
+opacity: .2;
+background: #c8ebfb
+}
+.button-container {
+display: flex;
+flex-direction: row;
+gap: 6px;
+margin-top: var(--spacing-unit);
+flex-wrap: nowrap
+}
+.button-container button {
+flex: 1;
+margin-top: 0;
+padding: var(--small-spacing) 8px;
+font-size: .8em;
+min-width: 60px
+}
+.button-container .add {
+grid-column: span 2
+}
+.modal {
+display: none;
+position: fixed;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+background: rgba(0, 0, 0, .5);
+z-index: 1000;
+justify-content: center;
+align-items: center
+}
+.modal-content {
+background: var(--surface-color);
+padding: 20px;
+border-radius: var(--border-radius);
+box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
+max-width: 300px;
+width: 100%;
+text-align: center;
+border: 1px solid var(--border);
+transition: transform .2s ease
+}
+.modal-content.add-new-name {
+background: linear-gradient(135deg, #f0f8ff 0%, #e6f0fa 100%);
+padding: 25px;
+box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+transform: scale(1.02)
+}
+.modal-content.add-new-name h3 {
+font-size: 1.4em;
+color: #1a3c6d;
+margin-bottom: 15px
+}
+.modal-content.add-new-name label {
+font-size: 1.1em;
+color: #1a3c6d;
+font-weight: 500
+}
+.modal-content input[type=text] {
+width: 100%;
+padding: 8px;
+margin: 8px 0;
+border: 1px solid #b0c4de;
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box
+}
+.modal-content input[type=text]:focus {
+outline: none;
+border-color: #007bff;
+box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+.modal-buttons {
+display: flex;
+flex-direction: row;
+gap: var(--spacing-unit);
+justify-content: center;
+margin-top: var(--spacing-unit)
+}
+.modal-content button {
+flex: 1;
+max-width: 120px;
+padding: 10px;
+margin: 0;
+border-radius: 8px;
+font-size: 1em;
+color: white;
+border: none;
+cursor: pointer;
+transition: background-color .2s ease, transform .1s ease
+}
+.modal-content button:hover {
+transform: translateY(-1px)
+}
+.modal-content .save-button {
+background: var(--success-color)
+}
+.modal-content .cancel-button {
+background: var(--info-color)
+}
+.modal-content .delete-greeting-btn {
+background: var(--danger-color)
+}
+.modal-content .trash-btn {
+background: #6d4c41 !important;
+color: #fff !important;
+}
+.modal-content .map-button {
+display: block;
+margin-left: auto;
+margin-right: auto;
+margin-top: var(--spacing-unit);
+margin-bottom: var(--spacing-unit);
+background: var(--primary-color);
+}
+#mapBtnsRow .map-button,
+#mapBtnsRow .modal-btn {
+width: 52px;
+height: 40px;
+min-width: 0;
+padding: 0;
+margin: 0;
+font-size: 20px;
+display: flex;
+align-items: center;
+justify-content: center;
+border-radius: var(--border-radius, 6px);
+}
+#mapBtnsRow #openMap {
+background: var(--info-color, #607d8b) !important;
+}
+#mapBtnsRow #cancelCoords {
+background: var(--danger-color, #e53935) !important;
+color: #fff !important;
+font-weight: 900;
+font-size: 22px;
+}
+#result {
+font-family: Arial, sans-serif;
+font-size: 16px;
+line-height: 1.5;
+margin: 10px 0;
+white-space: pre-wrap
+}
+#result sup {
+font-size: .7em;
+vertical-align: super
+}
+.checkbox-container {
+display: flex;
+gap: var(--small-spacing);
+margin-top: var(--spacing-unit);
+justify-content: flex-end;
+}
+/* Шапка карты — цвет темы */
+.map-picker-header {
+  background: #007bff;
+  color: #fff;
+}
+body.dark .map-picker-header {
+  background: #2d2d2d !important;
+  color: #e1e1e1 !important;
+  border-bottom: 1px solid #444;
+}
+body.dark .map-picker-header button {
+  color: #e1e1e1 !important;
+}
+/* Всё окно карты в тёмной теме */
+body.dark #mapPickerSheet {
+  background: #2d2d2d !important;
+}
+body.dark #mapPickerSheet > div {
+  background: #2d2d2d !important;
+  border-color: #444 !important;
+}
+body.dark #mapPickerCoords {
+  color: #aaa !important;
+}
+body.dark #mapPickerSheet .modal-btn.cancel-button {
+  background: #3d3d3d !important;
+  color: #e1e1e1 !important;
+  border-color: #555 !important;
+}
+
+/* Скрыть "Условия использования" и копирайт на карте */
+.gm-style-cc { display: none !important; }
+a[href*="maps.google.com/maps"] { display: none !important; }
+/* Скрыть ромбик навигации (pan/tilt control) */
+.gm-bundled-control { display: none !important; }
+.gm-bundled-control-on-bottom { display: none !important; }
+/* Закругление нативных кнопок Google Maps */
+/* Контейнер кнопок типа карты */
+.gm-style .gm-style-mtc-bbw { border-radius: 8px !important; overflow: hidden !important; }
+/* Все кнопки типа карты — скруглены + отступ между ними */
+.gm-style .gm-style-mtc-bbw {
+  gap: 4px !important;
+  display: flex !important;
+}
+.gm-style .gm-style-mtc-bbw button {
+  border-radius: 8px !important;
+}
+
+/* ----------  СВЕТЛАЯ (уже есть) ---------- */
+:root {
+--bg: #f0f0f0;
+--text: #333333;
+--surface: #ffffff;
+--border: #cccccc;
+/*кнопки */
+--primary-color: #007bff;
+--success-color: #28a745;
+--info-color: #6c757d;
+--danger-color: #dc3545;
+--route-back-color: #6f42c1;
+}
+body.dark {
+--bg: #121212;
+--surface: #1e1e1e;
+--text: #e1e1e1;
+--border: #333333;
+/* кнопки */
+--primary-color: #007bff;
+--success-color: #28a745;
+--info-color: #6c757d;
+--danger-color: #dc3545;
+--route-back-color: #6f42c1;
+/* модальное окно*/
+--modal-bg: #121212;
+--modal-text: #fff;
+--map-header-bg: #1e1e1e;
+--map-header-color: #e1e1e1;
+}
+body:not(.dark) {
+--map-header-bg: var(--primary-color, #007bff);
+--map-header-color: #fff;
+}
+body.dark .participant.machine {
+background: var(--surface);
+border-color: var(--border);
+}
+.participant.machine select {
+flex: 0 0 35%;
+min-width: 0;
+max-width: 35%;
+width: 35%;
+}
+/* обязательно «покрасить» всё, что было белым/серым */
+body {
+background: var(--bg) !important;
+color: var(--text) !important;
+}
+/* контейнеры, карточки, модалки, поля ввода */
+.greeting-container,
+.participant,
+pre,
+input,
+select {
+background: var(--surface) !important;
+color: var(--text) !important;
+border-color: var(--text) !important;
+}
+#stationSelect {
+width: 100%;
+padding: 8px;
+margin: 8px 0;
+border: 1px solid #b0c4de;
+border-radius: 4px;
+font-size: 1em;
+box-sizing: border-box;
+background: var(--surface-color);
+color: var(--text-color);
+}
+/* кнопки сохраняют цвет, но текст перекрашиваем/* обязательно покрасить сами кнопки */
+button.calculate { background: var(--primary-color) !important; }
+button.copy       { background: var(--success-color) !important; }
+button.add        { background: var(--info-color) !important; }
+button.clear      { background: var(--danger-color) !important; }
+button.route-back { background: var(--route-back-color) !important; }
+/* переключатель остаётся на месте */
+.theme-toggle {
+position: fixed;
+top: 10px;
+right: 10px;
+z-index: 999;
+}
+.theme-toggle input { display: none; }
+.theme-toggle span {
+cursor: pointer;
+font-size: 24px;
+user-select: none;
+/* жёстко тёмный фон и светлый текст */
+body.dark pre#output {
+background: #1e1e1e !important;
+color: #e1e1e1 !important;
+border: 1px solid #333 !important;
+border-radius: 6px !important;
+padding: 10px !important;
+margin: 0 !important;
+overflow-x: auto;
+}
+/* цветные кнопки модалки – всегда свои */
+.modal-btn                       { color: #fff !important; border: none !important; }
+.modal-btn.save-button           { background: var(--success-color) !important; }
+.modal-btn.cancel-button         { background: var(--danger-color)  !important; }
+#cancelGreeting                   { background: var(--danger-color)   !important; }
+.modal-btn.map-button            { background: var(--primary-color) !important; }
+.modal-btn.delete-greeting-btn   { background: var(--danger-color)  !important; }
+.modal-btn.trash-btn              { background: #6d4c41 !important; }
+/* фон модалки – переключается вместе с темой */
+.modal-content                   { background: #aaaaaa !important; color: #000 !important; }
+body.dark .modal-content        { background: #444444 !important; color: #fff !important
+;
+border: 1px solid #666 !important;
+}
+/* цвет карандаша – вместе с темой */
+.pencil-icon {
+width: 18px;
+height: 18px;
+fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
+}
+.god-mode{
+position:fixed;
+inset:0 auto auto 0;
+margin:4px;
+z-index:9999;
+background:none;
+padding:4px;
+cursor:pointer;
+}
+
+/* ── Universal Bottom Sheet Modal ─────────────────────────────── */
+.bs-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  align-items: flex-end;
+  justify-content: center;
+}
+.bs-sheet {
+  width: 100%;
+  max-width: 480px;
+  height: 72vh;
+  border-radius: 22px 22px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -12px 48px rgba(0,0,0,0.4);
+}
+.bs-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.2;
+  margin: 14px auto 0;
+  flex-shrink: 0;
+}
+.bs-header {
+  padding: 12px 20px 14px;
+  flex-shrink: 0;
+}
+.bs-title {
+  font-size: 1.1em;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.bs-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.bs-tab {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1.5px solid;
+  font-size: 0.88em;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+.bs-tab.active {
+  background: var(--primary-color) !important;
+  color: white !important;
+  border-color: var(--primary-color) !important;
+}
+.bs-divider {
+  height: 1px;
+  opacity: 0.1;
+  background: currentColor;
+  flex-shrink: 0;
+  margin: 0 20px;
+}
+.bs-list-label {
+  font-size: 0.68em;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 0.35;
+  padding: 10px 20px 4px;
+  flex-shrink: 0;
+}
+.bs-list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 0;
+}
+.bs-list-item {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  background: transparent;
+  font-size: 1em;
+  text-align: left;
+  cursor: pointer;
+  display: block;
+  transition: background 0.1s;
+  position: relative;
+}
+.bs-list-item::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  right: 20px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.07;
+}
+.bs-list-item:last-child::after { display: none; }
+.bs-list-item:active { opacity: 0.6; }
+.bs-list-item.bs-add-new {
+  opacity: 0.55;
+  font-size: 0.93em;
+  font-weight: 500;
+}
+.bs-footer {
+  padding: 12px 16px 20px;
+  flex-shrink: 0;
+}
+.bs-btn-cancel {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 0.95em;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid;
+  background: transparent;
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.bs-btn-cancel:active { opacity: 1; }
+.bs-btn.confirm {
+  background: var(--primary-color);
+  color: white;
+}
+</style>
+</head>
+<body>
+<main>
+<h2>Fahrzeit Rechner</h2>
+<!-- переключатель темы (уже есть) -->
+<label class="theme-toggle">
+<input type="checkbox" id="themeSwitch">
+<span>🌙</span>
+</label>
+<!-- ⛳ РЕЖИМ БОГА -->
+<a id="godL" href="redaktor.html"
+style="position:fixed; inset:1px auto auto 3px; margin:4px; z-index:9999; background:none; padding:4px; cursor:pointer;color:var(--text);"
+title="Bearbeitungsmodus">
+<svg width="32" height="32" viewBox="0 0 374 383" xmlns="http://www.w3.org/2000/svg">
+<g transform="translate(0,383) scale(0.085,-0.085)" fill="currentColor" stroke="none">
+<path d="M144 3732 c-87 -5 -83 17 -84 -427 l-2 -390 28 -24 28 -23 27 30 28 31 1 338 c0 185 3 339 6 342 3 3 159 6 346 6 l340 0 19 24 c20 25 18 54 -5 79 -9 9 -91 13 -347 15 -184 1 -357 1 -385 -1z"/>
+<path d="M2920 3730 c-57 -4 -66 -8 -79 -32 -12 -20 -13 -31 -4 -51 15 -32 79 -42 194 -32 44 4 181 4 305 0 l224 -7 0 -337 c0 -185 3 -346 6 -358 8 -29 49 -38 80 -18 l24 15 0 394 c0 367 -1 394 -18 409 -16 15 -58 17 -343 19 -178 2 -353 1 -389 -2z"/>
+<path d="M1850 3459 c-63 -4 -149 -9 -192 -11 -42 -1 -74 -5 -72 -8 4 -3 -138 -38 -173 -42 -7 -1 -11 -4 -11 -7 1 -3 -2 -14 -6 -23 -12 -28 -2 -62 22 -74 17 -8 41 -7 105 7 142 31 248 40 387 36 141 -5 192 -10 250 -26 123 -33 165 -30 176 14 11 44 -17 72 -86 86 -33 6 -58 14 -56 18 2 3 -19 7 -46 8 -28 1 -58 5 -67 9 -9 4 -27 6 -41 5 -14 -1 -37 2 -50 6 -14 5 -77 6 -140 2z"/>
+<path d="M1725 3199 c-38 -4 -112 -17 -163 -29 -51 -12 -101 -23 -110 -25 -9 -2 -19 -4 -22 -5 -3 -1 -8 -2 -12 -1 -5 0 -8 -4 -8 -9 0 -5 -9 -10 -19 -10 -11 0 -23 -5 -26 -11 -4 -6 -13 -8 -20 -5 -8 3 -19 -2 -25 -9 -7 -8 -15 -14 -18 -13 -4 1 -17 -3 -29 -10 -13 -7 -23 -10 -23 -7 0 3 -6 1 -12 -5 -24 -20 -133 -83 -145 -83 -7 0 -11 -3 -8 -5 3 -3 -19 -21 -48 -40 -28 -20 -55 -40 -59 -46 -5 -7 -8 -7 -8 -1 0 15 -40 -54 -40 -70 0 -7 12 -23 26 -34 32 -25 49 -19 138 48 37 28 74 51 82 51 7 0 14 4 14 8 0 12 76 53 84 45 3 -3 6 0 6 7 0 7 3 11 6 7 4 -3 13 1 21 9 8 8 19 12 24 9 5 -4 9 -2 9 3 0 7 28 19 90 37 3 1 16 6 30 12 14 6 41 14 60 19 19 4 37 8 40 9 77 22 124 27 308 34 179 6 192 10 192 51 0 40 -13 60 -44 65 -47 9 -212 11 -291 4z"/>
+<path d="M2160 3152 c-14 -9 -26 -27 -28 -40 -4 -23 25 -78 35 -68 3 3 21 -1 39 -9 19 -8 34 -11 34 -8 0 3 6 1 13 -5 7 -6 28 -14 46 -17 18 -3 47 -13 65 -22 17 -10 33 -17 36 -18 15 -1 70 -28 70 -34 0 -4 15 -12 33 -19 18 -7 42 -20 53 -29 10 -10 31 -24 45 -31 15 -8 37 -24 50 -36 68 -61 105 -67 135 -21 13 19 13 28 3 47 -14 27 -56 68 -69 68 -5 0 -15 8 -22 19 -7 10 -17 18 -21 19 -5 0 -20 9 -33 21 -13 11 -26 21 -29 21 -3 -1 -26 11 -51 26 -50 29 -218 104 -234 104 -6 0 -10 4 -10 8 0 5 -6 9 -12 9 -16 1 -88 19 -108 27 -8 3 -26 -2 -40 -12z"/>
+<path d="M1839 2945 c-2 -1 -40 -4 -84 -6 -44 -1 -84 -6 -90 -10 -5 -4 -30 -9 -55 -12 -25 -3 -63 -12 -85 -20 -22 -9 -49 -17 -60 -19 -11 -2 -23 -7 -26 -11 -3 -4 -15 -9 -27 -10 -11 0 -18 -5 -16 -9 3 -4 0 -8 -6 -8 -13 0 -173 -79 -180 -89 -3 -4 -12 -10 -22 -14 -25 -9 -33 -63 -14 -92 20 -31 65 -33 91 -5 10 11 22 17 26 14 5 -3 9 -1 9 4 0 5 32 26 70 46 39 21 70 34 70 31 0 -3 10 0 23 7 12 6 27 13 32 15 6 1 29 9 52 17 23 9 57 18 75 21 18 3 51 10 73 15 44 10 318 8 378 -3 21 -4 54 -14 73 -22 19 -8 34 -12 34 -10 0 3 25 -6 56 -20 31 -14 63 -25 70 -25 8 0 14 -5 14 -11 0 -5 4 -8 9 -4 5 3 15 0 23 -7 7 -7 35 -24 61 -38 26 -13 47 -28 47 -32 0 -5 6 -8 13 -8 14 0 53 -31 125 -97 49 -46 79 -53 105 -25 33 37 22 67 -55 142 -40 38 -78 70 -85 70 -7 0 -13 5 -13 10 0 6 -7 10 -15 10 -8 0 -15 4 -15 10 0 5 -11 12 -25 16 -14 3 -25 10 -25 14 0 4 -8 10 -17 14 -10 3 -33 15 -50 26 -18 11 -33 18 -33 15 0 -2 -25 7 -55 21 -31 13 -62 24 -70 24 -8 0 -15 5 -15 11 0 5 -4 8 -10 4 -5 -3 -17 -1 -27 4 -16 9 -70 20 -168 36 -45 7 -182 15 -186 10z"/>
+<path d="M1758 2685 c-2 -2 -21 -6 -43 -9 -88 -13 -110 -18 -116 -28 -3 -5 -9 -9 -13 -9 -27 5 -191 -67 -237 -103 -14 -12 -40 -32 -59 -46 -18 -14 -39 -31 -46 -37 -7 -7 -14 -13 -17 -13 -7 0 -131 -125 -129 -131 0 -3 -14 -23 -32 -43 -19 -20 -32 -36 -29 -36 2 0 -8 -17 -22 -37 -14 -21 -25 -47 -25 -59 0 -39 53 -68 87 -46 7 4 30 35 51 67 54 83 130 165 216 229 330 248 736 239 1071 -25 65 -51 153 -151 191 -214 46 -79 104 -200 104 -217 0 -9 4 -27 9 -40 15 -39 32 -102 35 -130 6 -60 65 -88 101 -48 20 22 17 62 -15 183 -10 39 -17 75 -14 79 3 4 1 8 -4 8 -9 0 -54 107 -51 124 0 5 -4 12 -9 15 -14 9 -65 94 -65 108 0 7 -2 11 -5 8 -7 -7 -61 67 -62 84 0 8 -2 12 -5 9 -6 -6 -135 122 -135 134 0 5 -4 6 -10 3 -5 -3 -10 -1 -10 4 0 6 -6 11 -14 11 -8 0 -16 3 -18 8 -6 14 -76 61 -82 55 -3 -4 -6 -2 -6 4 0 10 -39 31 -130 71 -19 9 -39 17 -45 18 -5 1 -37 10 -70 19 -33 9 -71 18 -85 21 -28 5 -258 13 -262 9z"/>
+<path d="M989 2559 c-43 -44 -79 -84 -79 -89 0 -6 -9 -15 -20 -22 -11 -7 -20 -17 -20 -21 0 -5 -18 -34 -40 -66 -22 -31 -40 -62 -40 -69 0 -7 -5 -12 -10 -12 -6 0 -10 -3 -9 -7 2 -16 -14 -53 -23 -53 -5 0 -6 -4 -3 -10 3 -5 1 -10 -4 -10 -6 0 -10 -3 -9 -7 1 -5 -2 -19 -6 -33 -4 -14 -2 -38 3 -53 8 -21 17 -27 39 -27 35 0 52 19 81 84 34 79 130 215 208 297 53 55 74 85 77 108 2 17 -1 31 -6 31 -5 0 -7 4 -4 9 3 5 -8 14 -25 20 -29 10 -33 8 -110 -70z"/>
+<path d="M2745 2444 c-18 -34 -18 -36 0 -67 10 -18 22 -34 25 -37 16 -11 79 -118 73 -124 -4 -3 -1 -6 6 -6 7 0 10 -4 7 -9 -4 -5 -2 -11 3 -13 5 -1 20 -25 33 -53 20 -43 28 -50 55 -53 25 -3 35 2 48 22 16 24 16 28 -1 72 -9 25 -41 86 -70 134 -28 49 -49 92 -45 96 3 4 0 4 -6 0 -7 -4 -13 -3 -13 2 0 15 -62 72 -79 72 -9 0 -25 -16 -36 -36z"/>
+<path d="M1768 2419 c-43 -16 -49 -87 -8 -109 10 -5 58 -9 106 -9 87 1 129 -4 169 -21 11 -4 42 -16 68 -25 102 -36 253 -163 299 -249 6 -11 14 -23 18 -26 14 -10 68 -136 86 -200 33 -118 23 -379 -23 -595 -8 -38 -17 -81 -19 -95 -12 -63 -68 -263 -95 -340 -70 -193 -70 -195 -60 -223 8 -20 17 -27 38 -27 39 0 49 9 72 62 67 157 146 446 187 683 22 129 27 192 27 325 1 186 -13 257 -76 394 -20 41 -32 78 -29 82 4 4 2 5 -3 1 -11 -6 -72 82 -67 96 1 5 -2 6 -8 2 -5 -3 -10 -2 -10 4 0 12 -69 77 -135 127 -27 21 -53 43 -57 48 -4 6 -8 8 -8 4 0 -4 -30 9 -67 29 -38 20 -68 35 -68 34 0 -4 -59 11 -70 18 -27 15 -230 23 -267 10z"/>
+<path d="M1558 2360 c-2 -3 -32 -22 -68 -41 -36 -20 -92 -61 -125 -92 -33 -31 -63 -57 -67 -57 -5 0 -8 -4 -8 -10 0 -10 -20 -37 -52 -71 -9 -9 -19 -26 -23 -38 -3 -12 -11 -21 -17 -21 -6 0 -9 -3 -6 -6 3 -3 -9 -38 -28 -78 -39 -86 -53 -134 -65 -236 -25 -207 -32 -246 -60 -341 -17 -57 -33 -108 -37 -114 -4 -5 -7 -14 -8 -20 -1 -5 -9 -27 -17 -48 -9 -20 -17 -41 -18 -45 0 -4 -16 -37 -35 -73 -44 -85 -44 -112 0 -136 34 -19 56 -3 92 68 99 198 184 485 184 625 0 147 84 354 187 459 33 33 70 68 84 78 13 9 33 24 44 32 11 9 41 28 66 44 39 24 47 35 51 64 2 20 1 34 -2 32 -6 -4 -30 21 -25 27 3 2 -7 4 -20 4 -14 0 -26 -3 -27 -6z"/>
+<path d="M1790 2163 c-79 -15 -199 -69 -241 -109 -14 -13 -31 -24 -38 -24 -7 0 -10 -4 -7 -9 3 -5 -12 -25 -34 -45 -22 -20 -37 -36 -33 -36 5 0 1 -6 -7 -13 -19 -15 -53 -86 -75 -152 -9 -27 -21 -101 -26 -164 -6 -63 -19 -151 -30 -195 -11 -45 -21 -88 -23 -96 -15 -61 -30 -107 -39 -119 -7 -8 -11 -17 -10 -20 6 -14 -35 -117 -100 -249 -57 -117 -68 -146 -56 -153 28 -19 68 -39 79 -39 13 0 128 239 173 360 50 134 96 318 108 430 16 153 29 210 60 274 37 74 77 120 152 169 114 76 217 93 330 57 40 -13 86 -33 102 -44 46 -31 125 -108 125 -122 0 -7 3 -14 8 -16 15 -7 51 -96 68 -167 15 -70 15 -159 0 -262 -2 -13 -10 -61 -17 -106 -10 -68 -10 -87 0 -107 19 -34 47 -39 76 -13 20 18 28 40 40 117 25 156 30 333 11 413 -17 70 -62 171 -102 223 -13 17 -21 34 -19 38 3 3 2 4 -2 1 -11 -8 -63 47 -56 59 3 6 3 8 -2 4 -4 -4 -25 6 -46 22 -59 48 -147 83 -234 94 -16 3 -37 6 -45 9 -8 3 -49 -2 -90 -10z"/>
+<path d="M944 2019 c-36 -18 -78 -177 -94 -354 -9 -101 -28 -192 -66 -303 -22 -66 -19 -100 11 -114 48 -22 67 -1 103 108 39 122 62 230 62 293 0 60 15 146 42 239 20 69 20 75 5 108 -17 35 -28 39 -63 23z"/>
+<path d="M1790 1900 c-44 -12 -67 -28 -123 -82 -38 -36 -68 -69 -68 -72 1 -4 -5 -30 -13 -59 -8 -28 -17 -88 -20 -132 -4 -44 -15 -120 -26 -170 -11 -49 -22 -103 -26 -118 -16 -77 -103 -308 -166 -437 -39 -80 -73 -147 -77 -150 -14 -10 -33 -69 -29 -91 2 -13 15 -30 30 -38 24 -14 28 -14 48 4 49 44 163 274 236 474 62 169 123 449 124 566 0 22 9 58 19 80 74 161 286 142 343 -30 17 -50 56 -69 88 -40 25 23 25 61 1 118 -11 25 -18 48 -15 51 2 3 1 4 -2 2 -9 -7 -60 56 -56 69 2 5 0 7 -4 3 -3 -4 -18 2 -32 13 -25 19 -119 51 -157 53 -11 1 -45 -6 -75 -14z"/>
+<path d="M1827 1632 c-10 -10 -17 -33 -17 -50 0 -49 -28 -227 -51 -322 -22 -93 -68 -249 -77 -265 -4 -5 -8 -19 -9 -30 -2 -10 -10 -30 -18 -42 -9 -13 -13 -23 -11 -23 3 0 -8 -32 -25 -71 -16 -40 -29 -80 -29 -90 0 -26 28 -49 60 -49 25 0 32 7 53 53 98 209 195 562 213 775 6 67 4 86 -10 107 -20 30 -56 33 -79 7z"/>
+<path d="M2795 1614 c-14 -10 -20 -41 -31 -153 -16 -173 -37 -299 -76 -465 l-30 -128 26 -26 c25 -26 28 -26 54 -12 22 13 31 31 50 100 58 218 106 601 83 658 -14 34 -49 46 -76 26z"/>
+<path d="M2062 1514 c-7 -8 -24 -78 -38 -156 -13 -79 -30 -161 -36 -183 -6 -22 -13 -49 -15 -60 -2 -11 -9 -36 -15 -55 -7 -19 -13 -37 -13 -40 -17 -65 -29 -101 -36 -106 -5 -3 -9 -14 -9 -24 0 -17 -45 -130 -90 -225 -10 -22 -30 -66 -44 -98 -14 -32 -32 -65 -41 -74 -25 -25 -16 -94 14 -110 17 -8 31 -9 42 -2 23 12 76 107 141 251 141 314 262 827 208 879 -19 18 -52 20 -68 3z"/>
+<path d="M2244 1132 c-15 -10 -35 -49 -40 -80 -6 -31 -64 -222 -73 -237 -3 -5 -6 -16 -7 -23 -2 -8 -6 -21 -10 -30 -4 -9 -9 -26 -11 -37 -2 -10 -7 -22 -11 -25 -4 -3 -8 -12 -10 -20 -2 -8 -23 -60 -47 -115 -56 -129 -58 -139 -31 -163 33 -30 66 -15 98 43 41 76 142 335 182 471 38 127 44 179 23 204 -14 17 -47 24 -63 12z"/>
+<path d="M83 947 l-22 -12 -1 -365 c0 -201 -1 -372 -2 -380 -4 -47 3 -67 27 -78 18 -9 138 -12 400 -12 367 0 375 0 396 21 15 15 19 28 14 47 -13 53 -3 52 -376 52 l-349 0 0 335 c0 184 0 337 0 340 0 3 -6 18 -14 33 -16 30 -39 37 -73 19z"/>
+<path d="M3576 929 c-14 -24 -16 -71 -16 -367 l0 -340 -349 2 c-192 0 -348 -1 -346 -2 2 -2 -5 -12 -16 -23 -21 -21 -21 -57 0 -83 12 -14 56 -16 395 -16 329 0 385 2 404 16 l22 15 0 393 c0 422 0 425 -52 430 -19 2 -30 -4 -42 -25z"/>
+<path d="M1491 568 c-36 -72 -39 -84 -28 -102 17 -25 59 -37 79 -22 24 17 78 120 78 148 0 31 -29 58 -62 58 -22 0 -31 -12 -67 -82z"/>
+</g>
+</svg>
+</a>
+<div class="greeting-container">
+<select id="startPoint" aria-label="Startpunkt wählen">
+<option value="" disabled>Startpunkt wählen</option>
+</select>
+<button class="start-point-coords" title="Startpunkt-Koordinaten bearbeiten"></button>
+<select id="greeting" aria-label="Begrüßung wählen">
+<option value="Moin zusammen" selected>Moin zusammen</option>
+<option value="add-new-greeting">➕</option>
+</select>
+<button class="edit-greeting-btn pencil-icon" title="Begrüßung bearbeiten">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
+<path
+d="M46.193 6.863a7.48 7.48 0 0 0-4.717 2.13L15.434 38.771S15.213 39.215 13.725 46.12c-.28-.074-.44-.204-.74-.267a1 1 0 0 0-.41 1.957c.305.064.452.186.73.262L11.799 55.045a1 1 0 0 0 1.38 1.125L20.553 52.9a1 1 0 0 0 .552-1.21s-.398-1.223-1.601-2.494c-.81-.855-2.192-1.688-3.883-2.404L17.113 39.9c.259-.3 20.274-23.473 25.815-29.52C47.764 5.267 55.893 14.152 52.834 17.424l-.022.023S33.986 38.92 27.871 46.266c-.79-1.355-1.806-2.557-2.826-3.433-.864-.742-1.162-.886-1.641-1.201L45.92 16.09a1 1 0 0 0-1.5-1.323L21.186 41.125a1 1 0 0 0 .24 1.521s1.084.645 2.316 1.703c1.232 1.058 2.549 2.529 3.022 3.945a1 1 0 0 0 1.722.317C33.662 42.3 54.262 18.827 54.295 18.79c3.881-4.151-1.668-11.392-7.387-11.9a7.55 7.55 0 0 0-1.715-.027zM15.203 48.752l1.035-4.795-4.527 1.998 4.492 2.797z"
+stroke="currentColor" stroke-width="2" fill="currentColor" />
+</svg>
+</button>
+<button class="add-sub-btn" id="addStartPassengerBtn" title="Mitfahrer hinzufügen" style="transform:translate(5px, -5px);">+</button>
+</div>
+<div id="startPassengersContainer" style="margin-left:0;"></div>
+<div id="participants"></div>
+<div class="button-container">
+<button class="add" title="Teilnehmer hinzufügen">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+<path
+d="M480-80Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880h20q10 0 20 2v81q-10-2-19.5-2.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186q122-112 181-203.5T720-552v-8h80v8q0 100-79.5 217.5T480-80Zm0-400q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0-80Zm240-80h80v-120h120v-80H800v-120h-80v120H600v80h120v120Z" />
+</svg>
+</button>
+<button class="calculate" title="Berechnen">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+<path
+d="m226-559 78 33q14-28 29-54t33-52l-56-11-84 84Zm142 83 114 113q42-16 90-49t90-75q70-70 109.5-155.5T806-800q-72-5-158 34.5T492-656q-42 42-75 90t-49 90Zm178-65q-23-23-23-56.5t23-56.5q23-23 57-23t57 23q23 23 23 56.5T660-541q-23 23-57 23t-57-23Zm19 321 84-84-11-56q-26 18-52 32.5T532-299l33 79Zm313-653q19 121-23.5 235.5T708-419l20 99q4 20-2 39t-20 33L538-80l-84-197-171-171-197-84 167-168q14-14 33.5-20t39.5-2l99 20q104-104 218-147t235-24ZM157-321q35-35 85.5-35.5T328-322q35 35 34.5 85.5T327-151q-25 25-83.5 43T82-76q14-103 32-161.5t43-83.5Zm57 56q-10 10-20 36.5T180-175q27-4 53.5-13.5T270-208q12-12 13-29t-11-29q-12-12-29-11.5T214-265Z" />
+</svg>
+</button>
+<button class="route-back" title="Route zurück">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
+<g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
+transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+<path
+d="M 77.612 90 H 12.388 c -0.829 0 -1.5 -0.672 -1.5 -1.5 V 36.637 H 1.5 c -0.642 0 -1.212 -0.408 -1.419 -1.015 c -0.208 -0.607 -0.006 -1.279 0.502 -1.671 l 43.5 -33.637 c 0.54 -0.418 1.295 -0.418 1.835 0 l 43.5 33.637 c 0.507 0.393 0.709 1.064 0.502 1.671 c -0.208 0.607 -0.778 1.015 -1.42 1.015 h -9.388 V 88.5 C 79.112 89.328 78.44 90 77.612 90 z M 13.888 87 h 62.225 V 35.137 c 0 -0.829 0.672 -1.5 1.5 -1.5 h 6.496 L 45 3.396 L 5.892 33.637 h 6.496 c 0.829 0 1.5 0.671 1.5 1.5 V 87 z"
+style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
+transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
+<path
+d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -16 7.177 -16 16 c 0 3.778 1.35 7.45 3.801 10.339 L 45 76.875 l 12.199 -14.367 C 59.65 59.619 61 55.948 61 52.169 C 61 43.347 53.822 36.169 45 36.169 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
+style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
+transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+</g>
+</svg>
+</button>
+<button class="copy" title="Kopieren" aria-label="Kopieren">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+<path
+d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
+</svg>
+</button>
+<button class="clear" title="Zurücksetzen">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
+width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
+<g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
+transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
+<path
+d="M 7.288 48.34 c 0.061 0.04 0.129 0.068 0.193 0.105 c 0.18 0.105 0.363 0.201 0.559 0.277 c 0.093 0.036 0.19 0.06 0.286 0.089 c 0.175 0.053 0.351 0.098 0.535 0.127 c 0.049 0.008 0.094 0.028 0.144 0.034 C 9.164 48.99 9.322 49 9.481 49 c 0 0 0 0 0.001 0 c 0 0 0 0 0 0 c 0 0 0 0 0 0 c 0.267 0 0.531 -0.028 0.79 -0.08 c 0.154 -0.031 0.297 -0.086 0.443 -0.134 c 0.101 -0.033 0.206 -0.054 0.304 -0.094 c 0.162 -0.067 0.31 -0.158 0.46 -0.245 c 0.075 -0.043 0.156 -0.075 0.228 -0.124 c 0.217 -0.146 0.42 -0.311 0.604 -0.495 c 0 0 0 0 0 0 l 7.492 -7.492 c 1.562 -1.562 1.562 -4.095 0 -5.657 c -1.149 -1.149 -2.822 -1.445 -4.249 -0.903 c 4.535 -11.868 16.033 -20.322 29.475 -20.322 c 12.266 0 23.516 7.2 28.658 18.342 c 0.926 2.004 3.3 2.881 5.309 1.956 c 2.005 -0.926 2.881 -3.302 1.955 -5.308 C 74.503 14.478 60.403 5.455 45.027 5.455 c -17.837 0 -32.947 11.873 -37.859 28.129 c -1.224 -1.611 -3.48 -2.084 -5.247 -1.008 c -1.887 1.148 -2.486 3.609 -1.338 5.496 l 5.481 9.007 c 0.014 0.023 0.035 0.041 0.049 0.063 c 0.125 0.195 0.268 0.375 0.424 0.545 c 0.036 0.039 0.064 0.085 0.101 0.122 C 6.835 48.009 7.053 48.186 7.288 48.34 z"
+style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
+transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+<path
+d="M 89.416 51.929 l -5.48 -9.008 c -0.014 -0.023 -0.035 -0.04 -0.049 -0.063 c -0.125 -0.195 -0.268 -0.375 -0.424 -0.546 c -0.035 -0.039 -0.063 -0.084 -0.1 -0.121 c -0.197 -0.199 -0.415 -0.376 -0.65 -0.531 c -0.061 -0.04 -0.129 -0.067 -0.192 -0.104 c -0.18 -0.105 -0.364 -0.201 -0.56 -0.277 c -0.093 -0.036 -0.19 -0.06 -0.287 -0.089 c -0.174 -0.053 -0.35 -0.098 -0.534 -0.127 c -0.049 -0.008 -0.095 -0.028 -0.144 -0.034 c -0.07 -0.008 -0.138 0.003 -0.208 -0.001 C 80.697 41.021 80.611 41 80.519 41 c -0.082 0 -0.159 0.019 -0.239 0.024 c -0.121 0.007 -0.24 0.018 -0.36 0.036 c -0.172 0.026 -0.338 0.065 -0.503 0.113 c -0.105 0.03 -0.209 0.058 -0.312 0.097 c -0.178 0.067 -0.344 0.152 -0.509 0.243 c -0.082 0.045 -0.166 0.082 -0.245 0.133 c -0.237 0.153 -0.46 0.326 -0.659 0.524 c 0 0 -0.001 0.001 -0.001 0.001 l 0 0 l 0 0 l -7.492 7.492 c -1.562 1.562 -1.562 4.095 0 5.656 c 1.148 1.15 2.822 1.446 4.249 0.904 c -4.535 11.868 -16.033 20.321 -29.475 20.321 c -12.707 0 -24.117 -7.563 -29.068 -19.268 c -0.861 -2.034 -3.209 -2.988 -5.242 -2.125 c -2.035 0.86 -2.986 3.207 -2.126 5.242 c 6.206 14.671 20.508 24.151 36.436 24.151 c 17.831 0 32.937 -11.864 37.854 -28.111 c 0.774 1.015 1.96 1.574 3.176 1.574 c 0.708 0 1.426 -0.188 2.075 -0.584 C 89.966 56.276 90.565 53.816 89.416 51.929 z"
+style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill:#e3e3e3; fill-rule: nonzero; opacity: 1;"
+transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
+</g>
+</svg>
+</button>
+</div>
+<pre id="output"></pre>
+<div id="appHints">
+  <div id="hintDriver" class="app-hint">👤 Fahrer auswählen</div>
+  <div id="hintPart"   class="app-hint">➕ Teilnehmer hinzufügen</div>
+  <div id="hintTime"   class="app-hint">⏰ Ankunftszeit festlegen</div>
+</div>
+<div id="toast" class="toast"></div>
+
+<!-- Add Type Modal: Treffpunkt oder Kollege -->
+<div id="addTypeModal" class="add-type-modal">
+<div class="add-type-modal-content">
+<div class="add-type-modal-title">➕ Teilnehmer hinzufügen</div>
+<div class="add-type-section" id="treffSection">
+<div class="add-type-section-label">📍 Treffpunkt</div>
+<select id="treffpunktSelect" class="add-type-select">
+<option value="">– Treffpunkt wählen –</option>
+</select>
+</div>
+<div class="add-type-section" id="kollegeSection">
+<div class="add-type-section-label">👤 Kollege</div>
+<select id="kollegeSelect" class="add-type-select">
+<option value="">– Kollege wählen –</option>
+</select>
+<div class="new-name-row" id="newKollegeRow">
+<input type="text" id="newKollegeName" class="new-name-input" placeholder="Neuer Name eingeben…" autocomplete="off" />
+<span class="new-name-hint">Name wird gespeichert und zur Liste hinzugefügt</span>
+</div>
+</div>
+<div class="add-type-buttons">
+<button class="add-type-btn secondary" id="addTypeCancelBtn">Abbrechen</button>
+</div>
+</div>
+</div>
+
+<!-- Sub-Participant Modal -->
+<div id="subModal" class="sub-modal">
+<div class="sub-modal-content">
+<div class="sub-modal-handle"></div>
+<div id="subModalTitle" class="sub-modal-title"></div>
+<div id="subModalList" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
+<div class="sub-modal-buttons"><button class="sub-modal-btn secondary" id="subCancelBtn">Abbrechen</button></div>
+</div>
+</div>
+
+
+<!-- Universal Bottom Sheet — создаётся динамически через bsOpen() -->
+
+<!-- God Mode Password Modal -->
+<div id="godModal" class="god-modal">
+<div class="god-modal-content">
+<div class="god-modal-title">🔐 Bearbeitungsmodus</div>
+<input 
+type="password" 
+id="godPasswordInput" 
+class="god-modal-input" 
+placeholder="Passwort eingeben"
+autocomplete="off"
+/>
+<div class="god-modal-buttons">
+<button class="god-modal-btn secondary" id="godCancelBtn">Abbrechen</button>
+<button class="god-modal-btn primary" id="godSubmitBtn">Anmelden</button>
+</div>
+</div>
+</div>
+<div id="coordsModal" class="modal">
+<div class="modal-content" id="modalContent"
+style="background: var(--modal-bg, #fff) !important; color: var(--modal-text, #000) !important;">
+<h3 id="modalTitle">Koordinaten bearbeiten</h3>
+<label id="nameLabel" style="display:none">Name:</label>
+<input type="text" id="nameInput" style="display:none" placeholder="Name eingeben" />
+<label id="greetingLabel" style="display:none">Begrüßung:</label>
+<input type="text" id="greetingInput" style="display:none" placeholder="Begrüßung eingeben" />
+<label id="coordsLabel" style="display:none">Koordinaten eingeben<br>(Breite,Länge oder Google Maps URL):</label>
+<input type="text" id="coordsInput" style="display:none"
+placeholder="51.452013,7.021455 oder https://maps.app.goo.gl/..." />
+<p id="coordsHelp" style="display:none;color:#d32f2f;font-weight:bold">Gekürzte Links werden
+einige Sekunden verarbeitet.</p>
+<select id="stationSelect" style="display:none;">
+<option value="">– Aus Liste wählen –</option>
+</select>
+<div id="mapBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:20px;margin-bottom:4px;">
+<button class="map-button" id="openMap" title="Karte öffnen">
+<svg width="24" height="24" viewBox="0 0 90 90" fill="currentColor">
+<path d="M89 79.382H1c-.355 0-.683-.188-.863-.494-.179-.306-.183-.685-.01-.994L15.174 49.373c.177-.315.511-.512.873-.512h22.326c.552 0 1 .447 1 1s-.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-.553 0-1-.447-1-1s.447-1 1-1h22.325c.362 0 .696.196.873.512l15.947 28.521c.173.31.169.688-.011.994s-.778.484-1.132.484z" />
+<path d="M45 60.554L30.514 43.493C27.603 40.063 26 35.701 26 31.213c0-10.477 8.523-19 19-19s19 8.523 19 19c0 4.489-1.603 8.851-4.514 12.28L45 60.554zM45 15.713c-8.28 0-15.016 6.736-15.016 15.016 0 3.778 1.35 7.45 3.801 10.339L45 45.875l12.199-14.367C59.65 38.619 61 34.948 61 31.169c0-8.822-7.177-16-16-16z" />
+<path d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649s3.88-8.649 8.649-8.649 8.649 3.88 8.649 8.649-3.88 8.649-8.649 8.649zm0-15.298c-3.666 0-6.649 2.983-6.649 6.649s2.983 6.649 6.649 6.649 6.649-2.983 6.649-6.649-2.983-6.649-6.649-6.649z" />
+<path d="M1 79.382c-.441 0-.845-.294-.965-.74-.143-.533.173-1.082.706-1.226l76.501-20.565c.531-.145 1.082.172 1.226.706.144.533-.173 1.082-.706 1.226L1.26 79.348c-.087.023-.175.034-.26.034z" />
+<path d="M63.521 73.279c-.286 0-.569-.121-.767-.357l-7.332-8.733c-.355-.423-.301-1.054.123-1.408.423-.355 1.056-.301 1.408.123l7.332 8.733c.355.423.301 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
+<path d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.123-1.408.424-.354 1.054-.301 1.409.123l10.047 11.966c.355.423.3 1.054-.123 1.408-.247.202-.476.279-.703.279z" />
+</svg>
+</button>
+<button class="map-button" id="openMapPicker" title="Punkt auf Karte wählen">
+<svg xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 469 512.42" width="22" height="22" fill="currentColor"><path fill-rule="nonzero" d="M191.82 93.36c27.85 0 53.07 11.31 71.31 29.54 18.23 18.23 29.53 43.46 29.53 71.3 0 27.85-11.3 53.07-29.53 71.31-18.24 18.23-43.46 29.53-71.31 29.53-27.84 0-53.07-11.3-71.3-29.53-18.23-18.24-29.54-43.46-29.54-71.31 0-27.84 11.31-53.07 29.54-71.3 18.23-18.23 43.46-29.54 71.3-29.54zm210.56 289.21v17.66c0 4.16-3.48 7.63-7.62 7.63h-30.32v30.32c0 4.15-3.47 7.62-7.62 7.62h-17.67c-4.13 0-7.62-3.43-7.62-7.62v-30.32h-30.34c-4.14 0-7.6-3.43-7.6-7.63v-17.66c0-4.19 3.42-7.62 7.6-7.62h30.34v-30.32c0-4.2 3.43-7.62 7.62-7.62h17.67c4.19 0 7.62 3.48 7.62 7.62v30.32h30.32c4.2 0 7.62 3.53 7.62 7.62zM348 270.39c33.39 0 63.66 13.55 85.55 35.44l.61.65c21.53 21.84 34.84 51.85 34.84 84.91 0 33.4-13.55 63.68-35.45 85.58l-.65.61c-21.83 21.52-51.84 34.84-84.9 34.84-33.4 0-63.65-13.57-85.54-35.45-21.94-21.9-35.49-52.18-35.49-85.58 0-33.37 13.57-63.62 35.45-85.52 21.89-21.93 52.18-35.48 85.58-35.48zm69.05 51.95c-17.66-17.67-42.1-28.6-69.05-28.6-26.96 0-51.42 10.93-69.08 28.6-17.65 17.64-28.59 42.1-28.59 69.05 0 26.96 10.92 51.42 28.59 69.08 17.64 17.64 42.1 28.59 69.08 28.59 26.7 0 50.94-10.73 68.56-28.06l.49-.53c17.67-17.66 28.6-42.12 28.6-69.08 0-26.7-10.74-50.94-28.07-68.56l-.53-.49zM197.53 485.87c7.56-4.8 14.91-9.92 22.02-15.28a149.47 149.47 0 0 0 13.51 18.57c-9.26 6.93-18.87 13.49-28.85 19.57-3.7 2.74-8.88 3.08-13 .48-44.87-28.52-82.58-62.92-112.28-100.19C38.05 357.7 12.26 300.79 3.44 246.01c-8.96-55.55-.56-109.03 27.07-152.51C41.4 76.35 55.34 60.72 72.37 47.15 111.36 16.08 156-.37 200.29.01c42.69.35 84.97 16.28 121.48 49.6 12.8 11.7 23.59 24.97 32.37 39.46 26.56 43.85 34.52 98.6 26.54 154.99-7.4-1.63-14.96-2.72-22.72-3.23 7.27-51.33.26-100.76-23.43-139.87-7.6-12.52-17-24.08-28.24-34.34-32.14-29.32-69.08-43.36-106.2-43.65-38.97-.32-78.53 14.37-113.42 42.18C71.78 77 59.56 90.73 49.97 105.83c-24.52 38.59-31.92 86.5-23.85 136.6 8.19 50.88 32.39 104.07 70.81 152.29 26.78 33.59 60.51 64.79 100.6 91.15zm49.33-346.7c-14.06-14.06-33.55-22.81-55.04-22.81-21.48 0-40.97 8.75-55.03 22.81-14.06 14.06-22.81 33.55-22.81 55.03 0 21.49 8.75 40.98 22.81 55.04 14.06 14.06 33.55 22.8 55.03 22.8 21.49 0 40.98-8.74 55.04-22.8 14.06-14.06 22.8-33.55 22.8-55.04 0-21.48-8.74-40.97-22.8-55.03z"/></svg>
+</button>
+<button class="modal-btn save-button"   id="saveCoords"   title="Speichern">✔</button>
+<button class="modal-btn cancel-button" id="cancelCoords" title="Abbrechen">✕</button>
+</div>
+<div style="display:flex;justify-content:center;margin-top:8px;">
+<button class="modal-btn trash-btn" id="deleteGreeting" title="Löschen">🗑 Löschen</button>
+</div>
+<div id="greetingBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:12px;">
+<button class="modal-btn cancel-button" id="cancelGreeting" title="Abbrechen" style="background:var(--danger-color)!important;color:#fff!important;">✕</button>
+<button class="modal-btn save-button"   id="saveGreeting"   title="Speichern">✔</button>
+</div>
+</div>
+</div>
+<!-- ═══ MAP PICKER MODAL ═══ -->
+<div id="mapPickerModal" class="modal" style="display:none;">
+  <div id="mapPickerSheet" class="modal-content" style="
+    max-width: 95vw; width: 600px; padding: 0;
+    background: var(--modal-bg, #fff) !important;
+    border-radius: 12px; overflow: hidden;
+    transition: all .2s ease;
+  ">
+    <!-- Шапка -->
+    <div class="map-picker-header" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;">
+      <span style="font-weight:600;font-size:1em;">📍 Ort auf Karte wählen</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="mapFullscreenBtn" title="Vollbild" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:15px;">⛶</button>
+        <button id="mapPickerClose" style="background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:0 2px;">✕</button>
+      </div>
+    </div>
+    <!-- Карта -->
+    <div id="mapPickerContainer" style="width:100%;height:55vh;min-height:300px;"></div>
+    <!-- Панель инструментов снизу -->
+    <div style="padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:var(--modal-bg,#fff);border-top:1px solid #e0e0e0;">
+      <!-- Тип карты -->
+
+      <!-- Координаты -->
+      <span id="mapPickerCoords" style="flex:1;font-size:.82em;font-family:monospace;color:#555;text-align:right;min-width:120px;">—</span>
+    </div>
+    <!-- Кнопки подтверждения -->
+    <div style="padding:8px 12px;display:flex;gap:8px;justify-content:flex-end;background:var(--modal-bg,#fff);border-top:1px solid #eee;">
+      <button id="mapPickerCancel"  class="modal-btn cancel-button">Abbrechen</button>
+      <button id="mapPickerConfirm" class="modal-btn save-button" disabled>OK</button>
+    </div>
+  </div>
+</div>
+</main>
+<script>
+"use strict";
+class FahrzeitRechner {
+constructor() {
+this.defaultGreetings = ['Moin zusammen']; // загружается из stations.js
+this.greetings = [...this.defaultGreetings];
+this.greeting = 'Moin zusammen';
+// Данные загружаются из stations.js — см. метод loadStations()
+const defaultCoords = {};
+this.stations        = {};
+this.travelTimes     = {};
+this.treffpunkt      = {};
+this.trefftravelTimes = {};
+this.participantOrders = {};
+this.startPoint = '';
+this.startPointCoords = { lat: null, lng: null };
+this.defaultCoordinates = defaultCoords;      // для сброса
+this.nameToCoordinates = { ...defaultCoords };
+this.participants = [];
+this.startPointPassengers = [];
+this.defaultStartPassengers = {};
+this.farewell = 'Tschüss 👋';
+this.farewells = ['Tschüss 👋'];
+this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
+this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
+this.useUhrBei = false;
+this.useSuperscriptTime = false;
+this.showDestName = false;
+this.showDestName = false;
+this.sortable = null;
+this.elements = {
+greetingSelect: document.getElementById('greeting'),
+editGreetingButton: document.querySelector('.edit-greeting-btn'),
+startPointSelect: document.getElementById('startPoint'),
+startPointCoordsButton: document.querySelector('.start-point-coords'),
+participantsContainer: document.getElementById('participants'),
+addButton: document.querySelector('.add'),
+calculateButton: document.querySelector('.calculate'),
+routeBackButton: document.querySelector('.route-back'),
+copyButton: document.querySelector('.copy'),
+clearButton: document.querySelector('.clear'),
+output: document.getElementById('output'),
+toast: document.getElementById('toast'),
+coordsModal: document.getElementById('coordsModal'),
+modalContent: document.querySelector('.modal-content'),
+coordsInput: document.getElementById('coordsInput'),
+coordsLabel: document.getElementById('coordsLabel'),
+coordsHelp: document.getElementById('coordsHelp'),
+nameInput: document.getElementById('nameInput'),
+nameLabel: document.getElementById('nameLabel'),
+greetingInput: document.getElementById('greetingInput'),
+greetingLabel: document.getElementById('greetingLabel'),
+modalTitle: document.getElementById('modalTitle'),
+saveCoordsButton: document.getElementById('saveCoords'),
+deleteGreetingButton: document.getElementById('deleteGreeting'),
+greetingBtnsRow: document.getElementById('greetingBtnsRow'),
+cancelGreetingButton: document.getElementById('cancelGreeting'),
+saveGreetingButton: document.getElementById('saveGreeting'),
+cancelCoordsButton: document.getElementById('cancelCoords'),
+openMapButton: document.getElementById('openMap'),
+openMapPickerButton: document.getElementById('openMapPicker'),
+mapBtnsRow: document.getElementById('mapBtnsRow')
+};
+this.currentEditIndex = null;
+this.currentMainParticipantIndex = null;
+this.currentSubParticipantIndex = null;
+this.isEditingMachine = false;
+this.isAddingNewName = false;
+this.isAddingSubName = false;
+this.isAddingNewGreeting = false;
+this.isEditingGreeting = false;
+this.isEditingFarewell = false;
+this.isEditingStartPoint = false;
+this.isAddingNewDestination = false;
+this.isAddingNewKollege = false;
+this.isAddingNewSubPerson = false;
+this.isAddingNewTreffpunkt = false;
+this.loadData();
+this.syncCoordinates();
+this.addEventListeners();
+this.renderParticipants();
+this.initSortable();
+this.elements.output.innerHTML = '';
+this.updateHints();
+}
+async loadStations() {
+try {
+  const resp = await fetch('stations.js', { cache: 'no-cache' });
+  if (!resp.ok) throw new Error('HTTP ' + resp.status);
+  const text = await resp.text();
+  // Парсим каждый блок через Function()
+  const defM  = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
+  const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
+  const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
+  // Блоки с вложенными {} — используем счётчик скобок
+  function extractBlock(str, keyword) {
+    const idx = str.indexOf(keyword);
+    if (idx === -1) return null;
+    const start = str.indexOf('{', idx);
+    if (start === -1) return null;
+    let depth = 0;
+    for (let i = start; i < str.length; i++) {
+      if (str[i] === '{') depth++;
+      else if (str[i] === '}') { depth--; if (depth === 0) return str.slice(start, i + 1); }
+    }
+    return null;
+  }
+  const trfBlock = extractBlock(text, 'this.treffpunkt');
+  const trtBlock = extractBlock(text, 'this.trefftravelTimes');
+  const ordBlock = extractBlock(text, 'this.participantOrders');
+  if (defM)  {
+    const coords = Function('"use strict";return (' + defM[1] + ')')();
+    this.defaultCoordinates = coords;
+    this.nameToCoordinates  = { ...coords };
+  }
+  if (stM)  this.stations          = Function('"use strict";return (' + stM[1]  + ')')();
+  if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
+  if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
+  if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
+  if (ordBlock) {
+    const rawOrders = Function('"use strict";return (' + ordBlock + ')')();
+    // Новый формат: значение может быть {startPassengers:[...], order:[...]}
+    const cleanOrders = {};
+    const spFromOrders = {};
+    Object.keys(rawOrders).forEach(driver => {
+      const val = rawOrders[driver];
+      if (val && !Array.isArray(val) && val.order) {
+        cleanOrders[driver] = val.order;
+        if (val.startPassengers && val.startPassengers.length) {
+          spFromOrders[driver] = val.startPassengers;
+        }
+      } else {
+        cleanOrders[driver] = val;
+      }
+    });
+    this.participantOrders = cleanOrders;
+    this.defaultStartPassengers = spFromOrders;
+  }
+  // Приветствия из stations.js
+  const grM = text.match(/const\s+defaultGreetingsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (grM) {
+    this.defaultGreetings = Function('"use strict";return (' + grM[1] + ')')();
+    if (!this.greetings || this.greetings.length === 0) this.greetings = [...this.defaultGreetings];
+    if (!this.greeting) this.greeting = this.defaultGreetings[0];
+  }
+  // Прощание из stations.js
+  const farewellM = text.match(/const\s+defaultFarewellData\s*=\s*({[\s\S]*?});/);
+  if (farewellM) {
+    const fd = Function('"use strict";return (' + farewellM[1] + ')')();
+    this.defaultFarewellText = fd.text || 'Tschüss 👋';
+    if (fd.list) this.farewells = fd.list;
+    if (!localStorage.getItem(this.profileKey('farewell'))) this.farewell = this.defaultFarewellText;
+  }
+  // Попутчики стартовой точки из stations.js
+  const spM2 = text.match(/const\s+defaultStartPassengersData\s*=\s*({[\s\S]*?});/);
+  if (spM2) this.defaultStartPassengers = Function('"use strict";return (' + spM2[1] + ')')();
+  // Конечные точки из stations.js
+  const destM = text.match(/const\s+defaultMachineDestinationsData\s*=\s*(\[[\s\S]*?\]);/);
+  if (destM) {
+    const freshDefaults = Function('"use strict";return (' + destM[1] + ')')();
+    const defaultNames = new Set(freshDefaults.map(d => d.name));
+    const userDefined = this.machineDestinations.filter(d => !defaultNames.has(d.name));
+    this.machineDestinations = [...freshDefaults, ...userDefined];
+  }
+  // Синхронизируем координаты участников из обновлённых данных stations
+  this.syncCoordinates();
+  // Если у водителя нет сохранённого списка — загружаем из participantOrders
+  if (this.startPoint && this.participants.length === 0) {
+    this.updateStartPoint(this.startPoint);
+  }
+  this.updateParticipantTimes();
+  this.renderParticipants();
+  this.initSortable();
+  this.calculate();
+  // Перерендерить greeting dropdown с загруженным списком
+  if (this.elements && this.elements.greetingSelect) {
+    this.elements.greetingSelect.innerHTML =
+      this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') +
+      '<option value="add-new-greeting">➕</option>';
+  }
+} catch (e) {
+  console.warn('stations.js nicht geladen:', e.message);
+  this.showToast('⚠️ stations.js nicht gefunden – Standarddaten nicht geladen');
+}
+}
+formatMinutes(minutes) {
+if (minutes < 60) {
+return `${minutes}`;
+}
+const hours = Math.floor(minutes / 60);
+const mins = minutes % 60;
+return `${hours}.${mins.toString().padStart(2, '0')}`;
+}
+getTravelTime(fromName, toName) {
+if (fromName === toName) return 0;
+const key = `${fromName}-${toName}`;
+const rev = `${toName}-${fromName}`;
+// Сначала ищем в обычных travelTimes
+if (this.travelTimes[key] !== undefined) return this.travelTimes[key];
+if (this.travelTimes[rev] !== undefined) return this.travelTimes[rev];
+// Затем в trefftravelTimes
+if (this.trefftravelTimes[key] !== undefined) return this.trefftravelTimes[key];
+if (this.trefftravelTimes[rev] !== undefined) return this.trefftravelTimes[rev];
+return 5; // fallback
+}
+updateParticipantTimes() {
+let previousPoint = this.startPoint;
+this.participants.forEach(participant => {
+if (participant.name && !participant.timeManuallyEdited) {
+participant.time = this.getTravelTime(previousPoint, participant.name);
+}
+if (participant.name) previousPoint = participant.name;
+});
+}
+syncCoordinates() {
+this.participants.forEach(p => {
+const coords = this.nameToCoordinates[p.name];
+if (coords) { p.lat = coords.lat; p.lng = coords.lng; }
+});
+const startCoords = this.nameToCoordinates[this.startPoint];
+this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+}
+profileKey(key) {
+const p = this.startPoint || '';
+return p ? `fahrzeitRechner_${p}_${key}` : `fahrzeitRechner${key.charAt(0).toUpperCase() + key.slice(1)}`;
+}
+saveData() {
+const k = (key) => this.profileKey(key);
+if (this.startPoint) localStorage.setItem('fahrzeitLastDriver', this.startPoint);
+localStorage.setItem(k('greeting'), this.greeting);
+localStorage.setItem(k('greetings'), JSON.stringify(this.greetings));
+localStorage.setItem(k('participants'), JSON.stringify(this.participants));
+localStorage.setItem(k('machineStop'), JSON.stringify(this.machineStop));
+localStorage.setItem(k('machineDestinations'), JSON.stringify(this.machineDestinations));
+localStorage.setItem(k('nameToCoordinates'), JSON.stringify(this.nameToCoordinates));
+localStorage.setItem(k('startPoint'), this.startPoint);
+localStorage.setItem(k('useUhrBei'), this.useUhrBei);
+localStorage.setItem(k('startPassengers'), JSON.stringify(this.startPointPassengers));
+localStorage.setItem(k('farewell'), this.farewell);
+localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
+localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
+localStorage.setItem(k('showDestName'), this.showDestName);
+}
+resetToDefaults() {
+this.greeting = this.defaultGreetings[0] || 'Moin zusammen';
+this.greetings = this.defaultGreetings.length ? [...this.defaultGreetings] : ['Moin zusammen'];
+this.startPoint = '';
+this.startPointCoords = { lat: null, lng: null };
+this.participants = [];
+this.nameToCoordinates = { ...this.defaultCoordinates };
+this.machineStop = { name: (this.machineDestinations[0] || {}).name || "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
+// НЕ сбрасываем machineDestinations — список загружен из stations.js
+this.useUhrBei = false;
+this.useSuperscriptTime = false;
+this.showDestName = false;
+this.startPointPassengers = [];
+this.farewell = this.defaultFarewellText || 'Tschüss 👋';
+this.saveData();
+}
+clearLocalStorage() {
+['greeting','greetings','participants','machineStop','machineDestinations',
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','startPassengers','farewell','farewells']
+.forEach(k => localStorage.removeItem(this.profileKey(k)));
+this.showToast("Daten zurückgesetzt.");
+this.resetToDefaults();
+this.elements.output.innerHTML = '';
+this.renderParticipants();
+this.initSortable();
+}
+loadData() {
+try {
+// Сначала восстанавливаем последнего водителя чтобы profileKey работал правильно
+const lastDriver = localStorage.getItem('fahrzeitLastDriver') || '';
+if (lastDriver) this.startPoint = lastDriver;
+
+const k = (key) => this.profileKey(key);
+const saved = {
+greeting: localStorage.getItem(k('greeting')),
+greetings: localStorage.getItem(k('greetings')),
+participants: localStorage.getItem(k('participants')),
+machineStop: localStorage.getItem(k('machineStop')),
+machineDestinations: localStorage.getItem(k('machineDestinations')),
+nameToCoordinates: localStorage.getItem(k('nameToCoordinates')),
+startPoint: localStorage.getItem(k('startPoint')),
+useUhrBei: localStorage.getItem(k('useUhrBei')),
+useSuperscript: localStorage.getItem(k('useSuperscript')),
+showDestName: localStorage.getItem(k('showDestName')),
+startPassengers: localStorage.getItem(k('startPassengers')),
+farewell: localStorage.getItem(k('farewell')),
+farewells: localStorage.getItem(k('farewells'))
+};
+if (saved.greeting) this.greeting = saved.greeting;
+if (saved.greetings) try { this.greetings = JSON.parse(saved.greetings); } catch { this.greetings = [...this.defaultGreetings]; }
+if (saved.participants) try { this.participants = JSON.parse(saved.participants).map(p => ({ ...p, timeManuallyEdited: p.timeManuallyEdited || false, subParticipants: p.subParticipants || [], isTreffpunkt: p.isTreffpunkt || false, treffpunktPersons: p.treffpunktPersons || [] })); } catch { this.participants = []; }
+if (saved.machineStop) try { this.machineStop = JSON.parse(saved.machineStop); } catch { this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null }; }
+if (saved.machineDestinations) try {
+  const parsed = JSON.parse(saved.machineDestinations);
+  const fromStorage = parsed.map(d =>
+    typeof d === 'string' ? { name: d, lat: null, lng: null } : d
+  );
+  // Пользовательские добавленные — сохраняем. Дефолты придут из loadStations()
+  const currentDefaults = this.machineDestinations;
+  const defaultNames = new Set(currentDefaults.map(d => d.name));
+  const userDefined = fromStorage.filter(d => !defaultNames.has(d.name));
+  this.machineDestinations = [...currentDefaults, ...userDefined];
+} catch { /* use default */ }
+if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
+if (saved.startPoint) {
+this.startPoint = saved.startPoint;
+const startCoords = this.nameToCoordinates[this.startPoint];
+this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+}
+if (saved.useUhrBei !== null) this.useUhrBei = saved.useUhrBei === 'true';
+if (saved.startPassengers) try { this.startPointPassengers = JSON.parse(saved.startPassengers); } catch { this.startPointPassengers = []; }
+if (saved.farewell) this.farewell = saved.farewell;
+if (saved.farewells) try { this.farewells = JSON.parse(saved.farewells); } catch {}
+if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
+if (saved.showDestName !== null) this.showDestName = saved.showDestName === 'true';
+} catch {
+this.resetToDefaults();
+}
+// НЕ вызываем updateStartPoint — он перезапишет participants из participantOrders
+// Просто синхронизируем координаты из nameToCoordinates
+this.syncCoordinates();
+}
+addEventListeners() {
+this.elements.greetingSelect.addEventListener('change', e => {
+if (e.target.value === 'add-new-greeting') { this.openGreetingModal(true); e.target.value = this.greeting; }
+else { this.greeting = e.target.value; this.saveData(); this.calculate(); }
+});
+this.elements.editGreetingButton.addEventListener('click', () => this.openGreetingModal(false));
+this.elements.startPointSelect.addEventListener('change', e => this.updateStartPoint(e.target.value));
+this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
+const addStartPassengerBtn = document.getElementById('addStartPassengerBtn');
+if (addStartPassengerBtn) {
+  addStartPassengerBtn.addEventListener('click', () => this.openStartPassengerModal());
+}
+this.elements.addButton.addEventListener('click', () => { this.addParticipant(); });
+this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
+this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
+this.elements.copyButton.addEventListener('click', () => this.copyResult());
+this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage());
+this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
+this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
+this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
+this.elements.saveGreetingButton.addEventListener('click', () => this.saveCoordinates());
+this.elements.cancelGreetingButton.addEventListener('click', () => this.closeModal());
+this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
+this.elements.openMapPickerButton.addEventListener('click', () => this.openMapPicker());
+// Add-type modal handlers
+const addTypeModal = document.getElementById('addTypeModal');
+const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
+const addTypeConfirmBtn = document.getElementById('addTypeConfirmBtn');
+const closeAddTypeModal = () => {
+addTypeModal.classList.remove('show');
+const row = document.getElementById('newKollegeRow');
+const inp = document.getElementById('newKollegeName');
+if (row) row.classList.remove('visible');
+if (inp) inp.value = '';
+// Восстановить обе секции и заголовок
+document.getElementById('treffSection').style.display = '';
+document.getElementById('kollegeSection').style.display = '';
+const title = addTypeModal.querySelector('.add-type-modal-title');
+if (title) title.textContent = '➕ Teilnehmer hinzufügen';
+};
+if (addTypeModal && addTypeCancelBtn) {
+addTypeCancelBtn.addEventListener('click', closeAddTypeModal);
+addTypeModal.addEventListener('click', (e) => {
+if (e.target === addTypeModal) closeAddTypeModal();
+});
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && addTypeModal.classList.contains('show')) closeAddTypeModal();
+});
+}
+// Sub-participant modal handlers
+const subModal = document.getElementById('subModal');
+const subCancelBtn = document.getElementById('subCancelBtn');
+const subAddBtn = null;
+const closeSubModal = () => {
+subModal.classList.remove('show');
+const row = document.getElementById('newSubNameRow');
+const inp = document.getElementById('newSubName');
+if (row) row.classList.remove('visible');
+if (inp) inp.value = '';
+const sel = document.getElementById('subParticipantSelect');
+if (sel) sel.value = '';
+};
+if (subModal && subCancelBtn) {
+subCancelBtn.addEventListener('click', closeSubModal);
+subModal.addEventListener('click', (e) => {
+if (e.target === subModal) closeSubModal();
+});
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && subModal.classList.contains('show')) closeSubModal();
+});
+}
+// --- УДАЛЕНЫ ОБРАБОТЧИКИ ДЛЯ open-map-direct и open-map-return ---
+}
+updateStartPoint(value) {
+// Загружаем попутчиков стартовой точки из stations.js
+const defaultSP = (this.defaultStartPassengers || {})[value] || [];
+this.startPointPassengers = [...defaultSP];
+if (value === 'add-new') {
+this.openCoordsModal(null, false, true, true);
+} else {
+this.startPoint = value;
+// Загружаем machineStop из профиля нового водителя
+const savedMachine = localStorage.getItem(`fahrzeitRechner_${value}_machineStop`);
+if (savedMachine) {
+  try { this.machineStop = JSON.parse(savedMachine); } catch {}
+} else {
+  // Нет сохранённого — берём первую конечную точку из списка
+  const firstDest = this.machineDestinations[0];
+  this.machineStop = { name: firstDest ? firstDest.name : 'an der Maschine', time: 20, arrivalTime: '', lat: firstDest?.lat || null, lng: firstDest?.lng || null, autoCalculated: false };
+}
+// Загружаем machineDestinations профиля нового водителя (пользовательские добавленные)
+try {
+  const savedDests = localStorage.getItem(`fahrzeitRechner_${value}_machineDestinations`);
+  if (savedDests) {
+    const fromStorage = JSON.parse(savedDests).map(d => typeof d === 'string' ? { name: d, lat: null, lng: null } : d);
+    const defaultNames = new Set(this.machineDestinations.map(d => d.name));
+    const userDefined = fromStorage.filter(d => !defaultNames.has(d.name));
+    if (userDefined.length) this.machineDestinations = [...this.machineDestinations, ...userDefined];
+  }
+} catch {}
+const startCoords = this.nameToCoordinates[value];
+this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+const order = this.participantOrders[value] || [];
+// Строим плоский список имён для расчёта времени
+const flatNames = order.map(item => {
+  if (typeof item === 'string') return item;
+  if (item?.treffpunkt) return item.treffpunkt;
+  return item.main;
+});
+this.participants = order.map((item, idx) => {
+const prev = idx === 0 ? this.startPoint : flatNames[idx - 1];
+// Элемент Treffpunkt — место встречи с ожидающими
+if (item?.treffpunkt) {
+  const treffName = item.treffpunkt;
+  const coords = this.treffpunkt[treffName] || { lat: null, lng: null };
+  const treffTime = this.trefftravelTimes?.[`${treffName}-${value}`] ?? this.getTravelTime(prev, treffName);
+  return {
+    name: treffName,
+    time: treffTime,
+    lat: coords.lat,
+    lng: coords.lng,
+    timeManuallyEdited: false,
+    isTreffpunkt: true,
+    subParticipants: [],
+    treffpunktPersons: item.persons || []
+  };
+}
+// Обычный участник или группа
+const name = typeof item === 'string' ? item : item.main;
+const subs = item?.subParticipants || [];
+const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
+return {
+name,
+time: this.getTravelTime(prev, name),
+lat: coords.lat,
+lng: coords.lng,
+timeManuallyEdited: false,
+isTreffpunkt: false,
+subParticipants: subs,
+treffpunktPersons: []
+};
+});
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+}
+// Возвращает Set всех занятых имён (исключая optionalExclude)
+getAllUsedNames(optionalExclude = null) {
+  const used = new Set();
+  if (this.startPoint) used.add(this.startPoint);
+  (this.startPointPassengers || []).forEach(n => { if (n !== optionalExclude) used.add(n); });
+  this.participants.forEach(p => {
+    if (p.name && p.name !== optionalExclude) used.add(p.name);
+    (p.subParticipants || []).forEach(n => { if (n !== optionalExclude) used.add(n); });
+    (p.treffpunktPersons || []).forEach(n => { if (n !== optionalExclude) used.add(n); });
+  });
+  return used;
+}
+renderParticipants() {
+const container = this.elements.participantsContainer;
+container.innerHTML = '';
+this.elements.greetingSelect.innerHTML = this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') + '<option value="add-new-greeting">➕</option>';
+const nameOptions = Object.keys(this.nameToCoordinates).map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`).join('');
+this.elements.startPointSelect.innerHTML = `
+<option value="" ${!this.startPoint ? 'selected' : ''}>Startpunkt wählen</option>
+${nameOptions}
+<option value="add-new">➕ Neuen Namen hinzufügen</option>
+`;
+const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+const hasCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#999" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#999" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#999" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#999" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#999" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? hasCoordsSvg : noCoordsSvg;
+
+// Рендерим субучастников начальной точки (попутчики)
+const startPassengersContainer = document.getElementById('startPassengersContainer');
+if (startPassengersContainer) {
+  startPassengersContainer.innerHTML = '';
+  (this.startPointPassengers || []).forEach((passengerName, idx) => {
+    const usedNames = this.getAllUsedNames(passengerName);
+    const opts = Object.keys(this.nameToCoordinates)
+      .filter(n => n !== this.startPoint && (!usedNames.has(n) || n === passengerName))
+      .sort()
+      .map(n => `<option value="${n}" ${n === passengerName ? 'selected' : ''}>${n}</option>`)
+      .join('');
+    const subDiv = document.createElement('div');
+    subDiv.className = 'sub-participant';
+    subDiv.innerHTML = `
+      <span class="drag-handle-sub">⋮⋮</span>
+      <select data-sp-index="${idx}" aria-label="Mitfahrer">
+        ${opts}
+        <option value="add-new">➕ Neue Person…</option>
+      </select>
+      <button class="remove-sub-btn" data-sp-index="${idx}" aria-label="Löschen"></button>
+    `;
+    subDiv.querySelector('select').addEventListener('change', e => {
+      if (e.target.value === 'add-new') {
+        e.target.value = passengerName;
+        this.openCoordsModal(null, false, false, false, false, false, true);
+        this.currentMainParticipantIndex = -1; // признак: добавляем к startPoint
+      } else {
+        this.startPointPassengers[idx] = e.target.value;
+        this.saveData();
+        this.calculate();
+      }
+    });
+    subDiv.querySelector('.remove-sub-btn').addEventListener('click', () => {
+      this.startPointPassengers.splice(idx, 1);
+      this.saveData();
+      this.renderParticipants();
+      this.initSortable();
+      this.calculate();
+    });
+    startPassengersContainer.appendChild(subDiv);
+  });
+}
+const validNames = this.participants.map(p => p.name).filter(n => n);
+if (this.startPoint && validNames.includes(this.startPoint)) {
+this.showToast(`Startpunkt "${this.startPoint}" darf nicht mit einem Teilnehmernamen übereinstimmen.`);
+this.startPoint = ''; this.startPointCoords = { lat: null, lng: null };
+this.participants = []; this.saveData();
+}
+this.participants.forEach((p, i) => {
+// Создаем группу для основного участника и его субучастников
+const groupDiv = document.createElement('div');
+groupDiv.className = 'participant-group';
+groupDiv.setAttribute('data-index', i);
+// Основной участник
+const div = document.createElement('div');
+div.className = 'participant main-participant' + (p.isTreffpunkt ? ' has-treffpunkt' : '');
+div.setAttribute('data-index', i);
+
+if (p.isTreffpunkt) {
+// ===== Рендер Treffpunkt-участника =====
+const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+div.innerHTML = `
+<select data-index="${i}" data-type="participant-name" aria-label="Treffpunkt">
+<option value="${p.name}" selected>📍 ${p.name}</option>
+${Object.keys(this.treffpunkt).filter(n => n !== p.name).map(n => `<option value="${n}">📍 ${n}</option>`).join('')}
+</select>
+<button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Redaktieren">${coordsSvg}</button>
+<div class="time-display" data-index="${i}" data-type="participant-time-display" title="Tippen zum Ändern">
+${this.formatMinutes(p.time)}
+</div>
+<button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
+  ${p.routeCalculated ? coloredMapSvg : grayMapSvg}
+</button>
+<button class="add-sub-btn" data-index="${i}" title="Person hinzufügen" style="background:#28a745;">+</button>
+<div class="right-section">
+<span class="material-symbols-outlined" aria-label="Verschieben">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+</span>
+<button class="remove-btn" data-index="${i}" aria-label="Löschen"></button>
+</div>
+`;
+groupDiv.appendChild(div);
+
+// Показываем людей на Treffpunkt как субучастников
+if (p.treffpunktPersons && p.treffpunktPersons.length > 0) {
+p.treffpunktPersons.forEach((personName, personIdx) => {
+const subDiv = document.createElement('div');
+subDiv.className = 'sub-participant';
+subDiv.setAttribute('data-main-index', i);
+subDiv.setAttribute('data-sub-index', personIdx);
+
+const usedInTreff = this.getAllUsedNames(personName);
+const personOptions = Object.keys(this.nameToCoordinates)
+.filter(n => !usedInTreff.has(n) || n === personName)
+.sort()
+.map(n => `<option value="${n}" ${n === personName ? 'selected' : ''}>${n}</option>`)
+.join('');
+
+subDiv.innerHTML = `
+<span class="drag-handle-sub">⋮⋮</span>
+<select data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" aria-label="Person am Treffpunkt">
+${personOptions}
+</select>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Löschen"></button>
+`;
+groupDiv.appendChild(subDiv);
+});
+}
+
+} else {
+// ===== Рендер обычного участника (оригинальный код) =====
+const usedForMain = this.getAllUsedNames(p.name);
+const participantNameOptions = Object.keys(this.nameToCoordinates)
+.filter(n => n !== this.startPoint && (!usedForMain.has(n) || n === p.name))
+.map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join('');
+const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+const participantCalcIcon = p.routeCalculated ? coloredMapSvg : grayMapSvg;
+div.innerHTML = `
+<select data-index="${i}" data-type="participant-name" aria-label="Teilnehmername">
+<option value="" ${!p.name ? 'selected' : ''}>Name wählen</option>
+${participantNameOptions}
+<option value="add-new">➕ Neuen Namen hinzufügen</option>
+</select>
+<button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten">${coordsSvg}</button>
+<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}" data-index="${i}" data-type="participant-time-display" title="Tippen zum Ändern">
+${this.formatMinutes(p.time)}
+</div>
+<button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
+  ${participantCalcIcon}
+</button>
+<button class="add-sub-btn" data-index="${i}" title="Mitfahrer hinzufügen">+</button>
+<div class="right-section">
+<span class="material-symbols-outlined" aria-label="Teilnehmer verschieben">
+<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+</span>
+<button class="remove-btn" data-index="${i}" aria-label="Teilnehmer löschen"></button>
+</div>
+`;
+groupDiv.appendChild(div);
+// Дополнительные участники (subParticipants)
+if (p.subParticipants && p.subParticipants.length > 0) {
+p.subParticipants.forEach((subName, subIdx) => {
+const subDiv = document.createElement('div');
+subDiv.className = 'sub-participant';
+subDiv.setAttribute('data-main-index', i);
+subDiv.setAttribute('data-sub-index', subIdx);
+const usedInSub = this.getAllUsedNames(subName);
+const subNameOptions = Object.keys(this.nameToCoordinates)
+.filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === subName))
+.sort()
+.map(n => `<option value="${n}" ${subName === n ? 'selected' : ''}>${n}</option>`).join('');
+subDiv.innerHTML = `
+<span class="drag-handle-sub">⋮⋮</span>
+<select data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" aria-label="Mitfahrer">
+${subNameOptions}
+<option value="add-new">➕ Neuen Namen hinzufügen</option>
+</select>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Löschen"></button>
+`;
+groupDiv.appendChild(subDiv);
+});
+}
+}
+
+container.appendChild(groupDiv);
+// Event listeners для основного участника
+div.querySelector('[data-type="participant-name"]').addEventListener('change', e => {
+if (p.isTreffpunkt) this.updateTreffpunktName(i, e.target.value);
+else this.updateName(i, e.target.value);
+});
+const timeDisplay = div.querySelector('[data-type="participant-time-display"]');
+if (timeDisplay) {
+timeDisplay.addEventListener('click', () => this.editParticipantTime(i, timeDisplay));
+}
+div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
+const calcRouteBtn = div.querySelector('[data-type="calc-route-participant"]');
+if (calcRouteBtn) calcRouteBtn.addEventListener('click', () => this.calculateTravelTimeForParticipant(i));
+div.querySelector('.add-sub-btn').addEventListener('click', () => {
+if (p.isTreffpunkt) this.openTreffpunktPersonModal(i);
+else this.openSubParticipantModal(i);
+});
+div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
+// Event listeners для субучастников / treffpunkt persons
+groupDiv.querySelectorAll('[data-type="sub-name"]').forEach(select => {
+select.addEventListener('change', (e) => {
+const mainIdx = parseInt(e.target.dataset.mainIndex);
+const subIdx = parseInt(e.target.dataset.subIndex);
+if (e.target.value === 'add-new') {
+this.currentMainParticipantIndex = mainIdx;
+this.currentSubParticipantIndex = subIdx;
+this.isAddingSubName = true;
+this.openCoordsModal(null, false, true);
+} else {
+this.updateSubParticipant(mainIdx, subIdx, e.target.value);
+}
+});
+});
+groupDiv.querySelectorAll('[data-type="treff-person-name"]').forEach(select => {
+select.addEventListener('change', (e) => {
+const mainIdx = parseInt(e.target.dataset.mainIndex);
+const personIdx = parseInt(e.target.dataset.subIndex);
+this.updateTreffpunktPerson(mainIdx, personIdx, e.target.value);
+});
+});
+groupDiv.querySelectorAll('.remove-sub-btn').forEach(btn => {
+btn.addEventListener('click', () => {
+const mainIdx = parseInt(btn.dataset.mainIndex);
+const subIdx = parseInt(btn.dataset.subIndex);
+if (this.participants[mainIdx].isTreffpunkt) {
+this.removeTreffpunktPerson(mainIdx, subIdx);
+} else {
+this.removeSubParticipant(mainIdx, subIdx);
+}
+});
+});
+});
+const machineDiv = document.createElement('div');
+machineDiv.className = 'participant machine';
+const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
+// SVG иконки для расчета времени в пути
+const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
+// Строим опции для select пункта назначения
+const destOptions = this.machineDestinations.map(d =>
+  `<option value="${d.name.replace(/"/g, '&quot;')}" ${this.machineStop.name === d.name ? 'selected' : ''}>${d.name}</option>`
+).join('');
+const isCustom = !this.machineDestinations.some(d => d.name === this.machineStop.name);
+machineDiv.innerHTML = `
+<select data-type="machine-name" aria-label="Zielort">
+  ${destOptions}
+  ${isCustom ? `<option value="${this.machineStop.name.replace(/"/g, '&quot;')}" selected>${this.machineStop.name}</option>` : ''}
+  <option value="__add_new__">➕ Ziel hinzufügen…</option>
+</select>
+<button class="coords-icon" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten">${machineCoordsSvg}</button>
+<div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Tippen zum Ändern">
+${this.formatMinutes(this.machineStop.time)}
+</div>
+<button class="calc-route-icon" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Teilnehmer">
+  ${calcIcon}
+</button>
+<div class="right-section">
+${this.machineStop.arrivalTime
+? `<div class="arrival-time" tabindex="0" role="button" aria-label="Ankunftszeit ändern">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Ankunftszeit löschen"></button>`
+: '<button class="time-icon" aria-label="Ankunftszeit festlegen">🕒</button>'
+}
+</div>
+`;
+container.appendChild(machineDiv);
+const machineNameSel = machineDiv.querySelector('[data-type="machine-name"]');
+
+machineNameSel.addEventListener('change', e => {
+  const val = e.target.value;
+  if (val === '__add_new__') {
+    // Сбрасываем select обратно на текущее значение — модалка сама сохранит
+    machineNameSel.value = this.machineStop.name.replace(/"/g, '&quot;');
+    this.openCoordsModal(null, false, false, false, true); // isAddingNewDestination
+  } else {
+    // Подставляем координаты если есть
+    const dest = this.machineDestinations.find(d => d.name === val);
+    if (dest && dest.lat && dest.lng) {
+      this.machineStop.lat = dest.lat;
+      this.machineStop.lng = dest.lng;
+      this.machineStop.autoCalculated = false;
+    } else if (dest) {
+      this.machineStop.lat = null;
+      this.machineStop.lng = null;
+    }
+    this.updateMachineName(val);
+    this.renderParticipants();
+  }
+});
+
+const machineTimeDisplay = machineDiv.querySelector('[data-type="machine-time-display"]');
+if (machineTimeDisplay) {
+machineTimeDisplay.addEventListener('click', () => this.editMachineTime(machineTimeDisplay));
+}
+machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
+machineDiv.querySelector('[data-type="calc-route"]').addEventListener('click', () => this.calculateTravelTimeToMachine());
+// Карточка прощания с select и чекбоксами
+const farewellDiv = document.createElement('div');
+farewellDiv.className = 'participant machine';
+farewellDiv.style.cssText = 'display:flex;align-items:center;gap:var(--spacing-unit, 10px);flex-wrap:nowrap;';
+const farewellOptions = this.farewells.map(f =>
+  `<option value="${f.replace(/"/g,'&quot;')}" ${this.farewell === f ? 'selected' : ''}>${f}</option>`
+).join('') + '<option value="__add_new_farewell__">➕ Hinzufügen…</option>';
+farewellDiv.innerHTML = `
+<select id="farewellSelect" style="flex:1;min-width:0;">${farewellOptions}</select>
+<button id="editFarewellBtn" title="Abschied bearbeiten" style="flex-shrink:0;width:24px;height:24px;background:transparent;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transform:translateY(-5px);color:var(--text);">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
+  <path d="M46.193 6.863a7.48 7.48 0 0 0-4.717 2.13L15.434 38.771S15.213 39.215 13.725 46.12c-.28-.074-.44-.204-.74-.267a1 1 0 0 0-.41 1.957c.305.064.452.186.73.262L11.799 55.045a1 1 0 0 0 1.38 1.125L20.553 52.9a1 1 0 0 0 .552-1.21s-.398-1.223-1.601-2.494c-.81-.855-2.192-1.688-3.883-2.404L17.113 39.9c.259-.3 20.274-23.473 25.815-29.52C47.764 5.267 55.893 14.152 52.834 17.424l-.022.023S33.986 38.92 27.871 46.266c-.79-1.355-1.806-2.557-2.826-3.433-.864-.742-1.162-.886-1.641-1.201L45.92 16.09a1 1 0 0 0-1.5-1.323L21.186 41.125a1 1 0 0 0 .24 1.521s1.084.645 2.316 1.703c1.232 1.058 2.549 2.529 3.022 3.945a1 1 0 0 0 1.722.317C33.662 42.3 54.262 18.827 54.295 18.79c3.881-4.151-1.668-11.392-7.387-11.9a7.55 7.55 0 0 0-1.715-.027zM15.203 48.752l1.035-4.795-4.527 1.998 4.492 2.797z"
+  stroke="currentColor" stroke-width="2" fill="currentColor" />
+  </svg>
+</button>
+<div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;padding-right:4px;font-size:0.8em;">
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
+    <input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei
+  </label>
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
+    <input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²
+  </label>
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
+    <input type="checkbox" id="showDestName" ${this.showDestName ? 'checked' : ''}> (...)
+  </label>
+</div>
+`;
+container.appendChild(farewellDiv);
+// Обработчик select прощания
+const farewellSelect = farewellDiv.querySelector('#farewellSelect');
+farewellSelect.addEventListener('change', () => {
+  if (farewellSelect.value === '__add_new_farewell__') {
+    farewellSelect.value = this.farewell;
+    this.openFarewellModal(true);
+  } else {
+    this.farewell = farewellSelect.value;
+    this.saveData();
+    this.calculate();
+  }
+});
+// Карандаш — открывает модалку редактирования как у приветствия
+const editFarewellBtn = farewellDiv.querySelector('#editFarewellBtn');
+editFarewellBtn.addEventListener('click', () => this.openFarewellModal());
+// Обработчики чекбоксов
+const uhrBeiCheckbox = farewellDiv.querySelector('#useUhrBei');
+uhrBeiCheckbox.addEventListener('change', () => {
+  this.useUhrBei = uhrBeiCheckbox.checked;
+  this.saveData();
+  this.calculate();
+});
+const superscriptCheckbox = farewellDiv.querySelector('#useSuperscriptTime');
+superscriptCheckbox.addEventListener('change', () => {
+  this.useSuperscriptTime = superscriptCheckbox.checked;
+  this.saveData();
+  this.calculate();
+});
+const showDestNameCb = farewellDiv.querySelector('#showDestName');
+showDestNameCb.addEventListener('change', () => {
+  this.showDestName = showDestNameCb.checked;
+  this.saveData();
+  this.calculate();
+});
+const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
+timeControl.addEventListener('click', () => this.startTimeEdit());
+timeControl.addEventListener('keydown', (e) => {
+if (e.key === 'Enter' || e.key === ' ') {
+e.preventDefault();
+this.startTimeEdit();
+}
+});
+const timeRemoveBtn = machineDiv.querySelector('.time-remove');
+if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
+this.saveData();
+if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this.updateHints(); }
+}
+async parseCoordinates(raw) {
+const s = raw.trim();
+if (!s) { this.showToast("Bitte Daten eingeben."); return null; }
+// 1. Прямые координаты lat,lng — парсим локально без сервера
+const localMatch = s.match(/^(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)$/);
+if (localMatch) {
+  const lat = parseFloat(localMatch[1]), lng = parseFloat(localMatch[2]);
+  if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
+}
+// 2. Координаты прямо в URL maps.google.com (@lat,lng или !3d!4d)
+if (/^https?:\/\//i.test(s)) {
+  const fromUrl = this._parseCoordsFromUrl(s);
+  if (fromUrl) return fromUrl;
+}
+// 3. Сокращённые ссылки — через Vercel API
+try {
+this.showToast("🔄 Koordinaten werden ermittelt…");
+const resp = await fetch('https://fahrzeit.vercel.app/api/parse-coords?input=' + encodeURIComponent(s));
+if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
+const d = await resp.json();
+if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
+this.showToast(d.error || "Koordinaten nicht erkannt.");
+return null;
+} catch(e) {
+this.showToast("Fehler: " + e.message);
+return null;
+}
+}
+_parseCoordsFromUrl(url) {
+  const check = (lat, lng) => (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
+  let m;
+  m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  m = url.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  return null;
+}
+openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false, isAddingNewDestination = false, isAddingNewKollege = false, isAddingNewSubPerson = false) {
+this.currentEditIndex = index;
+this.isEditingMachine = isMachine;
+this.isAddingNewName = isAddingNewName;
+this.isEditingStartPoint = isEditingStartPoint;
+this.isAddingNewDestination = isAddingNewDestination;
+this.isAddingNewKollege = isAddingNewKollege;
+this.isAddingNewSubPerson = isAddingNewSubPerson;
+this.isAddingNewGreeting = false;
+this.isEditingGreeting = false;
+if (!isAddingNewName) this.isAddingSubName = false;
+const modal = this.elements.coordsModal;
+const modalContent = this.elements.modalContent;
+const coordsInput = this.elements.coordsInput;
+const coordsLabel = this.elements.coordsLabel;
+const coordsHelp = this.elements.coordsHelp;
+const nameInput = this.elements.nameInput;
+const nameLabel = this.elements.nameLabel;
+const greetingInput = this.elements.greetingInput;
+const greetingLabel = this.elements.greetingLabel;
+const modalTitle = this.elements.modalTitle;
+const openMapButton = this.elements.openMapButton;
+const openMapPickerButton = this.elements.openMapPickerButton;
+const deleteGreetingButton = this.elements.deleteGreetingButton;
+modalContent.classList.toggle('add-new-name', isAddingNewName || isAddingNewKollege || isAddingNewSubPerson);
+modalTitle.textContent = isAddingNewDestination ? 'Neuer Zielort' :
+isAddingNewKollege ? 'Neuer Kollege' :
+isAddingNewSubPerson ? 'Neue Person' :
+isAddingNewName ? 'Neuen Namen hinzufügen' :
+isEditingStartPoint ? 'Startpunkt-Koordinaten bearbeiten' :
+isMachine ? 'Maschinenkoordinaten bearbeiten' : 'Koordinaten bearbeiten';
+[nameLabel, nameInput, greetingLabel, greetingInput, deleteGreetingButton].forEach(el => el.style.display = 'none');
+this.elements.greetingBtnsRow.style.display = 'none';
+[coordsLabel, coordsHelp, coordsInput, this.elements.mapBtnsRow].forEach(el => el.style.display = 'block');
+this.elements.mapBtnsRow.style.display = 'flex';
+// выбор станций
+const stSel = document.getElementById('stationSelect');
+if (isMachine) {
+stSel.style.display = 'block';
+stSel.innerHTML = '<option value="">– Aus Liste wählen –</option>' +
+Object.entries(this.stations)
+.map(([name,c]) => `<option value="${c.lat},${c.lng}">${name}</option>`)
+.join('');
+/* ➜ подсветить ранее сохранённую станцию */
+const saved = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
+stSel.value = saved && [...stSel.options].some(o => o.value === saved) ? saved : '';
+stSel.onchange = () => {
+this.elements.coordsInput.value = stSel.value;
+const selOpt = stSel.options[stSel.selectedIndex];
+this.machineStop.stationName = selOpt && selOpt.value ? selOpt.textContent.trim() : '';
+};
+} else {
+stSel.style.display = 'none';
+}
+if (isAddingNewDestination || isAddingNewName || isAddingNewKollege || isAddingNewSubPerson) {
+nameLabel.style.display = 'block';
+nameInput.style.display = 'block';
+nameInput.value = '';
+coordsInput.value = '';
+} else if (isEditingStartPoint) {
+coordsInput.value = this.startPointCoords.lat && this.startPointCoords.lng ? `${this.startPointCoords.lat},${this.startPointCoords.lng}` : '';
+} else if (isMachine) {
+coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
+} else {
+const participant = this.participants[index];
+coordsInput.value = participant.lat && participant.lng ? `${parseFloat(participant.lat.toFixed(6))},${parseFloat(participant.lng.toFixed(6))}` : '';
+}
+modal.style.display = 'flex';
+// Автофокус только при hinzugefügtии нового имени —
+// иначе на мобильном сразу выскакивает клавиатура
+if (isAddingNewName || isAddingNewKollege || isAddingNewSubPerson) {
+nameInput.focus();
+}
+}
+openGreetingModal(isAddingNewGreeting) {
+this.isAddingNewGreeting = isAddingNewGreeting;
+this.isEditingGreeting = !isAddingNewGreeting;
+this.isAddingNewName = false;
+this.isEditingMachine = false;
+this.isEditingStartPoint = false;
+const modal = this.elements.coordsModal;
+const modalContent = this.elements.modalContent;
+modalContent.classList.remove('add-new-name');
+this.elements.modalTitle.textContent = isAddingNewGreeting ? 'Neue Begrüßung hinzufügen' : 'Begrüßung bearbeiten';
+['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
+document.getElementById('stationSelect').style.display = 'none';
+this.elements.greetingLabel.style.display = 'block';
+this.elements.greetingInput.style.display = 'block';
+this.elements.greetingInput.value = isAddingNewGreeting ? '' : this.greeting;
+this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
+this.elements.greetingBtnsRow.style.display = 'flex';
+modal.style.display = 'flex';
+this.elements.greetingInput.focus();
+}
+openFarewellModal(isAdding = false) {
+this.isAddingNewGreeting = false;
+this.isEditingGreeting = false;
+this.isEditingFarewell = !isAdding;
+this.isAddingNewFarewell = isAdding;
+this.isAddingNewName = false;
+this.isEditingMachine = false;
+this.isEditingStartPoint = false;
+const modal = this.elements.coordsModal;
+const modalContent = this.elements.modalContent;
+modalContent.classList.remove('add-new-name');
+this.elements.modalTitle.textContent = isAdding ? 'Neues Abschied hinzufügen' : 'Abschied bearbeiten';
+['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
+document.getElementById('stationSelect').style.display = 'none';
+this.elements.greetingLabel.style.display = 'block';
+this.elements.greetingInput.style.display = 'block';
+this.elements.greetingInput.value = isAdding ? '' : this.farewell;
+this.elements.deleteGreetingButton.style.display = (!isAdding && this.farewells.length > 1) ? 'inline-block' : 'none';
+this.elements.greetingBtnsRow.style.display = 'flex';
+modal.style.display = 'flex';
+this.elements.greetingInput.focus();
+}
+async saveCoordinates() {
+const saveButton = this.elements.saveCoordsButton;
+try {
+if (this.isEditingFarewell || this.isAddingNewFarewell) {
+const newFarewell = this.elements.greetingInput.value.trim();
+if (!newFarewell) { this.showToast("Abschied eingeben."); return; }
+if (this.isAddingNewFarewell) {
+  if (this.farewells.includes(newFarewell)) { this.showToast("Bereits vorhanden."); return; }
+  this.farewells.push(newFarewell);
+  this.farewell = newFarewell;
+} else {
+  const idx = this.farewells.indexOf(this.farewell);
+  if (idx !== -1) this.farewells[idx] = newFarewell;
+  this.farewell = newFarewell;
+}
+this.isEditingFarewell = false;
+this.isAddingNewFarewell = false;
+this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+} else if (this.isAddingNewGreeting || this.isEditingGreeting) {
+const newGreeting = this.elements.greetingInput.value.trim();
+if (!newGreeting) { this.showToast("Begrüßung eingeben."); return; }
+if (this.isAddingNewGreeting && this.greetings.includes(newGreeting)) { this.showToast("Begrüßung existiert bereits."); return; }
+if (this.isEditingGreeting) {
+const old = this.greeting;
+const idx = this.greetings.indexOf(old);
+if (idx !== -1 && !this.defaultGreetings.includes(old)) this.greetings[idx] = newGreeting;
+this.greeting = newGreeting;
+} else if (this.isAddingNewGreeting) {
+this.greetings.push(newGreeting);
+this.greeting = newGreeting;
+}
+this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+} else {
+const raw = this.elements.coordsInput.value.trim();
+let coords = null;
+if (raw) {                                  // пользователь что-то ввёл
+coords = await this.parseCoordinates(raw);
+if (!coords) return;                    // только требуем корректность
+}
+// если raw пуст – coords остаётся null, продолжаем сохранять
+if (this.isAddingNewKollege || this.isAddingNewSubPerson) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('⚠️ Bitte einen Namen eingeben'); return; }
+if (this.nameToCoordinates[name]) { this.showToast(`⚠️ "${name}" existiert bereits`); return; }
+this.nameToCoordinates[name] = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
+if (this.isAddingNewKollege) {
+  this.participants.push({ name, time: 5, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, timeManuallyEdited: false, isTreffpunkt: false, subParticipants: [], treffpunktPersons: [] });
+  document.getElementById('addTypeModal').classList.remove('show');
+} else {
+  // isAddingNewSubPerson — добавляем как субучастника, treffpunktPerson или попутчика старта
+  const mainIndex = this.currentMainParticipantIndex;
+  if (mainIndex === -1) {
+    // попутчик начальной точки
+    if (!this.startPointPassengers) this.startPointPassengers = [];
+    this.startPointPassengers.push(name);
+  } else {
+    const mainP = this.participants[mainIndex];
+    if (mainP.isTreffpunkt) {
+      if (!mainP.treffpunktPersons) mainP.treffpunktPersons = [];
+      mainP.treffpunktPersons.push(name);
+    } else {
+      if (!mainP.subParticipants) mainP.subParticipants = [];
+      mainP.subParticipants.push(name);
+    }
+  }
+  document.getElementById('subModal').classList.remove('show');
+}
+this.closeModal(); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+return;
+}
+if (this.isAddingNewDestination) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('Bitte Zielname eingeben.'); return; }
+if (this.machineDestinations.some(d => d.name === name)) { this.showToast('Dieser Zielort existiert bereits.'); return; }
+this.machineDestinations.push({ name, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null });
+this.machineStop.name = name;
+this.machineStop.lat  = coords ? coords.lat : null;
+this.machineStop.lng  = coords ? coords.lng : null;
+this.machineStop.autoCalculated = false;
+this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+return;
+}
+if (this.isAddingNewTreffpunkt) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast('⚠️ Bitte einen Namen eingeben'); return; }
+if (this.treffpunkt[name]) { this.showToast(`⚠️ "${name}" existiert bereits`); return; }
+this.treffpunkt[name] = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
+// Сразу добавляем как участника-Treffpunkt
+this.participants.push({
+  name,
+  time: 5,
+  lat: coords ? coords.lat : null,
+  lng: coords ? coords.lng : null,
+  timeManuallyEdited: false,
+  isTreffpunkt: true,
+  treffpunktPersons: []
+});
+this.isAddingNewTreffpunkt = false;
+this.closeModal(); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+return;
+}
+if (this.isAddingNewName) {
+const name = this.elements.nameInput.value.trim();
+if (!name) { this.showToast("Name eingeben."); return; }
+if (this.nameToCoordinates[name]) { this.showToast("Name existiert bereits."); return; }
+/* 1. СОХРАНЯЕМ имя (с координатами или без) */
+this.nameToCoordinates[name] = coords
+? { lat: coords.lat, lng: coords.lng }
+: { lat: null, lng: null };
+/* 2. Если добавляем для субучастника — добавляем в subParticipants */
+if (this.isAddingSubName) {
+const mainIdx = this.currentMainParticipantIndex;
+const subIdx = this.currentSubParticipantIndex;
+if (subIdx !== null && subIdx !== undefined) {
+// Замена существующего субучастника
+this.participants[mainIdx].subParticipants[subIdx] = name;
+} else {
+// Добавление нового субучастника
+if (!this.participants[mainIdx].subParticipants) {
+this.participants[mainIdx].subParticipants = [];
+}
+this.participants[mainIdx].subParticipants.push(name);
+}
+this.isAddingSubName = false;
+this.currentSubParticipantIndex = null;
+} else if (this.isEditingStartPoint) {
+this.startPoint = name;
+this.startPointCoords = { ...this.nameToCoordinates[name] };
+this.participants = [];
+} else {
+const p = this.participants[this.currentEditIndex];
+if (!p) {
+  // Индекс недействителен — добавляем как нового участника
+  this.participants.push({ name, time: 5, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, timeManuallyEdited: false, isTreffpunkt: false, subParticipants: [], treffpunktPersons: [] });
+} else {
+  p.name = name;
+  p.lat  = this.nameToCoordinates[name].lat;
+  p.lng  = this.nameToCoordinates[name].lng;
+  p.timeManuallyEdited = false;
+}
+}
+this.updateParticipantTimes();
+}
+else if (this.isEditingMachine) {
+this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
+this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable();
+this.showToast('✅ Koordinaten gespeichert');
+// Автоматически рассчитываем время после сохранения координат машины
+setTimeout(() => this.calculateTravelTimeToMachine(), 500);
+return; // Выходим, чтобы не дублировать вызовы ниже
+} else if (this.isEditingStartPoint) {
+this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+this.updateParticipantTimes();
+} else {
+this.participants[this.currentEditIndex].lat = coords.lat;
+this.participants[this.currentEditIndex].lng = coords.lng;
+this.participants[this.currentEditIndex].timeManuallyEdited = false;
+this.updateParticipantTimes();
+}
+this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+this.showToast('✅ Koordinaten gespeichert');
+}
+} catch(e) {
+  this.showToast('⚠️ ' + e.message);
+}
+}
+deleteGreeting() {
+if (this.isEditingFarewell) {
+  if (this.farewells.length > 1) {
+    this.farewells = this.farewells.filter(f => f !== this.farewell);
+    this.farewell = this.farewells[0];
+    this.isEditingFarewell = false;
+    this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+  }
+} else if (!this.defaultGreetings.includes(this.greeting)) {
+  this.greetings = this.greetings.filter(g => g !== this.greeting);
+  this.greeting = this.defaultGreetings[0];
+  this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
+}
+}
+closeModal() {
+this.elements.coordsModal.style.display = 'none';
+this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = this.isAddingNewDestination = this.isAddingNewKollege = this.isAddingNewSubPerson = this.isAddingNewTreffpunkt = this.isEditingFarewell = this.isAddingNewFarewell = false;
+this.isAddingNewKollege = false;
+this.isAddingNewSubPerson = false;
+this.isAddingNewTreffpunkt = false;
+this.currentEditIndex = null;
+}
+openMapForSelection() {
+const coords = this.elements.coordsInput.value.trim();
+let url = 'https://www.google.com/maps';
+if (coords) {
+const m = coords.match(/([-+]?\d{1,3}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+const parsed = m ? { lat: +m[1], lng: +m[2] } : null;
+if (parsed && Math.abs(parsed.lat) <= 90) url += `/place/${parsed.lat},${parsed.lng}`;
+else url += `/search/${encodeURIComponent(coords)}`;
+}
+window.open(url, '_blank');
+}
+
+// ── Map Picker ────────────────────────────────────────────────────────────────
+async openMapPicker() {
+  const modal = document.getElementById('mapPickerModal');
+  const container = document.getElementById('mapPickerContainer');
+  const coordsSpan = document.getElementById('mapPickerCoords');
+  const confirmBtn = document.getElementById('mapPickerConfirm');
+
+  modal.style.display = 'flex';
+  modal.style.cssText += 'display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);';
+
+  let pickedLat = null, pickedLng = null;
+
+  // Получаем API ключ
+  let apiKey;
+  try {
+    const r = await fetch('https://fahrzeit.vercel.app/api/maps-key');
+    const d = await r.json();
+    apiKey = d.key;
+  } catch(e) {
+    this.showToast('❌ Karten-API-Schlüssel konnte nicht abgerufen werden');
+    modal.style.display = 'none';
+    return;
+  }
+
+  // Начальная точка — из текущего поля или центр Германии
+  let initLat = 51.5, initLng = 7.0, initZoom = 10;
+  const cur = this.elements.coordsInput.value.trim();
+  const m = cur.match(/([-+]?\d{1,3}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+  if (m) { initLat = +m[1]; initLng = +m[2]; initZoom = 15; }
+
+  // Загружаем Google Maps JS API если ещё не загружен
+  const initMap = () => {
+    const map = new google.maps.Map(container, {
+      center: { lat: initLat, lng: initLng },
+      zoom: initZoom,
+      mapTypeId: 'roadmap',
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.BOTTOM_LEFT,
+        mapTypeIds: ['roadmap', 'satellite'],
+      },
+      streetViewControl: false,
+      fullscreenControl: false,
+      zoomControl: false,
+    });
+
+    // ── Полноэкранный режим ───────────────────────────────────────────────
+    const sheet = document.getElementById('mapPickerSheet');
+    let isFullscreen = false;
+    document.getElementById('mapFullscreenBtn').onclick = () => {
+      isFullscreen = !isFullscreen;
+      if (isFullscreen) {
+        sheet.style.cssText = 'position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;border-radius:0;padding:0;display:flex;flex-direction:column;';
+        container.style.height = 'auto';
+        container.style.flex = '1';
+        document.getElementById('mapFullscreenBtn').textContent = '⊡';
+        document.getElementById('mapFullscreenBtn').title = 'Verkleinern';
+      } else {
+        sheet.style.cssText = 'max-width:95vw;width:600px;padding:0;background:var(--modal-bg,#fff) !important;border-radius:12px;overflow:hidden;transition:all .2s ease;';
+        container.style.height = '55vh';
+        container.style.flex = '';
+        document.getElementById('mapFullscreenBtn').textContent = '⛶';
+        document.getElementById('mapFullscreenBtn').title = 'Vollbild';
+      }
+      google.maps.event.trigger(map, 'resize');
+    };
+
+    // ── Смена типа карты — через встроенный контрол Google Maps ──────────
+
+    // ── Геолокация ────────────────────────────────────────────────────────
+    // ── Геолокация — нативная кнопка Google Maps стиле ──────────────────
+    let geoMarker = null;
+    const geoBtn = document.createElement('button');
+    geoBtn.title = 'Mein Standort';
+    geoBtn.style.cssText = `
+      background:#fff;border:none;border-radius:8px;
+      box-shadow:0 1px 4px rgba(0,0,0,.3);
+      cursor:pointer;width:40px;height:40px;
+      display:flex;align-items:center;justify-content:center;
+      margin:10px;padding:0;
+    `;
+    geoBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" fill="#666"/>
+    </svg>`;
+    geoBtn.addEventListener('mouseover', () => geoBtn.style.background = '#f5f5f5');
+    geoBtn.addEventListener('mouseout',  () => geoBtn.style.background = '#fff');
+    geoBtn.onclick = () => {
+      if (!navigator.geolocation) { alert('Geolokalisierung wird nicht unterstützt'); return; }
+      geoBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="5" fill="#4285F4"/>
+        <circle cx="12" cy="12" r="9" stroke="#4285F4" stroke-width="2" fill="none" opacity=".4"/>
+      </svg>`;
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          geoBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" fill="#4285F4"/>
+          </svg>`;
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          map.panTo(loc); map.setZoom(16);
+          if (geoMarker) geoMarker.setPosition(loc);
+          else geoMarker = new google.maps.Marker({
+            position: loc, map,
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+            title: 'Mein Standort', zIndex: 1
+          });
+        },
+        err => {
+          geoBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" fill="#666"/>
+          </svg>`;
+          alert('Standort konnte nicht ermittelt werden: ' + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    };
+    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(geoBtn);
+
+    // ── Поиск ─────────────────────────────────────────────────────────────
+    const searchInput = Object.assign(document.createElement('input'), {
+      type: 'text', placeholder: '🔍 Adresse suchen…',
+    });
+    searchInput.style.cssText = 'margin:8px;padding:7px 12px;width:240px;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.3);font-size:14px;outline:none;';
+    const searchBox = new google.maps.places.SearchBox(searchInput);
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchInput);
+    searchBox.addListener('places_changed', () => {
+      const places = searchBox.getPlaces();
+      if (!places?.length) return;
+      map.panTo(places[0].geometry.location);
+      map.setZoom(16);
+    });
+
+    // ── Маркер ────────────────────────────────────────────────────────────
+    let marker = null;
+    const coordsSpan = document.getElementById('mapPickerCoords');
+    const confirmBtn = document.getElementById('mapPickerConfirm');
+
+    const placeMarker = (latLng) => {
+      pickedLat = latLng.lat(); pickedLng = latLng.lng();
+      coordsSpan.textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+      confirmBtn.disabled = false;
+      if (marker) marker.setPosition(latLng);
+      else {
+        marker = new google.maps.Marker({ position: latLng, map, draggable: true, animation: google.maps.Animation.DROP });
+        marker.addListener('dragend', e => {
+          pickedLat = e.latLng.lat(); pickedLng = e.latLng.lng();
+          coordsSpan.textContent = `${pickedLat.toFixed(6)}, ${pickedLng.toFixed(6)}`;
+        });
+      }
+    };
+
+    if (m) placeMarker(new google.maps.LatLng(initLat, initLng));
+    map.addListener('click', e => placeMarker(e.latLng));
+  };
+
+  if (window.google?.maps) {
+    container.innerHTML = '';
+    initMap();
+  } else {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">⏳ Karte wird geladen…</div>';
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__mapPickerInit`;
+    script.async = true;
+    window.__mapPickerInit = () => { container.innerHTML = ''; initMap(); };
+    document.head.appendChild(script);
+  }
+
+  // Подтвердить
+  confirmBtn.onclick = () => {
+    if (pickedLat === null) return;
+    this.elements.coordsInput.value = `${pickedLat.toFixed(6)},${pickedLng.toFixed(6)}`;
+    modal.style.display = 'none';
+  };
+
+  // Закрыть
+  const close = () => { modal.style.display = 'none'; pickedLat = null; };
+  document.getElementById('mapPickerClose').onclick = close;
+  document.getElementById('mapPickerCancel').onclick = close;
+}
+openStartPassengerModal() {
+if (!this.startPoint) { this.showToast('⚠️ Zuerst Startpunkt wählen'); return; }
+const usedNames = this.getAllUsedNames();
+const items = Object.keys(this.nameToCoordinates)
+  .filter(n => !usedNames.has(n) && !this.treffpunkt[n]).sort();
+this.bsOpen({
+  title: `Mitfahrer ab ${this.startPoint}`,
+  mode: 'kollege',
+  items,
+  onSelect: (name) => {
+    if (!this.startPointPassengers) this.startPointPassengers = [];
+    this.startPointPassengers.push(name);
+    this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+  }
+});
+}
+
+addStartPassenger() {
+const select = document.getElementById('subParticipantSelect');
+const selectedName = select.value;
+if (!selectedName || selectedName === 'add-new') {
+  this.showToast('⚠️ Person auswählen');
+  return;
+}
+if (!this.startPointPassengers) this.startPointPassengers = [];
+this.startPointPassengers.push(selectedName);
+document.getElementById('subModal').classList.remove('show');
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+addParticipant() {
+const usedNames = this.getAllUsedNames();
+const usedTreffpunkte = new Set(this.participants.filter(p => p.isTreffpunkt).map(p => p.name));
+const items = Object.keys(this.nameToCoordinates)
+  .filter(n => !usedNames.has(n) && !this.treffpunkt[n]).sort();
+const treffItems = Object.keys(this.treffpunkt)
+  .filter(n => !usedTreffpunkte.has(n)).sort();
+this.bsOpen({
+  title: 'Teilnehmer hinzufügen',
+  mode: 'both',
+  items,
+  treffItems,
+  onSelect: (name, tab) => {
+    if (tab === 'treff') {
+      const coords = this.treffpunkt[name] || {};
+      this.participants.push({ name, time: 5, lat: coords.lat||null, lng: coords.lng||null, timeManuallyEdited: false, isTreffpunkt: true, treffpunktPersons: [] });
+    } else {
+      const coords = this.nameToCoordinates[name] || {};
+      this.participants.push({ name, time: 5, lat: coords.lat||null, lng: coords.lng||null, timeManuallyEdited: false, isTreffpunkt: false, subParticipants: [], treffpunktPersons: [] });
+    }
+    this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+    this.showToast('✅ ' + name + ' hinzugefügt');
+  }
+});
+}
+
+addSubParticipant() {
+// Если mainIndex === -1, добавляем как попутчика начальной точки
+const mainIndex = this.currentMainParticipantIndex;
+if (mainIndex === -1) {
+this.addStartPassenger();
+return;
+}
+// Если текущий участник — Treffpunkt, добавляем как treffpunktPerson
+if (mainIndex !== null && this.participants[mainIndex] && this.participants[mainIndex].isTreffpunkt) {
+this.addTreffpunktPerson();
+return;
+}
+const select = document.getElementById('subParticipantSelect');
+const newSubNameInput = document.getElementById('newSubName');
+let selectedName = select.value;
+
+if (!selectedName) {
+this.showToast('⚠️ Person auswählen');
+return;
+}
+
+// Новое имя введено вручную
+if (selectedName === 'add-new') {
+const newName = newSubNameInput.value.trim();
+if (!newName) {
+this.showToast('⚠️ Bitte einen Namen eingeben');
+newSubNameInput.focus();
+return;
+}
+if (this.nameToCoordinates[newName]) {
+this.showToast(`⚠️ "${newName}" existiert bereits`);
+newSubNameInput.focus();
+return;
+}
+this.nameToCoordinates[newName] = { lat: null, lng: null };
+selectedName = newName;
+}
+
+if (!this.participants[mainIndex].subParticipants) {
+this.participants[mainIndex].subParticipants = [];
+}
+this.participants[mainIndex].subParticipants.push(selectedName);
+document.getElementById('subModal').classList.remove('show');
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`✅ ${selectedName} hinzugefügt`);
+}
+removeSubParticipant(mainIndex, subIndex) {
+const removedName = this.participants[mainIndex].subParticipants[subIndex];
+this.participants[mainIndex].subParticipants.splice(subIndex, 1);
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`🗑️ ${removedName} entfernt`);
+}
+updateSubParticipant(mainIndex, subIndex, newName) {
+// Проверка на дубли: не допускаем выбор уже занятого имени
+const p = this.participants[mainIndex];
+const usedNames = new Set([p.name]);
+p.subParticipants.forEach((n, idx) => {
+if (idx !== subIndex) usedNames.add(n);
+});
+// Также имена субучастников других участников
+this.participants.forEach((other, idx) => {
+if (idx !== mainIndex) {
+(other.subParticipants || []).forEach(n => usedNames.add(n));
+}
+});
+if (usedNames.has(newName)) {
+this.showToast(`⚠️ ${newName} wird bereits verwendet`);
+this.renderParticipants();
+return;
+}
+this.participants[mainIndex].subParticipants[subIndex] = newName;
+this.saveData();
+this.calculate();
+}
+// ===== Методы для Treffpunkt =====
+updateTreffpunktName(index, newName) {
+const coords = this.treffpunkt[newName] || { lat: null, lng: null };
+this.participants[index].name = newName;
+this.participants[index].lat = coords.lat;
+this.participants[index].lng = coords.lng;
+this.participants[index].timeManuallyEdited = false;
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+openSubParticipantModal(mainIndex) {
+const usedNames = this.getAllUsedNames();
+const items = Object.keys(this.nameToCoordinates)
+  .filter(n => !usedNames.has(n) && !this.treffpunkt[n]).sort();
+const pName = this.participants[mainIndex]?.name || '';
+this.bsOpen({
+  title: `Hinzufügen zu ${pName}`,
+  mode: 'kollege',
+  items,
+  onSelect: (name) => {
+    if (!this.participants[mainIndex].subParticipants) this.participants[mainIndex].subParticipants = [];
+    this.participants[mainIndex].subParticipants.push(name);
+    this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+    this.showToast('✅ ' + name + ' hinzugefügt');
+  }
+});
+}
+
+openTreffpunktPersonModal(mainIndex) {
+const usedNames = this.getAllUsedNames();
+const items = Object.keys(this.nameToCoordinates)
+  .filter(n => !usedNames.has(n) && !this.treffpunkt[n]).sort();
+const pName = this.participants[mainIndex]?.name || '';
+this.bsOpen({
+  title: `Hinzufügen zu ${pName}`,
+  mode: 'kollege',
+  items,
+  onSelect: (name) => {
+    if (!this.participants[mainIndex].treffpunktPersons) this.participants[mainIndex].treffpunktPersons = [];
+    this.participants[mainIndex].treffpunktPersons.push(name);
+    this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+    this.showToast('✅ ' + name + ' hinzugefügt');
+  }
+});
+}
+
+addTreffpunktPerson() {
+const select = document.getElementById('subParticipantSelect');
+const newSubNameInput = document.getElementById('newSubName');
+let selectedName = select.value;
+
+if (!selectedName) {
+this.showToast('⚠️ Bitte Person auswählen');
+return;
+}
+
+// Новое имя введено вручную
+if (selectedName === 'add-new') {
+const newName = newSubNameInput.value.trim();
+if (!newName) {
+this.showToast('⚠️ Bitte einen Namen eingeben');
+newSubNameInput.focus();
+return;
+}
+if (this.nameToCoordinates[newName]) {
+this.showToast(`⚠️ "${newName}" existiert bereits`);
+newSubNameInput.focus();
+return;
+}
+this.nameToCoordinates[newName] = { lat: null, lng: null };
+selectedName = newName;
+}
+
+const mainIndex = this.currentMainParticipantIndex;
+if (!this.participants[mainIndex].treffpunktPersons) {
+this.participants[mainIndex].treffpunktPersons = [];
+}
+this.participants[mainIndex].treffpunktPersons.push(selectedName);
+document.getElementById('subModal').classList.remove('show');
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`✅ ${selectedName} → ${this.participants[mainIndex].name}`);
+}
+removeTreffpunktPerson(mainIndex, personIdx) {
+const removedName = this.participants[mainIndex].treffpunktPersons[personIdx];
+this.participants[mainIndex].treffpunktPersons.splice(personIdx, 1);
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast(`🗑️ ${removedName} entfernt`);
+}
+updateTreffpunktPerson(mainIndex, personIdx, newName) {
+this.participants[mainIndex].treffpunktPersons[personIdx] = newName;
+this.saveData();
+this.calculate();
+}
+async calculateTravelTimeForParticipant(index) {
+const p = this.participants[index];
+if (!p) return;
+if (!p.lat || !p.lng) {
+  this.showToast('⚠️ Koordinaten des Teilnehmers fehlen');
+  return;
+}
+// Определяем предыдущую точку
+let prevLat, prevLng;
+if (index === 0) {
+  if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
+    this.showToast('⚠️ Koordinaten des Startpunkts fehlen');
+    return;
+  }
+  prevLat = this.startPointCoords.lat;
+  prevLng = this.startPointCoords.lng;
+} else {
+  const prev = this.participants[index - 1];
+  if (!prev.lat || !prev.lng) {
+    this.showToast('⚠️ Koordinaten des vorherigen Teilnehmers fehlen');
+    return;
+  }
+  prevLat = prev.lat;
+  prevLng = prev.lng;
+}
+try {
+  this.showToast('🔄 Fahrtzeit wird berechnet…');
+  const response = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      originLat: prevLat,
+      originLng: prevLng,
+      destLat: p.lat,
+      destLng: p.lng,
+      departureTime: 'now'
+    })
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'API-Anfragefehler');
+  }
+  const data = await response.json();
+  if (data.success) {
+    p.time = data.duration.minutes;
+    p.routeCalculated = true;
+    p.timeManuallyEdited = false;
+    this.saveData();
+    this.renderParticipants();
+    this.calculate();
+    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)`);
+  } else {
+    throw new Error('Fehler in der API-Antwort');
+  }
+} catch (error) {
+  this.showToast(`❌ Fehler: ${error.message}`);
+}
+}
+async calculateTravelTimeToMachine() {
+// Находим последнего участника с координатами
+const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
+if (validParticipants.length === 0) {
+this.showToast('⚠️ Keine Teilnehmer mit Koordinaten');
+return;
+}
+// Проверяем координаты машины
+if (!this.machineStop.lat || !this.machineStop.lng) {
+this.showToast('⚠️ Maschinenkoordinaten fehlen');
+return;
+}
+const lastParticipant = validParticipants[validParticipants.length - 1];
+
+// Определяем время для расчета трафика
+let departureTime = 'now';
+if (this.machineStop.arrivalTime) {
+// Если задано время прибытия, рассчитываем departure_time
+const [hours, minutes] = this.machineStop.arrivalTime.split(':');
+const arrivalDate = new Date();
+arrivalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+// Конвертируем в Unix timestamp (секунды)
+departureTime = Math.floor(arrivalDate.getTime() / 1000).toString();
+}
+
+try {
+this.showToast('🔄 Fahrtzeit wird berechnet…');
+
+// Вызываем Vercel serverless function
+const response = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+method: 'POST',
+headers: {
+'Content-Type': 'application/json',
+},
+body: JSON.stringify({
+originLat: lastParticipant.lat,
+originLng: lastParticipant.lng,
+destLat: this.machineStop.lat,
+destLng: this.machineStop.lng,
+departureTime: departureTime
+})
+});
+
+if (!response.ok) {
+const errorData = await response.json();
+throw new Error(errorData.message || 'API-Anfragefehler');
+}
+
+const data = await response.json();
+
+if (data.success) {
+// Обновляем время машины
+this.machineStop.time = data.duration.minutes;
+this.machineStop.autoCalculated = true;
+this.saveData();
+this.renderParticipants();
+this.calculate();
+
+const timeInfo = this.machineStop.arrivalTime ? ` um ${this.machineStop.arrivalTime} Uhr` : ' jetzt';
+const trafficInfo = data.hasTraffic ? ' (mit Verkehr)' : '';
+this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${timeInfo}${trafficInfo}`);
+console.log(`Время в пути: ${data.duration.minutes} мин, Расстояние: ${data.distance.km} км, Время: ${timeInfo}${trafficInfo}`);
+} else {
+throw new Error('Fehler in der API-Antwort');
+}
+} catch (error) {
+console.error('Ошибка расчета:', error);
+this.showToast(`❌ Fehler: ${error.message}`);
+}
+}
+updateMachineName(value) {
+this.machineStop.name = value.trim() || 'an der Maschine';
+this.saveData();
+this.calculate();
+}
+
+// ── Universal Bottom Sheet ────────────────────────────────────────────────
+bsOpen(config) {
+  this._bsConfig = config;
+  this._bsActiveTab = config.mode === 'treff' ? 'treff' : 'kollege';
+
+  const isDark = document.body.classList.contains('dark');
+  const surf = isDark ? '#242424' : '#f5f5f5';
+  const txt  = isDark ? '#ececec' : '#111111';
+  const sub  = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+  const bord = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)';
+  const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
+
+  // Создать overlay заново каждый раз
+  let _ov = document.getElementById('bsOverlay');
+  if (_ov) _ov.remove();
+
+  _ov = document.createElement('div');
+  _ov.id = 'bsOverlay';
+  _ov.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;box-sizing:border-box;`;
+  _ov.addEventListener('click', e => { if (e.target === _ov) this.bsClose(); });
+
+  const sheet = document.createElement('div');
+  sheet.style.cssText = `background:${surf};color:${txt};width:90%;max-width:440px;height:72vh;border-radius:22px 22px 22px 22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,0.5);margin-bottom:20px;`;
+
+  // Ручка
+  const handle = document.createElement('div');
+  handle.style.cssText = `width:40px;height:4px;border-radius:2px;background:${txt};opacity:0.2;margin:14px auto 0;flex-shrink:0;`;
+
+  // Заголовок
+  const header = document.createElement('div');
+  header.style.cssText = `padding:12px 20px 14px;flex-shrink:0;`;
+  const title = document.createElement('div');
+  title.style.cssText = `font-size:1.1em;font-weight:700;`;
+  title.textContent = config.title;
+  header.appendChild(title);
+
+  // Вкладки (только для mode=both)
+  if (config.mode === 'both') {
+    const tabs = document.createElement('div');
+    tabs.style.cssText = `display:flex;gap:8px;margin-top:12px;`;
+    ['kollege','treff'].forEach(tab => {
+      const btn = document.createElement('button');
+      const isActive = tab === this._bsActiveTab;
+      btn.style.cssText = `flex:1;padding:9px 12px;border-radius:10px;border:1.5px solid ${isActive ? primary : bord};font-size:0.88em;font-weight:600;cursor:pointer;background:${isActive ? primary : 'transparent'};color:${isActive ? '#fff' : txt};display:flex;align-items:center;justify-content:center;gap:5px;`;
+      btn.innerHTML = tab === 'kollege' ? 'Kollege' : '📍 Treffpunkt';
+      btn.id = tab === 'kollege' ? 'bsTabKollege' : 'bsTabTreff';
+      btn.onclick = () => this.bsSwitchTab(tab);
+      tabs.appendChild(btn);
+    });
+    header.appendChild(tabs);
+  }
+
+  // Разделитель
+  const divider = document.createElement('div');
+  divider.style.cssText = `height:1px;background:${bord};flex-shrink:0;margin:0 20px;`;
+
+  // Лейбл
+  const label = document.createElement('div');
+  label.id = 'bsListLabel';
+  label.style.cssText = `font-size:0.68em;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.35;padding:10px 20px 4px;flex-shrink:0;`;
+  label.textContent = this._bsActiveTab === 'treff' ? 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ' : 'ВЫБЕРИТЕ УЧАСТНИКА';
+
+  // Список
+  const list = document.createElement('div');
+  list.id = 'bsList';
+  list.style.cssText = `flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;`;
+
+  // Кнопка отмены
+  const footer = document.createElement('div');
+  footer.style.cssText = `padding:12px 16px 20px;flex-shrink:0;`;
+  const cancelBtn = document.createElement('button');
+  cancelBtn.style.cssText = `width:100%;padding:14px;border-radius:14px;font-size:0.95em;font-weight:600;cursor:pointer;border:1.5px solid ${bord};background:transparent;color:${txt};opacity:0.7;`;
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.onclick = () => this.bsClose();
+  footer.appendChild(cancelBtn);
+
+  sheet.appendChild(handle);
+  sheet.appendChild(header);
+  sheet.appendChild(divider);
+  sheet.appendChild(label);
+  sheet.appendChild(list);
+  sheet.appendChild(footer);
+  _ov.appendChild(sheet);
+  document.body.appendChild(_ov);
+
+  this.bsRenderList();
+}
+
+bsSwitchTab(tab) {
+  this._bsActiveTab = tab;
+  const isDark = document.body.classList.contains('dark');
+  const txt = isDark ? '#ececec' : '#111';
+  const bord = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.09)';
+  const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
+  ['kollege','treff'].forEach(t => {
+    const btn = document.getElementById(t === 'kollege' ? 'bsTabKollege' : 'bsTabTreff');
+    if (!btn) return;
+    const active = t === tab;
+    btn.style.background = active ? primary : 'transparent';
+    btn.style.color = active ? '#fff' : txt;
+    btn.style.borderColor = active ? primary : bord;
+  });
+  this.bsRenderList();
+}
+bsRenderList() {
+  const list = document.getElementById('bsList');
+  const label = document.getElementById('bsListLabel');
+  if (!list) return;
+  const cfg = this._bsConfig;
+  list.innerHTML = '';
+
+  const isDark = document.body.classList.contains('dark');
+  const txt  = isDark ? '#ececec' : '#111111';
+  const bord = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
+  const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
+
+  const isKollege = this._bsActiveTab === 'kollege';
+  if (label) label.textContent = isKollege ? 'ВЫБЕРИТЕ УЧАСТНИКА' : 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ';
+  const items = isKollege ? (cfg.items || []) : (cfg.treffItems || []);
+
+  items.forEach((name, i) => {
+    const btn = document.createElement('button');
+    const isLast = i === items.length - 1 && !cfg.showAddNew;
+    btn.style.cssText = `width:100%;padding:15px 24px;border:none;border-bottom:${isLast ? 'none' : '1px solid ' + bord};background:transparent;font-size:1em;text-align:left;cursor:pointer;color:${txt};display:block;box-sizing:border-box;`;
+    btn.textContent = name;
+    btn.onclick = () => { this.bsClose(); cfg.onSelect(name, this._bsActiveTab); };
+    list.appendChild(btn);
+  });
+
+  // Кнопка добавить новый
+  const addBtn = document.createElement('button');
+  addBtn.style.cssText = `width:100%;padding:15px 24px;border:none;border-top:1px solid ${bord};background:transparent;font-size:0.93em;font-weight:500;text-align:left;cursor:pointer;color:${primary};display:block;box-sizing:border-box;`;
+  addBtn.textContent = isKollege ? '＋ Neue Person…' : '＋ Neuer Treffpunkt…';
+  addBtn.onclick = () => {
+    this.bsClose();
+    if (isKollege) this.openCoordsModal(null,false,false,false,false,true);
+    else { this.isAddingNewTreffpunkt=true; this.openCoordsModal(null,false,true); }
+  };
+  list.appendChild(addBtn);
+}
+
+
+bsClose() {
+  const ov = document.getElementById('bsOverlay'); if(ov) ov.remove();
+}
+
+updateHints() {
+  const hasDriver = !!this.startPoint;
+  const hasPart   = this.participants.length > 0;
+  const hasTime   = !!this.machineStop.arrivalTime;
+  const hD = document.getElementById('hintDriver');
+  const hP = document.getElementById('hintPart');
+  const hT = document.getElementById('hintTime');
+  if (!hD) return;
+  hD.classList.toggle('visible', !hasDriver);
+  hP.classList.toggle('visible', hasDriver && !hasPart);
+  hT.classList.toggle('visible', hasDriver && hasPart && !hasTime);
+}
+
+editParticipantTime(index, displayEl) {
+const current = this.participants[index].time;
+const input = document.createElement('input');
+input.type = 'number';
+input.min = '1';
+input.max = '999';
+input.value = current;
+input.className = 'time-display';
+input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+displayEl.replaceWith(input);
+input.focus();
+input.select();
+
+const save = () => {
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    this.participants[index].time = val;
+    this.participants[index].timeManuallyEdited = true;
+    this.participants[index].routeCalculated = false;
+  }
+  this.saveData(); this.renderParticipants(); this.calculate();
+};
+
+input.addEventListener('blur', save);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { input.blur(); }
+  if (e.key === 'Escape') { this.renderParticipants(); }
+});
+}
+editMachineTime(displayEl) {
+const current = this.machineStop.time;
+const input = document.createElement('input');
+input.type = 'number';
+input.min = '1';
+input.max = '999';
+input.value = current;
+input.className = 'time-display';
+input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+displayEl.replaceWith(input);
+input.focus();
+input.select();
+
+const save = () => {
+  const val = parseInt(input.value);
+  if (!isNaN(val) && val > 0) {
+    this.machineStop.time = val;
+    this.machineStop.autoCalculated = false;
+  }
+  this.saveData(); this.renderParticipants(); this.calculate();
+};
+
+input.addEventListener('blur', save);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { input.blur(); }
+  if (e.key === 'Escape') { this.renderParticipants(); }
+});
+}
+updateMachineTime(value) {
+const time = parseInt(value) || 20;
+this.machineStop.time = Math.max(1, Math.min(720, time));
+this.machineStop.autoCalculated = false;  // Сбрасываем флаг при ручном изменении
+this.saveData();
+this.calculate();
+}
+clearArrivalTime() {
+this.machineStop.arrivalTime = "";
+this.saveData();
+this.elements.output.innerHTML = '';
+this.renderParticipants();
+}
+startTimeEdit() {
+const existing = document.getElementById('customTimePicker');
+if (existing) existing.remove();
+
+const [curH, curM] = this.machineStop.arrivalTime
+  ? this.machineStop.arrivalTime.split(':').map(Number)
+  : [6, 0];
+
+const overlay = document.createElement('div');
+overlay.id = 'customTimePicker';
+overlay.style.cssText = `
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;
+`;
+
+// Определяем цвета в зависимости от темы
+const isDark = document.body.classList.contains('dark') || localStorage.theme === 'dark';
+const bg      = isDark ? '#1e1e1e' : '#ffffff';
+const bgFade  = isDark ? 'rgba(30,30,30,' : 'rgba(255,255,255,';
+const textCol = isDark ? '#e0e0e0' : '#222222';
+const btnBg   = isDark ? '#2a2a2a' : '#f0f0f0';
+const accent  = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#1976d2';
+
+overlay.innerHTML = `
+  <div style="background:${bg};border-radius:20px;padding:24px;
+    box-shadow:0 8px 40px rgba(0,0,0,.5);width:280px;text-align:center;
+    font-family:inherit;">
+    <div style="font-size:.8em;font-weight:700;color:${isDark?'#aaa':'#888'};letter-spacing:.08em;
+      margin-bottom:16px;text-transform:uppercase;">Ankunftszeit</div>
+
+    <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+      <!-- Барабан часов -->
+      <div style="position:relative;width:80px;height:230px;overflow:hidden;">
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:2;
+          background:linear-gradient(to bottom,${bgFade}.92) 0%,${bgFade}0) 28%,${bgFade}0) 72%,${bgFade}.92) 100%);"></div>
+        <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+          height:46px;border-top:2px solid ${accent};border-bottom:2px solid ${accent};
+          pointer-events:none;z-index:1;"></div>
+        <div id="tpHDrum" style="position:absolute;left:0;right:0;top:0;cursor:grab;touch-action:none;"></div>
+      </div>
+
+      <div style="font-size:2em;font-weight:700;color:${textCol};padding-bottom:4px;">:</div>
+
+      <!-- Барабан минут -->
+      <div style="position:relative;width:80px;height:230px;overflow:hidden;">
+        <div style="position:absolute;inset:0;pointer-events:none;z-index:2;
+          background:linear-gradient(to bottom,${bgFade}.92) 0%,${bgFade}0) 28%,${bgFade}0) 72%,${bgFade}.92) 100%);"></div>
+        <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+          height:46px;border-top:2px solid ${accent};border-bottom:2px solid ${accent};
+          pointer-events:none;z-index:1;"></div>
+        <div id="tpMDrum" style="position:absolute;left:0;right:0;top:0;cursor:grab;touch-action:none;"></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:22px;">
+      <button id="tpClear" style="flex:1;padding:12px;border:none;border-radius:50px;
+        background:${btnBg};color:#d32f2f;font-size:1em;font-weight:600;cursor:pointer;">
+        Löschen
+      </button>
+      <button id="tpSave" style="flex:2;padding:12px;border:none;border-radius:50px;
+        background:${accent};color:#fff;font-size:1em;font-weight:700;cursor:pointer;">
+        Fertig
+      </button>
+    </div>
+  </div>
+`;
+
+document.body.appendChild(overlay);
+
+const ITEM_H = 46; // высота одного элемента барабана
+let h = curH, m = curM;
+
+function makeDrum(el, count, current, onChange) {
+  // Создаём элементы — тройной цикл для бесконечного скролла
+  const items = [];
+  for (let rep = 0; rep < 3; rep++) {
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div');
+      d.style.cssText = `height:${ITEM_H}px;line-height:${ITEM_H}px;text-align:center;
+        font-size:1.9em;font-weight:700;color:${isDark?'#555':'#bbb'};user-select:none;transition:color .15s,font-size .15s;`;
+      d.textContent = String(i).padStart(2,'0');
+      el.appendChild(d);
+      items.push(d);
+    }
+  }
+
+  // Начальная позиция: центр среднего цикла
+  let offset = -(count + current) * ITEM_H + (230/2 - ITEM_H/2);
+  el.style.transform = `translateY(${offset}px)`;
+
+  // Подсвечиваем текущее значение сразу при старте
+  el.querySelectorAll('div').forEach((item, i) => {
+    const isSel = ((i % count) + count) % count === current;
+    item.style.color = isSel ? (isDark?'#fff':'#111') : (isDark?'#555':'#bbb');
+    item.style.fontSize = isSel ? '2em' : '1.9em';
+  });
+
+  function normalize() {
+    // Нормализуем offset чтобы всегда быть в среднем цикле
+    if (offset < -(count * 2 - 1) * ITEM_H + (230/2 - ITEM_H/2)) {
+      offset += count * ITEM_H;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${offset}px)`;
+    }
+    if (offset > -(1) * ITEM_H + (230/2 - ITEM_H/2)) {
+      offset -= count * ITEM_H;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${offset}px)`;
+    }
+  }
+
+  function snapToNearest(animate) {
+    const center = 230/2 - ITEM_H/2;
+    const raw = -offset + center;
+    const idx = Math.round(raw / ITEM_H);
+    const snapped = -(idx * ITEM_H) + center;
+    if (animate) {
+      el.style.transition = 'transform .15s cubic-bezier(.25,.46,.45,.94)';
+    }
+    offset = snapped;
+    el.style.transform = `translateY(${offset}px)`;
+    const val = ((idx % count) + count) % count;
+    onChange(val);
+    // Подсвечиваем выбранный элемент
+    const allItems = el.querySelectorAll('div');
+    allItems.forEach((item, i) => {
+      const isSel = ((i % count) + count) % count === val;
+      item.style.color = isSel ? (isDark?'#fff':'#111') : (isDark?'#555':'#bbb');
+      item.style.fontSize = isSel ? '2em' : '1.9em';
+    });
+    setTimeout(normalize, 250);
+  }
+
+  // Touch
+  let startY, startOffset, lastY, vel = 0, lastT, rafId;
+  el.addEventListener('touchstart', e => {
+    cancelAnimationFrame(rafId);
+    el.style.transition = 'none';
+    startY = lastY = e.touches[0].clientY;
+    startOffset = offset;
+    lastT = Date.now();
+    vel = 0;
+  }, {passive:true});
+
+  el.addEventListener('touchmove', e => {
+    const y = e.touches[0].clientY;
+    const now = Date.now();
+    vel = (y - lastY) / (now - lastT || 1);
+    lastY = y; lastT = now;
+    offset = startOffset + (y - startY);
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${offset}px)`;
+  }, {passive:true});
+
+  el.addEventListener('touchend', () => {
+    // Инерция
+    if (Math.abs(vel) > 0.3) {
+      const momentum = vel * 280;
+      offset += momentum;
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${offset}px)`;
+    }
+    snapToNearest(true);
+  });
+
+  // Mouse (десктоп)
+  let mouseDown = false;
+  el.addEventListener('mousedown', e => {
+    mouseDown = true;
+    el.style.transition = 'none';
+    startY = e.clientY;
+    startOffset = offset;
+    el.style.cursor = 'grabbing';
+  });
+  window.addEventListener('mousemove', e => {
+    if (!mouseDown) return;
+    offset = startOffset + (e.clientY - startY);
+    el.style.transform = `translateY(${offset}px)`;
+  });
+  window.addEventListener('mouseup', () => {
+    if (!mouseDown) return;
+    mouseDown = false;
+    el.style.cursor = 'grab';
+    snapToNearest(true);
+  });
+
+  // Колесо мыши
+  el.addEventListener('wheel', e => {
+    e.preventDefault();
+    offset -= Math.sign(e.deltaY) * ITEM_H;
+    el.style.transition = 'none';
+    el.style.transform = `translateY(${offset}px)`;
+    clearTimeout(el._wt);
+    el._wt = setTimeout(() => snapToNearest(true), 150);
+  }, {passive:false});
+}
+
+makeDrum(overlay.querySelector('#tpHDrum'), 24, curH, v => { h = v; });
+makeDrum(overlay.querySelector('#tpMDrum'), 60, curM, v => { m = v; });
+
+overlay.querySelector('#tpSave').onclick = () => {
+  this.machineStop.arrivalTime = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+  overlay.remove();
+  this.saveData();
+  this.renderParticipants();
+  this.initSortable();
+  this.calculate();
+};
+overlay.querySelector('#tpClear').onclick = () => {
+  this.machineStop.arrivalTime = '';
+  overlay.remove();
+  this.saveData();
+  this.elements.output.innerHTML = '';
+  this.renderParticipants();
+};
+overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+initSortable() {
+if (this.sortable) this.sortable.destroy();
+this.sortable = new Sortable(this.elements.participantsContainer, {
+handle: '.material-symbols-outlined',
+animation: 150,
+onEnd: evt => {
+if (evt.oldIndex !== evt.newIndex) {
+const [moved] = this.participants.splice(evt.oldIndex, 1);
+this.participants.splice(evt.newIndex, 0, moved);
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.calculate();
+}
+}
+});
+}
+showToast(message) {
+this.elements.toast.textContent = message;
+this.elements.toast.classList.add('show');
+setTimeout(() => this.elements.toast.classList.remove('show'), 3000);
+}
+formatTime(date) {
+if (this.useSuperscriptTime) {
+const hours = date.getHours().toString().padStart(2, '0');
+const minutes = date.getMinutes().toString().padStart(2, '0');
+const superscriptDigits = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
+const superscriptMinutes = minutes.split('').map(d => superscriptDigits[parseInt(d)]).join('');
+return `${hours}${superscriptMinutes}`;
+}
+return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
+calculate(){
+if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';this.updateHints();return}
+let out=`${this.greeting},
+`;
+const valid=this.participants.filter(p=>p.name);
+const total=valid.reduce((s,p)=>s+p.time,0)+this.machineStop.time;
+// 1. ВЫЧИСЛЯЕМ ВРЕМЯ СТАРТА
+const startTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
+startTime.setMinutes(startTime.getMinutes()-total);
+// 2. ФОРМИРУЕМ ВЫВОД
+// Строка старта с учётом попутчиков
+const passengers = (this.startPointPassengers || []).filter(n => n);
+let startLine;
+if (passengers.length === 0) {
+  startLine = this.useUhrBei
+    ? `um ${this.formatTime(startTime)} Uhr geht's los`
+    : `${this.formatTime(startTime)}  geht's los`;
+} else {
+  const allNames = [...passengers];
+  let namesStr;
+  if (allNames.length === 1) namesStr = `${allNames[0]} und ich`;
+  else namesStr = allNames.join(', ') + ' und ich';
+  startLine = this.useUhrBei
+    ? `um ${this.formatTime(startTime)} Uhr fahren ${namesStr} los`
+    : `${this.formatTime(startTime)}  ${namesStr} fahren los`;
+}
+out += startLine + '\n';
+let current=new Date(startTime);
+valid.forEach(p=>{
+current.setMinutes(current.getMinutes()+p.time);
+let line = '';
+if (p.isTreffpunkt) {
+// Treffpunkt: формат "12:00 René (Olga-Park)" или "12:00 René, Vasyl und Alex (Olga-Park)"
+const persons = (p.treffpunktPersons || []).filter(n => n);
+let personsStr = '';
+if (persons.length === 0) {
+personsStr = p.name; // просто название, если никого не добавили
+} else if (persons.length === 1) {
+personsStr = `${persons[0]} (${p.name})`;
+} else if (persons.length === 2) {
+personsStr = `${persons[0]} und ${persons[1]} (${p.name})`;
+} else {
+personsStr = persons.slice(0, -1).join(', ') + ' und ' + persons[persons.length - 1] + ` (${p.name})`;
+}
+line = this.useUhrBei
+? `um ${this.formatTime(current)} Uhr bei ${personsStr}
+`
+: `${this.formatTime(current)}  ${personsStr}
+`;
+} else {
+// Обычный участник (оригинальный код)
+let names = p.name;
+if (p.subParticipants && p.subParticipants.length > 0) {
+const subs = p.subParticipants.filter(n => n);
+if (subs.length > 0) {
+const all = [p.name, ...subs];
+if (all.length === 2) {
+names = `${all[0]} und ${all[1]}`;
+} else {
+names = all.slice(0, -1).join(', ') + ' und ' + all[all.length - 1];
+}
+}
+}
+line = this.useUhrBei
+? `um ${this.formatTime(current)} Uhr bei ${names}
+`
+: `${this.formatTime(current)}  ${names}
+`;
+}
+out += line;
+});
+// Время прибытия к машине
+const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
+out+=this.useUhrBei
+? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}\n`
+: `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}\n`;
+if (this.farewell) out += this.farewell + '\n';
+this.elements.output.innerHTML=out;
+this.updateHints();
+}
+
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ — С УЧЁТОМ ТВОЕГО УТОЧНЕНИЯ
+openGoogleMaps(returnTrip = false) {
+  const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
+
+  // Маршрут туда требует хотя бы конечную точку (машину) или участника
+  if (!returnTrip) {
+    const hasDest = this.machineStop.lat && this.machineStop.lng;
+    if (validParticipants.length === 0 && !hasDest) {
+      this.showToast("Bitte Koordinaten des Ziels angeben oder Teilnehmer hinzufügen.");
+      return;
+    }
+  }
+
+  if (!navigator.geolocation) {
+    this.showToast("Geolokalisierung wird nicht unterstützt.");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const currentLat = position.coords.latitude;
+      const currentLng = position.coords.longitude;
+      const origin = `${currentLat},${currentLng}`;
+
+      let waypoints = [];
+      let destination;
+
+      if (!returnTrip) {
+        // ➤ Маршрут ТУДА: текущее положение → участники → машина
+        waypoints = validParticipants.map(p => `${p.lat},${p.lng}`);
+        if (this.machineStop.lat && this.machineStop.lng) {
+          destination = `${this.machineStop.lat},${this.machineStop.lng}`;
+        } else {
+          // Нет координат машины — конец маршрута = последний участник
+          destination = waypoints.pop();
+        }
+      } else {
+        // ◀ Маршрут ОБРАТНО: текущее положение → участники (обратный порядок) → дом водителя
+        if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
+          this.showToast("Bitte Startpunkt für die Rückroute angeben.");
+          return;
+        }
+        if (validParticipants.length === 0) {
+          this.showToast("Mindestens ein Teilnehmer mit Koordinaten für die Rückroute erforderlich.");
+          return;
+        }
+        waypoints = [...validParticipants].reverse().map(p => `${p.lat},${p.lng}`);
+        destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+      }
+
+      let url = 'https://www.google.com/maps/dir/?api=1';
+      url += `&origin=${encodeURIComponent(origin)}`;
+      url += `&destination=${encodeURIComponent(destination)}`;
+      if (waypoints.length > 0) {
+        url += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`;
+      }
+      url += '&travelmode=driving';
+
+      window.open(url, '_blank');
+    },
+    (error) => {
+      console.error("Ошибка геолокации:", error);
+      this.showToast("Standort konnte nicht ermittelt werden. Bitte Zugriff erlauben.");
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
+// ❌ УДАЛЕНА ФУНКЦИЯ openGoogleMapsInNewTab
+
+_destLabel() {
+const machineName = this.machineStop.name;
+const stationName = this.machineStop.stationName || '';
+if (machineName !== 'an der Maschine' || !stationName) return '';
+if (this.showDestName) {
+return ` <span class="dest-label">(${stationName})</span>`;
+} else {
+return ` <span class="dest-label dest-label--muted" data-nocopy="1">(${stationName})</span>`;
+}
+}
+copyResult() {
+const el = this.elements.output;
+if (!el || !el.textContent.trim()) {
+this.showToast("Nichts zu kopieren – bitte zuerst Route berechnen.");
+return;
+}
+const clone = el.cloneNode(true);
+clone.querySelectorAll('[data-nocopy]').forEach(s => s.remove());
+const text = clone.textContent.trim();
+navigator.clipboard.writeText(text)
+.then(() => this.showToast("📋 Kopiert"))
+.catch(() => this.showToast("⚠️ Kopieren fehlgeschlagen – Zugriff auf Zwischenablage erlauben."));
+}
+removeParticipant(index) {
+this.participants.splice(index, 1);
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+// ── ПРОФИЛИ ──────────────────────────────────────────────
+window.app = new FahrzeitRechner();
+window._appInstance = app;
+app.loadStations();
+// ---------- тема ----------
+const switcher = document.getElementById('themeSwitch');
+if (!switcher) return;
+// УСТАНАВЛИВАЕМ ЦВЕТ СТАТУС-БАРА СРАЗУ
+const meta = document.getElementById('theme-meta');
+meta.content = (localStorage.theme === 'dark') ? '#121212' : '#f0f0f0';
+// восстанавливаем сохранённую тему
+if (localStorage.theme === 'dark') document.body.classList.add('dark');
+switcher.checked = localStorage.theme === 'dark';
+// переключаем по клику
+switcher.addEventListener('change', e => {
+document.body.classList.toggle('dark', e.target.checked);
+localStorage.theme = e.target.checked ? 'dark' : 'light';
+meta.content = e.target.checked ? '#121212' : '#f0f0f0';
+});
+});
+</script>
+<!-- подключаем bcrypt -->
+<script src="
+https://cdn.jsdelivr.net/npm/bcryptjs@3.0.2/umd/index.min.js
+"></script>
+<script>
+// хэш пароля '266214' (10 раундов)
+const GOD_HASH = '$2a$12$O3Syhnm4rRn55bdKSmkZ5e9ptITFc23gshbj2NugI2N/khhcZlwOm';
+document.addEventListener('DOMContentLoaded', () => {
+const link = document.getElementById('godL');
+const modal = document.getElementById('godModal');
+const input = document.getElementById('godPasswordInput');
+const submitBtn = document.getElementById('godSubmitBtn');
+const cancelBtn = document.getElementById('godCancelBtn');
+
+if (!link) { console.error('godL не найден'); return; }
+
+// Если уже авторизован в этой сессии — сразу переходим без модалки
+link.addEventListener('click', (e) => {
+e.preventDefault();
+if (sessionStorage.getItem('godAuth') === '1') {
+  window.location.href = link.href;
+  return;
+}
+modal.classList.add('show');
+input.value = '';
+input.classList.remove('error');
+submitBtn.innerHTML = 'Anmelden';
+submitBtn.disabled = false;
+});
+
+// При возврате назад (bfcache) — закрываем модалку если вдруг открыта
+window.addEventListener('pageshow', () => {
+  modal.classList.remove('show');
+});
+
+// Закрытие модального окна
+const closeModal = () => {
+modal.classList.remove('show');
+input.value = '';
+input.classList.remove('error');
+};
+
+// Abbrechen
+cancelBtn.addEventListener('click', closeModal);
+
+// Закрытие при клике вне модального окна
+modal.addEventListener('click', (e) => {
+if (e.target === modal) closeModal();
+});
+
+// Закрытие по Escape
+document.addEventListener('keydown', (e) => {
+if (e.key === 'Escape' && modal.classList.contains('show')) {
+closeModal();
+}
+});
+
+// Проверка пароля
+const checkPassword = async () => {
+const pwd = input.value.trim();
+if (!pwd) {
+input.classList.add('error');
+return;
+}
+
+// Показываем loader
+submitBtn.innerHTML = 'Prüfen…<span class="god-loader"></span>';
+submitBtn.disabled = true;
+
+try {
+const ok = await bcrypt.compare(pwd, GOD_HASH);
+if (ok) {
+submitBtn.innerHTML = '✅ Erfolgreich!';
+sessionStorage.setItem('godAuth', '1');
+setTimeout(() => {
+window.location.href = link.href;
+}, 500);
+} else {
+submitBtn.innerHTML = 'Anmelden';
+submitBtn.disabled = false;
+input.classList.add('error');
+input.value = '';
+input.focus();
+// Небольшая вибрация на мобильных
+if (navigator.vibrate) navigator.vibrate(200);
+}
+} catch (error) {
+console.error('Ошибка проверки пароля:', error);
+submitBtn.innerHTML = 'Anmelden';
+submitBtn.disabled = false;
+}
+};
+
+// Кнопка "Anmelden"
+submitBtn.addEventListener('click', checkPassword);
+
+// Enter для отправки
+input.addEventListener('keypress', (e) => {
+if (e.key === 'Enter') {
+checkPassword();
+}
+});
+
+// Убираем ошибку при вводе
+input.addEventListener('input', () => {
+input.classList.remove('error');
+});
+});
+</script>
+<!-- иконка консоли -->
+<button id="btnConsole"
+title="Konsole ein-/ausblenden"
+style="position:fixed; left:3px; bottom:3px; z-index:9999;
+width:24px; height:24px;          /* фиксируем размеры */
+margin:0; padding:0; border:none; background:none;
+color: var(--text);
+display:flex; align-items:center; justify-content:center;
+cursor:pointer;">
+<svg width="32" height="32" viewBox="0 0 20 20" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path d="M5.64645 9.14645C5.84171 8.95118 6.15829 8.95118 6.35355 9.14645L8.35355 11.1464C8.44732 11.2402 8.5 11.3674 8.5 11.5C8.5 11.6326 8.44732 11.7598 8.35355 11.8536L6.35355 13.8536C6.15829 14.0488 5.84171 14.0488 5.64645 13.8536C5.45118 13.6583 5.45118 13.3417 5.64645 13.1464L7.29289 11.5L5.64645 9.85355C5.45118 9.65829 5.45118 9.34171 5.64645 9.14645ZM14.5 13H9.5C9.22386 13 9 13.2239 9 13.5C9 13.7761 9.22386 14 9.5 14H14.5C14.7761 14 15 13.7761 15 13.5C15 13.2239 14.7761 13 14.5 13ZM2.99609 5.5C2.99609 4.11929 4.11538 3 5.49609 3H14.4961C15.8768 3 16.9961 4.11929 16.9961 5.5V6H16.999V7H16.9961V14.5C16.9961 15.8807 15.8768 17 14.4961 17H5.49609C4.11538 17 2.99609 15.8807 2.99609 14.5V5.5ZM15.9961 6V5.5C15.9961 4.67157 15.3245 4 14.4961 4H5.49609C4.66767 4 3.99609 4.67157 3.99609 5.5V6H15.9961ZM3.99609 7V14.5C3.99609 15.3284 4.66767 16 5.49609 16H14.4961C15.3245 16 15.9961 15.3284 15.9961 14.5V7H3.99609Z"/>
+</svg>
+</button>
+<!-- сама консоль (изначально скрыта) -->
+<div id="mobileConsole" style="
+display:none;
+position:fixed; inset:auto 0 0 0; height:120px;
+background:#000; color:#0f0; font:11px/1.3 monospace;
+overflow:auto; padding:4px; z-index:9998;">
+<div>=== консоль ===</div>
+</div>
+<script>
+/* ---------- мобильная консоль ---------- */
+const con = document.getElementById('mobileConsole');
+const btn = document.getElementById('btnConsole');
+// перехватываем console.log
+const origLog = console.log;
+console.log = function (...args) {
+origLog(...args);                       // выводим в обычную консоль
+const line = args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ');
+con.insertAdjacentHTML('beforeend', '<div>' + line + '</div>');
+con.scrollTop = con.scrollHeight;
+};
+// показ/скрытие по кнопке
+btn.addEventListener('click', () => {
+con.style.display = con.style.display === 'none' ? 'block' : 'none';
+});
+/* первое тестовое сообщение */
+console.log('mobile console ready');
+</script>
+</body>
+</html>
