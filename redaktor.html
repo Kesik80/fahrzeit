@@ -1264,8 +1264,7 @@ function getAutoFlag(key, isTreff) { return !!autoCalcFlags[flagKey(key, isTreff
 
 // Запрос времени в пути между двумя координатами → минуты
 async function fetchTravelTime(originLat, originLng, destLat, destLng) {
-  const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
-  const resp = await fetch(base + '/api/calculate-time', {
+  const resp = await fetch('/api/calculate-time', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ originLat, originLng, destLat, destLng })
@@ -2763,8 +2762,7 @@ async function parseAnyCoords(input) {
   // Для сокращённых ссылок — сервер
   try {
     showMsg('🔄 Определяю координаты…', 5000);
-    const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
-    const resp = await fetch(base + '/api/parse-coords?input=' + encodeURIComponent(input));
+    const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(input));
     if (!resp.ok) { showMsg('❌ Сервер недоступен — введите координаты вручную (lat, lng)', 4000); return null; }
     const d = await resp.json();
     if (d.success) return { lat: d.lat, lng: d.lng };

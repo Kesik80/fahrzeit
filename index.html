@@ -2394,17 +2394,21 @@ if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.
 async parseCoordinates(raw) {
 const s = raw.trim();
 if (!s) { this.showToast("Bitte Daten eingeben."); return null; }
-// Локальный парсинг lat,lng
+// 1. Прямые координаты lat,lng — парсим локально без сервера
 const localMatch = s.match(/^(-?\d+\.\d+)[,\s]+(-?\d+\.\d+)$/);
 if (localMatch) {
   const lat = parseFloat(localMatch[1]), lng = parseFloat(localMatch[2]);
   if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) return { lat, lng };
 }
-// Для сокращённых ссылок — обращаемся к серверу
+// 2. Координаты прямо в URL maps.google.com (@lat,lng или !3d!4d)
+if (/^https?:\/\//i.test(s)) {
+  const fromUrl = this._parseCoordsFromUrl(s);
+  if (fromUrl) return fromUrl;
+}
+// 3. Сокращённые ссылки — через Vercel API
 try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
-const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
-const resp = await fetch(base + '/api/parse-coords?input=' + encodeURIComponent(s));
+const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
 if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
 const d = await resp.json();
 if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
@@ -2414,6 +2418,17 @@ return null;
 this.showToast("Fehler: " + e.message);
 return null;
 }
+}
+_parseCoordsFromUrl(url) {
+  const check = (lat, lng) => (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) ? { lat, lng } : null;
+  let m;
+  m = url.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  m = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  m = url.match(/[?&](?:q|query|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+  return null;
 }
 openCoordsModal(index, isMachine = false, isAddingNewName = false, isEditingStartPoint = false, isAddingNewDestination = false, isAddingNewKollege = false, isAddingNewSubPerson = false) {
 this.currentEditIndex = index;
@@ -3177,8 +3192,7 @@ if (index === 0) {
 }
 try {
   this.showToast('🔄 Fahrtzeit wird berechnet…');
-  const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
-  const response = await fetch(base + '/api/calculate-time', {
+  const response = await fetch('/api/calculate-time', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -3238,8 +3252,7 @@ try {
 this.showToast('🔄 Fahrtzeit wird berechnet…');
 
 // Вызываем Vercel serverless function
-const base = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost' ? '' : 'https://fahrzeit.vercel.app';
-const response = await fetch(base + '/api/calculate-time', {
+const response = await fetch('/api/calculate-time', {
 method: 'POST',
 headers: {
 'Content-Type': 'application/json',
