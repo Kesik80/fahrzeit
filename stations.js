@@ -138,6 +138,5 @@ const defaultMachineDestinationsData = [
   { name: 'an der Maschine', lat: null, lng: null },
   { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
   { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
-  { name: 'Hotel "Am Stadtpark"', lat: 51.1784257, lng: 9.3693976 },
-  { name: 'Педиатр', lat: 51.519754199999994, lng: 7.1793686999999995 }
+  { name: 'Hotel "Am Stadtpark"', lat: 51.1784257, lng: 9.3693976 }
 ];
