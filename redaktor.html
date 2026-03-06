@@ -1433,10 +1433,19 @@ document.getElementById('tabs').addEventListener('click', e => {
 async function loadFromGitHub() {
   setStatus('loading', 'Загрузка stations.js с GitHub…', '⏳');
   try {
-    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
-    const headers = { 'Accept': 'application/vnd.github.raw+json', 'Cache-Control': 'no-cache', 'X-GitHub-Api-Version': '2022-11-28' };
-    if (localStorage.ghToken) headers['Authorization'] = 'token ' + localStorage.ghToken;
-    const resp = await fetch(apiUrl, { cache: 'no-store', headers });
+    let resp = null;
+    // Сначала пробуем GitHub API (актуально, без CDN кэша)
+    try {
+      const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+      const headers = { 'Accept': 'application/vnd.github.raw+json', 'X-GitHub-Api-Version': '2022-11-28' };
+      if (localStorage.ghToken) headers['Authorization'] = 'token ' + localStorage.ghToken;
+      resp = await fetch(apiUrl, { cache: 'no-store', headers });
+      if (!resp.ok) resp = null; // fallback если не 200
+    } catch(e) { resp = null; }
+    // Fallback на raw URL
+    if (!resp) {
+      resp = await fetch(GH_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    }
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     parseStationsText(await resp.text());
     setStatus('ok', 'stations.js загружен ✅', '✅');
@@ -1455,7 +1464,7 @@ function parseStationsText(text) {
   const defM = text.match(/const\s+defaultCoords\s*=\s*({[\s\S]*?});/);
   const stM  = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM  = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
-  showMsg(`🔍 def:${!!defM} st:${!!stM} tm:${!!tmM}`, 5000);
+
 
   function extractBraces(str, keyword) {
     const ki = str.indexOf(keyword);
