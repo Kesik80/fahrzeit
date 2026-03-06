@@ -24,7 +24,7 @@ this.stations = {
   'Gutersloh': {lat: 51.907774, lng: 8.3882563},
   'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929},
   'Hamm': {lat: 51.6727514, lng: 7.8114577},
-  'Hotel "Am Stadtpark"': {lat: 51.539072, lng: 7.0090119}
+  'Hotel "Am Stadtpark"': {lat: 51.1784257, lng: 9.3693976}
 };
 
 // Время в пути между участниками
