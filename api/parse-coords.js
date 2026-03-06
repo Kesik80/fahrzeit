@@ -209,7 +209,7 @@ module.exports = async (req, res) => {
     const fromGeo = await geocodeFromUrl(finalUrl);
     if (fromGeo) return res.json({ success: true, ...fromGeo, source: 'geocode' });
 
-    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке', debug_url: finalUrl, debug_place: decodeURIComponent(finalUrl).match(/\/maps\/place\/([^/]+)\//)?.[1] || null });
+    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке' });
 
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
