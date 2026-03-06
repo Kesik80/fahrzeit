@@ -23,8 +23,7 @@ this.stations = {
   'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
   'Gutersloh': {lat: 51.907774, lng: 8.3882563},
   'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929},
-  'Hamm': {lat: 51.6727514, lng: 7.8114577},
-  'Hotel "Am Stadtpark"': {lat: 51.1784257, lng: 9.3693976}
+  'Hamm': {lat: 51.6727514, lng: 7.8114577}
 };
 
 // Время в пути между участниками
@@ -138,5 +137,6 @@ const defaultGreetingsData = [
 const defaultMachineDestinationsData = [
   { name: 'an der Maschine', lat: null, lng: null },
   { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
-  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 }
+  { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
+  { name: 'Hotel "Am Stadtpark"', lat: 51.1784257, lng: 9.3693976 }
 ];
