@@ -1433,10 +1433,13 @@ document.getElementById('tabs').addEventListener('click', e => {
 async function loadFromGitHub() {
   setStatus('loading', 'Загрузка stations.js с GitHub…', '⏳');
   try {
-    const resp = await fetch(GH_RAW_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
+    const headers = { 'Accept': 'application/vnd.github.raw+json', 'Cache-Control': 'no-cache', 'X-GitHub-Api-Version': '2022-11-28' };
+    if (localStorage.ghToken) headers['Authorization'] = 'token ' + localStorage.ghToken;
+    const resp = await fetch(apiUrl, { cache: 'no-store', headers });
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     parseStationsText(await resp.text());
-    setStatus('ok', 'stations.js загружен с GitHub', '✅');
+    setStatus('ok', 'stations.js загружен ✅', '✅');
     document.getElementById('ghUploadBtn').disabled = false;
     updateHeaderSub();
     render();
