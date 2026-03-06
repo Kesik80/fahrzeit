@@ -1723,12 +1723,22 @@ try {
 }
 }
 formatMinutes(minutes) {
-if (minutes < 60) {
-return `${minutes}`;
-}
+if (minutes < 60) return `${minutes}`;
 const hours = Math.floor(minutes / 60);
 const mins = minutes % 60;
-return `${hours}.${mins.toString().padStart(2, '0')}`;
+return `${hours},${mins.toString().padStart(2, '0')}`;
+}
+parseTimeInput(raw) {
+// Принимает: "105", "1,45", "1.45" → минуты
+const s = String(raw).trim();
+if (/^\d+$/.test(s)) return Math.max(1, Math.min(720, parseInt(s)));
+const m = s.match(/^(\d+)[.,](\d{1,2})$/);
+if (m) {
+  const hours = parseInt(m[1]);
+  const mins = parseInt(m[2].padEnd(2, '0'));
+  return Math.max(1, Math.min(720, hours * 60 + mins));
+}
+return null;
 }
 getTravelTime(fromName, toName) {
 if (fromName === toName) return 0;
@@ -3461,10 +3471,9 @@ updateHints() {
 editParticipantTime(index, displayEl) {
 const current = this.participants[index].time;
 const input = document.createElement('input');
-input.type = 'number';
-input.min = '1';
-input.max = '999';
-input.value = current;
+input.type = 'text';
+input.inputMode = 'decimal';
+input.value = this.formatMinutes(current);
 input.className = 'time-display';
 input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
 displayEl.replaceWith(input);
@@ -3472,8 +3481,8 @@ input.focus();
 input.select();
 
 const save = () => {
-  const val = parseInt(input.value);
-  if (!isNaN(val) && val > 0) {
+  const val = this.parseTimeInput(input.value);
+  if (val !== null) {
     this.participants[index].time = val;
     this.participants[index].timeManuallyEdited = true;
     this.participants[index].routeCalculated = false;
@@ -3490,10 +3499,9 @@ input.addEventListener('keydown', e => {
 editMachineTime(displayEl) {
 const current = this.machineStop.time;
 const input = document.createElement('input');
-input.type = 'number';
-input.min = '1';
-input.max = '999';
-input.value = current;
+input.type = 'text';
+input.inputMode = 'decimal';
+input.value = this.formatMinutes(current);
 input.className = 'time-display';
 input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
 displayEl.replaceWith(input);
@@ -3501,8 +3509,8 @@ input.focus();
 input.select();
 
 const save = () => {
-  const val = parseInt(input.value);
-  if (!isNaN(val) && val > 0) {
+  const val = this.parseTimeInput(input.value);
+  if (val !== null) {
     this.machineStop.time = val;
     this.machineStop.autoCalculated = false;
   }
