@@ -23,7 +23,8 @@ this.stations = {
   'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
   'Gutersloh': {lat: 51.907774, lng: 8.3882563},
   'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929},
-  'Hamm': {lat: 51.6727514, lng: 7.8114577}
+  'Hamm': {lat: 51.6727514, lng: 7.8114577},
+  'Hotel "Am Stadtpark"': {lat: 51.539072, lng: 7.0090119}
 };
 
 // Время в пути между участниками
