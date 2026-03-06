@@ -66,35 +66,40 @@ function parseCoords(str) {
 
 // Геокодирование через адрес в URL (когда координат нет напрямую)
 async function geocodeFromUrl(url) {
-  // Извлекаем название места из URL вида /maps/place/NAME/data=...
-  const placeMatch = decodeURIComponent(url).match(/\/maps\/place\/([^/]+)\//);
+  const decoded = decodeURIComponent(url).replace(/\+/g, ' ');
+  const placeMatch = decoded.match(/\/maps\/place\/([^/]+)\//);
   if (!placeMatch) return null;
-  
-  const placeName = placeMatch[1].replace(/\+/g, ' ');
-  
-  // Используем Nominatim OpenStreetMap для геокодирования
-  return new Promise((resolve) => {
-    const q = encodeURIComponent(placeName);
-    const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`;
-    https.get(nominatimUrl, {
-      headers: { 'User-Agent': 'FahrzeitRechner/1.0' }
-    }, res => {
-      let body = '';
-      res.on('data', c => body += c);
-      res.on('end', () => {
-        try {
-          const data = JSON.parse(body);
-          if (data && data[0]) {
-            const lat = parseFloat(data[0].lat);
-            const lng = parseFloat(data[0].lon);
-            if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) {
-              resolve({ lat, lng });
+
+  const full = placeMatch[1];
+  const parts = full.split(',').map(s => s.trim());
+  // Try: full name, last 2 parts (street+city), last part (city only)
+  const queries = [full];
+  if (parts.length >= 2) queries.push(parts.slice(-2).join(', '));
+  if (parts.length >= 1) queries.push(parts[parts.length - 1]);
+
+  for (const q of queries) {
+    const result = await new Promise((resolve) => {
+      const encoded = encodeURIComponent(q);
+      const nominatimUrl = `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1`;
+      https.get(nominatimUrl, { headers: { 'User-Agent': 'FahrzeitRechner/1.0' } }, res => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => {
+          try {
+            const data = JSON.parse(body);
+            if (data && data[0]) {
+              const lat = parseFloat(data[0].lat);
+              const lng = parseFloat(data[0].lon);
+              if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) resolve({ lat, lng });
+              else resolve(null);
             } else resolve(null);
-          } else resolve(null);
-        } catch { resolve(null); }
-      });
-    }).on('error', () => resolve(null));
-  });
+          } catch { resolve(null); }
+        });
+      }).on('error', () => resolve(null));
+    });
+    if (result) return result;
+  }
+  return null;
 }
 
 function parseText(s) {
