@@ -19,10 +19,13 @@ function fetchUrl(url, redirectCount = 0) {
           ? res.headers.location
           : new URL(res.headers.location, url).href;
         res.resume();
+        // Проверяем координаты уже в Location заголовке редиректа
+        const fromRedirect = parseCoords(next);
+        if (fromRedirect) return resolve({ finalUrl: next, body: '', coords: fromRedirect });
         return resolve(fetchUrl(next, redirectCount + 1));
       }
       let body = '';
-      res.on('data', chunk => body += chunk);
+      res.on('data', chunk => { if (body.length < 500000) body += chunk; });
       res.on('end', () => resolve({ finalUrl: url, body, status: res.statusCode }));
     });
     req.on('error', reject);
@@ -35,7 +38,7 @@ function parseCoords(str) {
     Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
   let m;
 
-  // ★ ГЛАВНЫЙ: !3d<lat>!4d<lng> — формат data= параметра Google Maps
+  // !3d<lat>!4d<lng>
   m = str.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   if (m) return check(+m[1], +m[2]);
 
@@ -53,6 +56,10 @@ function parseCoords(str) {
 
   // ?q= / ?query= / ?center= / ?dest=
   m = str.match(/[?&](?:q|query|center|dest)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  if (m) return check(+m[1], +m[2]);
+
+  // pb= параметр с координатами (формат Google Maps)
+  m = str.match(/pb=.*?!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   if (m) return check(+m[1], +m[2]);
 
   // Просто два числа рядом
@@ -93,7 +100,7 @@ function parseCoordsFromBody(body) {
   m = body.match(/"lat"\s*:\s*([-+]?\d+\.\d+)\s*,\s*"lng"\s*:\s*([-+]?\d+\.\d+)/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
 
-  // og:url / canonical — могут содержать !3d или @lat,lng
+  // og:url / canonical
   for (const pattern of [
     /property="og:url"\s+content="([^"]+)"/,
     /content="([^"]+)"\s+property="og:url"/,
@@ -101,16 +108,16 @@ function parseCoordsFromBody(body) {
   ]) {
     m = body.match(pattern);
     if (m) {
-      const c = parseCoords(m[1]);
+      const c = parseCoords(decodeURIComponent(m[1]));
       if (c) return c;
     }
   }
 
-  // ★ !3d<lat>!4d<lng> прямо в HTML теле
+  // !3d<lat>!4d<lng> в теле
   m = body.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
   if (m && Math.abs(+m[1]) <= 90) return { lat: +m[1], lng: +m[2] };
 
-  // JSON-массивы [lat, lng] высокой точности
+  // JSON-массивы [lat, lng]
   const pairs = body.match(/\[([-+]?\d{2,3}\.\d{6,}),([-+]?\d{1,3}\.\d{6,})\]/g);
   if (pairs) {
     for (const pair of pairs) {
@@ -157,18 +164,23 @@ module.exports = async (req, res) => {
     }
 
     const result = await fetchUrl(input);
+
+    // Если координаты найдены уже при редиректе
+    if (result.coords) return res.json({ success: true, ...result.coords, source: 'redirect' });
+
     const finalUrl = result.finalUrl;
     const body = result.body;
 
-    // Из финального URL
-    const fromUrl = parseCoords(finalUrl);
+    // Из финального URL (включая декодированный)
+    const fromUrl = parseCoords(finalUrl) || parseCoords(decodeURIComponent(finalUrl));
     if (fromUrl) return res.json({ success: true, ...fromUrl, source: 'url' });
 
     // Из тела страницы
     const fromBody = parseCoordsFromBody(body);
     if (fromBody) return res.json({ success: true, ...fromBody, source: 'body' });
 
-    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке' });
+    // Отладка: вернём финальный URL чтобы понять что пришло
+    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке', debug_url: finalUrl.substring(0, 200) });
 
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
