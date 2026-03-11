@@ -139,5 +139,5 @@ const defaultMachineDestinationsData = [
   { name: 'im Büro Bochum', lat: 51.503883, lng: 7.240038 },
   { name: 'an der Sauna', lat: 51.5093, lng: 6.903112 },
   { name: 'Hotel "Am Stadtpark"', lat: 51.1783189, lng: 9.3683781 },
-  { name: 'Opladen Plasser', lat: 51.058017299999996, lng: 7.0131669 }
+  { name: 'Opladen Plasser', lat: 51.0591072, lng: 7.012385 }
 ];
