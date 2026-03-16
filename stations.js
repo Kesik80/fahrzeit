@@ -121,7 +121,8 @@ const defaultFarewellData = {
   "list": [
     "Tschüss 👋",
     "Bis bald 👋",
-    "Bis später 👋"
+    "Bis später 👋",
+    "Bis morgen früh 👋"
   ]
 };
 
