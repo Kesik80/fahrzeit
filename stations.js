@@ -104,16 +104,16 @@ this.trefftravelTimes = {
   'Gelsenkirchen-Maikel': 15,
   'Gelsenkirchen-René': 20,
   'Gelsenkirchen-Vasyl': 20,
-  'Lirich P&R Parkplatz-Sergii': 5,
-  'Lirich P&R Parkplatz-Anatolii': 5,
-  'Lirich P&R Parkplatz-Andrii': 5,
-  'Lirich P&R Parkplatz-Sergio': 5,
-  'Lirich P&R Parkplatz-Dima': 5,
-  'Lirich P&R Parkplatz-René': 5,
-  'Lirich P&R Parkplatz-Marvin': 5,
-  'Lirich P&R Parkplatz-Vasyl': 5,
-  'Lirich P&R Parkplatz-Maikel': 5,
-  'Lirich P&R Parkplatz-Aleks': 5
+  'Lirich P&R Parkplatz-Sergii': 20,
+  'Lirich P&R Parkplatz-Anatolii': 15,
+  'Lirich P&R Parkplatz-Andrii': 20,
+  'Lirich P&R Parkplatz-Sergio': 20,
+  'Lirich P&R Parkplatz-Dima': 30,
+  'Lirich P&R Parkplatz-René': 15,
+  'Lirich P&R Parkplatz-Marvin': 15,
+  'Lirich P&R Parkplatz-Vasyl': 20,
+  'Lirich P&R Parkplatz-Maikel': 25,
+  'Lirich P&R Parkplatz-Aleks': 15
 };
 
 // Приоритетные списки остановок и попутчики
