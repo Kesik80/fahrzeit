@@ -111,7 +111,7 @@ this.trefftravelTimes = {
   'Lirich P&R Parkplatz-Dima': 30,
   'Lirich P&R Parkplatz-René': 15,
   'Lirich P&R Parkplatz-Marvin': 15,
-  'Lirich P&R Parkplatz-Vasyl': 20,
+  'Lirich P&R Parkplatz-Vasyl': 15,
   'Lirich P&R Parkplatz-Maikel': 25,
   'Lirich P&R Parkplatz-Aleks': 15
 };
