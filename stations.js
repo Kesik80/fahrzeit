@@ -81,7 +81,7 @@ this.travelTimes = {
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
   'Gelsenkirchen': {lat: 51.535695, lng: 7.096155},
-  'Lirich P&R Parkplatz': {lat: 51.4756937, lng: 6.8113397}
+  'Lirich P&R Parkplatz': {lat: 51.475983, lng: 6.812073}
 };
 
 // Время в пути от пункта встречи до каждого участника
