@@ -80,7 +80,8 @@ this.travelTimes = {
 // Пункты встречи (Treffpunkt)
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
-  'Gelsenkirchen': {lat: 51.535695, lng: 7.096155}
+  'Gelsenkirchen': {lat: 51.535695, lng: 7.096155},
+  'Lirich P&R Parkplatz': {lat: 51.4756937, lng: 6.8113397}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -102,7 +103,17 @@ this.trefftravelTimes = {
   'Gelsenkirchen-Marvin': 25,
   'Gelsenkirchen-Maikel': 15,
   'Gelsenkirchen-René': 20,
-  'Gelsenkirchen-Vasyl': 20
+  'Gelsenkirchen-Vasyl': 20,
+  'Lirich P&R Parkplatz-Sergii': 5,
+  'Lirich P&R Parkplatz-Anatolii': 5,
+  'Lirich P&R Parkplatz-Andrii': 5,
+  'Lirich P&R Parkplatz-Sergio': 5,
+  'Lirich P&R Parkplatz-Dima': 5,
+  'Lirich P&R Parkplatz-René': 5,
+  'Lirich P&R Parkplatz-Marvin': 5,
+  'Lirich P&R Parkplatz-Vasyl': 5,
+  'Lirich P&R Parkplatz-Maikel': 5,
+  'Lirich P&R Parkplatz-Aleks': 5
 };
 
 // Приоритетные списки остановок и попутчики
