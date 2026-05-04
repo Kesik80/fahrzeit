@@ -82,7 +82,8 @@ this.travelTimes = {
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
   'Gelsenkirchen': {lat: 51.535695, lng: 7.096155},
-  'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221}
+  'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
+  'Herten A2 Parkplatz': {lat: 51.572268, lng: 7.132545}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -114,7 +115,17 @@ this.trefftravelTimes = {
   'Lirich P&R Parkplatz-Marvin': 15,
   'Lirich P&R Parkplatz-Vasyl': 15,
   'Lirich P&R Parkplatz-Maikel': 25,
-  'Lirich P&R Parkplatz-Aleks': 15
+  'Lirich P&R Parkplatz-Aleks': 15,
+  'Herten A2 Parkplatz-Sergii': 5,
+  'Herten A2 Parkplatz-Anatolii': 5,
+  'Herten A2 Parkplatz-Andrii': 5,
+  'Herten A2 Parkplatz-Sergio': 5,
+  'Herten A2 Parkplatz-Dima': 5,
+  'Herten A2 Parkplatz-René': 5,
+  'Herten A2 Parkplatz-Marvin': 5,
+  'Herten A2 Parkplatz-Vasyl': 5,
+  'Herten A2 Parkplatz-Maikel': 5,
+  'Herten A2 Parkplatz-Aleks': 5
 };
 
 // Приоритетные списки остановок и попутчики
