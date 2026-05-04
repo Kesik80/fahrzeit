@@ -2472,11 +2472,18 @@ stSel.style.display = 'block';
 stSel.innerHTML = '<option value="">– Aus Liste wählen –</option>' +
 Object.entries(this.stations)
 .map(([name,c]) => `<option value="${c.lat},${c.lng}">${name}</option>`)
-.join('');
+.join('') +
+'<option value="__add_new_station__">\u2795 Neuer Ort\u2026</option>';
 /* ➜ подсветить ранее сохранённую станцию */
 const saved = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
 stSel.value = saved && [...stSel.options].some(o => o.value === saved) ? saved : '';
 stSel.onchange = () => {
+if (stSel.value === '__add_new_station__') {
+  stSel.value = '';
+  this.closeModal();
+  this.openCoordsModal(null, false, false, false, true);
+  return;
+}
 this.elements.coordsInput.value = stSel.value;
 const selOpt = stSel.options[stSel.selectedIndex];
 this.machineStop.stationName = selOpt && selOpt.value ? selOpt.textContent.trim() : '';
@@ -4096,5 +4103,8 @@ input.classList.remove('error');
 });
 </script>
 <script src="console.js"></script>
+<script>
+  console.log('test');
+</script>
 </body>
 </html>
