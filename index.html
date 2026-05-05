@@ -96,6 +96,30 @@ background: #6f42c1
 color: #ff9800 !important;
 font-weight: 700;
 }
+#shareButtons {
+display: none;
+gap: 8px;
+margin: 8px 0;
+flex-wrap: wrap;
+}
+.share-btn {
+flex: 0 0 auto;
+width: 54px;
+height: 54px;
+padding: 0;
+border: none;
+border-radius: 50%;
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+box-shadow: 0 3px 10px rgba(0,0,0,.4);
+transition: opacity .15s, transform .1s;
+}
+.share-btn:active { opacity: .75; transform: scale(.94); }
+.maps-btn      { background: #4285f4; }
+.maps-back-btn { background: #34a853; }
+.wa-btn        { background: #25d366; }
 #output .result-line {
 display: block;
 padding: 1px 0;
@@ -1418,6 +1442,35 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </button>
 </div>
 <pre id="output"></pre>
+<div id="shareButtons" style="display:none;gap:16px;margin:10px 0;justify-content:center;">
+  <button id="btnMapsTo" class="share-btn maps-btn" title="Скопировать маршрут туда">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- машина вправо -->
+      <path d="M3 11l2-4h9l2 4" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+      <rect x="2" y="11" width="13" height="5" rx="1.2" fill="#fff" opacity=".9"/>
+      <circle cx="6" cy="17" r="1.5" fill="#fff"/>
+      <circle cx="12" cy="17" r="1.5" fill="#fff"/>
+      <!-- стрелка вправо -->
+      <path d="M17 12h4M19 10l2 2-2 2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+  <button id="btnMapsBack" class="share-btn maps-back-btn" title="Скопировать маршрут обратно">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- стрелка влево -->
+      <path d="M7 12H3M5 10l-2 2 2 2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- машина влево -->
+      <path d="M21 11l-2-4h-9l-2 4" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
+      <rect x="9" y="11" width="13" height="5" rx="1.2" fill="#fff" opacity=".9"/>
+      <circle cx="12" cy="17" r="1.5" fill="#fff"/>
+      <circle cx="18" cy="17" r="1.5" fill="#fff"/>
+    </svg>
+  </button>
+  <button id="btnWhatsApp" class="share-btn wa-btn" title="Поделиться графиком">
+    <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35A9.93 9.93 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.93 13.57c-.21.58-1.22 1.11-1.68 1.17-.44.06-.99.08-1.59-.1-.37-.11-.84-.26-1.44-.51-2.52-1.09-4.17-3.62-4.3-3.79-.13-.17-1.05-1.4-1.05-2.67 0-1.27.67-1.9.9-2.16.24-.26.52-.33.7-.33.18 0 .35.002.5.01.16.007.38-.06.6.45.21.52.72 1.76.78 1.89.06.13.1.28.02.45-.08.17-.12.28-.24.43-.12.15-.25.34-.36.45-.12.12-.24.25-.1.49.14.24.62.99 1.33 1.6.91.8 1.68 1.04 1.92 1.16.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.15 1.16z"/>
+    </svg>
+  </button>
+</div>
 <div id="appHints">
   <div id="hintDriver" class="app-hint">👤 Fahrer auswählen</div>
   <div id="hintPart"   class="app-hint">➕ Teilnehmer hinzufügen</div>
@@ -1639,6 +1692,7 @@ this.addEventListeners();
 this.renderParticipants();
 this.initSortable();
 this.elements.output.innerHTML = '';
+this._setShareButtons(false);
 this.updateHints();
 }
 async loadStations() {
@@ -1802,6 +1856,7 @@ localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
 }
 resetToDefaults() {
+this._setShareButtons(false);
 this.greeting = this.defaultGreetings[0] || 'Moin zusammen';
 this.greetings = this.defaultGreetings.length ? [...this.defaultGreetings] : ['Moin zusammen'];
 this.startPoint = '';
@@ -1898,6 +1953,7 @@ this.loadData();
 this.renderParticipants();
 this.initSortable();
 this.calculate();
+this._setShareButtons(false);
 this.showToast('↩ Wiederhergestellt!');
 }
 loadData() {
@@ -2102,6 +2158,7 @@ this.updateParticipantTimes();
 this.saveData();
 this.renderParticipants();
 this.initSortable();
+this._initShareButtons();
 this.calculate();
 }
 }
@@ -2809,6 +2866,9 @@ this.updateParticipantTimes();
 }
 else if (this.isEditingMachine) {
 this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
+// BUGFIX: синхронизируем координаты и в machineDestinations
+const destEntry = this.machineDestinations.find(d => d.name === this.machineStop.name);
+if (destEntry) { destEntry.lat = coords.lat; destEntry.lng = coords.lng; }
 this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable();
 this.showToast('✅ Koordinaten gespeichert');
 // Автоматически рассчитываем время после сохранения координат машины
@@ -3989,7 +4049,152 @@ this.elements.output.innerHTML = lines
   .map(l => `<span class="result-line">${l}</span>`)
   .join('\n');
 this._initLineLongPress();
+// Показываем кнопки шаринга
+this._setShareButtons(!!out.trim());
 this.updateHints();
+}
+_setShareButtons(visible) {
+const sb = document.getElementById('shareButtons');
+if (sb) sb.style.display = visible ? 'flex' : 'none';
+}
+_copyRouteLink(reverse) {
+const url = this._buildRouteUrl(reverse);
+if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+navigator.clipboard.writeText(url).then(() => {
+  this.showToast(reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!');
+}).catch(() => {
+  // Fallback для старых браузеров
+  const ta = document.createElement('textarea');
+  ta.value = url;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  this.showToast(reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!');
+});
+}
+_buildRouteUrl(reverse) {
+const enc = (lat, lng) => `${lat},${lng}`;
+const waypoints = [];
+const parts = this.participants.filter(p => p.name);
+const machine = this.machineStop;
+const startC = this.startPointCoords; // координаты водителя (Sergii)
+
+if (reverse) {
+  // Обратно: машина → участники в обратном порядке → водитель
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+  [...parts].reverse().forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
+} else {
+  // Туда: водитель → участники по порядку → машина
+  if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
+  parts.forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+}
+if (waypoints.length < 2) return null;
+const [origin, ...rest] = waypoints;
+const destination = rest.pop();
+const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
+return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
+}
+_buildMapsUrl(reverse) {
+// Собираем точки маршрута: GPS → участники → машина (туда)
+// или GPS → участники обратно → дом водителя (обратно)
+const enc = (lat, lng) => `${lat},${lng}`;
+const waypoints = [];
+// Стартовая точка — текущее GPS (подставим реальные через геолокацию при клике)
+// Участники
+const parts = this.participants.filter(p => p.name);
+const machine = this.machineStop;
+if (reverse) {
+  // Обратно: machine → участники в обратном порядке → стартовая точка водителя
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+  [...parts].reverse().forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  const sc = this.startPointCoords;
+  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
+} else {
+  // Туда: GPS (текущее) → участники → machine
+  // Первый waypoint — текущее местоположение (используем "My+Location" или startPointCoords)
+  const sc = this.startPointCoords;
+  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
+  parts.forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+}
+if (waypoints.length < 2) return null;
+// Google Maps multi-stop URL
+const [origin, ...rest] = waypoints;
+const destination = rest.pop();
+const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
+return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
+}
+_openMapsWithGps(reverse) {
+if (!navigator.geolocation) {
+  this._openMapsUrl(reverse, null);
+  return;
+}
+navigator.geolocation.getCurrentPosition(
+  pos => this._openMapsUrl(reverse, pos.coords),
+  ()  => this._openMapsUrl(reverse, null),
+  { timeout: 5000, maximumAge: 60000 }
+);
+}
+_openMapsUrl(reverse, gpsCoords) {
+const enc = (lat, lng) => `${lat},${lng}`;
+const waypoints = [];
+const parts = this.participants.filter(p => p.name);
+const machine = this.machineStop;
+if (reverse) {
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+  [...parts].reverse().forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  const sc = this.startPointCoords;
+  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
+  else if (gpsCoords) waypoints.push(enc(gpsCoords.latitude, gpsCoords.longitude));
+} else {
+  if (gpsCoords) waypoints.push(enc(gpsCoords.latitude, gpsCoords.longitude));
+  else { const sc = this.startPointCoords; if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng)); }
+  parts.forEach(p => {
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+  });
+  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+}
+if (waypoints.length < 2) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+const [origin, ...rest] = waypoints;
+const destination = rest.pop();
+const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
+const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
+window.open(url, '_blank');
+}
+_initShareButtons() {
+const btnTo   = document.getElementById('btnMapsTo');
+const btnBack = document.getElementById('btnMapsBack');
+const btnWa   = document.getElementById('btnWhatsApp');
+if (btnTo)   btnTo.onclick   = () => this._copyRouteLink(false);
+if (btnBack) btnBack.onclick = () => this._copyRouteLink(true);
+if (btnWa)   btnWa.onclick   = () => {
+  const clone = this.elements.output.cloneNode(true);
+  clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
+  const text = clone.textContent.trim();
+  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
+  window.open(url, '_blank');
+};
 }
 _initLineLongPress() {
 const lines = this.elements.output.querySelectorAll('.result-line');
@@ -4128,6 +4333,19 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 app.loadStations();
+// Кнопки шаринга — делегирование, работает всегда
+document.addEventListener('click', e => {
+  const app = window.app;
+  if (!app) return;
+  if (e.target.id === 'btnMapsTo')   { app._copyRouteLink(false); return; }
+  if (e.target.id === 'btnMapsBack') { app._copyRouteLink(true);  return; }
+  if (e.target.id === 'btnWhatsApp') {
+    const clone = app.elements.output.cloneNode(true);
+    clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
+    const text = clone.textContent.trim();
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+});
 // ---------- тема ----------
 const switcher = document.getElementById('themeSwitch');
 if (!switcher) return;
