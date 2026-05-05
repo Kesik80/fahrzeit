@@ -3465,12 +3465,23 @@ updateHints() {
   hT.classList.toggle('visible', hasDriver && hasPart && !hasTime);
 }
 
+parseTimeInput(raw) {
+const s = String(raw).trim().replace(',', '.');
+// formats: "95" → 95 min | "1.35" or "1,35" → 1h35m = 95 min
+if (/^\d+$/.test(s)) return parseInt(s, 10);
+const m = s.match(/^(\d+)[.,](\d{1,2})$/);
+if (m) {
+  const h = parseInt(m[1], 10);
+  const mm = parseInt(m[2].padEnd(2, '0'), 10);
+  return h * 60 + mm;
+}
+return NaN;
+}
 editParticipantTime(index, displayEl) {
 const current = this.participants[index].time;
 const input = document.createElement('input');
-input.type = 'number';
-input.min = '1';
-input.max = '999';
+input.type = 'text';
+input.inputMode = 'decimal';
 input.value = current;
 input.className = 'time-display';
 input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
@@ -3479,7 +3490,7 @@ input.focus();
 input.select();
 
 const save = () => {
-  const val = parseInt(input.value);
+  const val = this.parseTimeInput(input.value);
   if (!isNaN(val) && val > 0) {
     this.participants[index].time = val;
     this.participants[index].timeManuallyEdited = true;
@@ -3497,9 +3508,8 @@ input.addEventListener('keydown', e => {
 editMachineTime(displayEl) {
 const current = this.machineStop.time;
 const input = document.createElement('input');
-input.type = 'number';
-input.min = '1';
-input.max = '999';
+input.type = 'text';
+input.inputMode = 'decimal';
 input.value = current;
 input.className = 'time-display';
 input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
@@ -3508,7 +3518,7 @@ input.focus();
 input.select();
 
 const save = () => {
-  const val = parseInt(input.value);
+  const val = this.parseTimeInput(input.value);
   if (!isNaN(val) && val > 0) {
     this.machineStop.time = val;
     this.machineStop.autoCalculated = false;
@@ -3523,7 +3533,7 @@ input.addEventListener('keydown', e => {
 });
 }
 updateMachineTime(value) {
-const time = parseInt(value) || 20;
+const time = this.parseTimeInput(value) || 20;
 this.machineStop.time = Math.max(1, Math.min(720, time));
 this.machineStop.autoCalculated = false;  // Сбрасываем флаг при ручном изменении
 this.saveData();
