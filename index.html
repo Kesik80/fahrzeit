@@ -92,6 +92,25 @@ background: var(--danger-color)
 .route-back {
 background: #6f42c1
 }
+.time-display.is-fallback {
+color: #ff9800 !important;
+font-weight: 700;
+}
+#output .result-line {
+display: block;
+padding: 1px 0;
+border-radius: 3px;
+cursor: pointer;
+transition: background .15s;
+user-select: none;
+}
+#output .result-line:active {
+background: rgba(0,123,255,0.12);
+}
+#output .result-line.copy-flash {
+background: rgba(40,167,69,0.25);
+transition: background 0s;
+}
 .greeting-container {
 background: var(--surface-color);
 border-radius: var(--border-radius);
@@ -1731,22 +1750,24 @@ const mins = minutes % 60;
 return `${hours}.${mins.toString().padStart(2, '0')}`;
 }
 getTravelTime(fromName, toName) {
-if (fromName === toName) return 0;
+if (fromName === toName) return { val: 0, fallback: false };
 const key = `${fromName}-${toName}`;
 const rev = `${toName}-${fromName}`;
-// Сначала ищем в обычных travelTimes
-if (this.travelTimes[key] !== undefined) return this.travelTimes[key];
-if (this.travelTimes[rev] !== undefined) return this.travelTimes[rev];
-// Затем в trefftravelTimes
-if (this.trefftravelTimes[key] !== undefined) return this.trefftravelTimes[key];
-if (this.trefftravelTimes[rev] !== undefined) return this.trefftravelTimes[rev];
-return 5; // fallback
+if (this.travelTimes[key] !== undefined) return { val: this.travelTimes[key], fallback: false };
+if (this.travelTimes[rev] !== undefined) return { val: this.travelTimes[rev], fallback: false };
+if (this.trefftravelTimes[key] !== undefined) return { val: this.trefftravelTimes[key], fallback: false };
+if (this.trefftravelTimes[rev] !== undefined) return { val: this.trefftravelTimes[rev], fallback: false };
+return { val: 5, fallback: true };
 }
 updateParticipantTimes() {
 let previousPoint = this.startPoint;
 this.participants.forEach(participant => {
 if (participant.name && !participant.timeManuallyEdited) {
-participant.time = this.getTravelTime(previousPoint, participant.name);
+  const result = this.getTravelTime(previousPoint, participant.name);
+  participant.time = result.val;
+  participant.isFallback = result.fallback;
+} else if (participant.timeManuallyEdited) {
+  participant.isFallback = false;
 }
 if (participant.name) previousPoint = participant.name;
 });
@@ -1797,14 +1818,87 @@ this.farewell = this.defaultFarewellText || 'Tschüss 👋';
 this.saveData();
 }
 clearLocalStorage() {
+// Сохраняем снапшот для undo
+this._undoSnapshot = {
+  greeting: localStorage.getItem(this.profileKey('greeting')),
+  greetings: localStorage.getItem(this.profileKey('greetings')),
+  participants: localStorage.getItem(this.profileKey('participants')),
+  machineStop: localStorage.getItem(this.profileKey('machineStop')),
+  machineDestinations: localStorage.getItem(this.profileKey('machineDestinations')),
+  nameToCoordinates: localStorage.getItem(this.profileKey('nameToCoordinates')),
+  startPoint: localStorage.getItem(this.profileKey('startPoint')),
+  useUhrBei: localStorage.getItem(this.profileKey('useUhrBei')),
+  useSuperscript: localStorage.getItem(this.profileKey('useSuperscript')),
+  showDestName: localStorage.getItem(this.profileKey('showDestName')),
+  startPassengers: localStorage.getItem(this.profileKey('startPassengers')),
+  farewell: localStorage.getItem(this.profileKey('farewell')),
+  farewells: localStorage.getItem(this.profileKey('farewells')),
+  _profileKey: this.startPoint,
+};
 ['greeting','greetings','participants','machineStop','machineDestinations',
 'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','startPassengers','farewell','farewells']
 .forEach(k => localStorage.removeItem(this.profileKey(k)));
-this.showToast("Daten zurückgesetzt.");
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
 this.renderParticipants();
 this.initSortable();
+this._showUndoToast();
+}
+_showUndoToast() {
+const toast = this.elements.toast;
+const TOTAL = 8;
+toast.innerHTML = '';
+const msg = document.createElement('span');
+msg.textContent = 'Daten zurückgesetzt. ';
+const btn = document.createElement('button');
+btn.style.cssText = 'margin-left:8px;padding:2px 10px;border:none;border-radius:4px;background:#fff;color:#333;font-weight:700;cursor:pointer;font-size:0.9em;height:auto;width:auto;display:inline-flex;align-items:center;gap:5px;margin-top:0;';
+// Счётчик секунд внутри кнопки
+const counter = document.createElement('span');
+counter.style.cssText = 'display:inline-block;min-width:18px;background:#ff9800;color:#fff;border-radius:50%;font-size:0.8em;font-weight:900;text-align:center;line-height:18px;height:18px;';
+counter.textContent = TOTAL;
+const label = document.createElement('span');
+label.textContent = 'Rückgängig';
+btn.appendChild(label);
+btn.appendChild(counter);
+btn.onclick = () => {
+  this._restoreSnapshot();
+  toast.classList.remove('show');
+  clearInterval(this._undoInterval);
+};
+toast.appendChild(msg);
+toast.appendChild(btn);
+toast.classList.add('show');
+let remaining = TOTAL;
+clearInterval(this._undoInterval);
+this._undoInterval = setInterval(() => {
+  remaining--;
+  counter.textContent = remaining;
+  if (remaining <= 0) {
+    clearInterval(this._undoInterval);
+    toast.classList.remove('show');
+    toast.innerHTML = '';
+    this._undoSnapshot = null;
+  }
+}, 1000);
+}
+_restoreSnapshot() {
+if (!this._undoSnapshot) return;
+clearTimeout(this._undoTimer);
+clearInterval(this._undoInterval);
+const snap = this._undoSnapshot;
+// Восстанавливаем startPoint сначала для правильного profileKey
+this.startPoint = snap._profileKey || '';
+const k = (key) => this.profileKey(key);
+Object.entries(snap).forEach(([key, val]) => {
+  if (key === '_profileKey') return;
+  if (val !== null) localStorage.setItem(k(key), val);
+  else localStorage.removeItem(k(key));
+});
+this.loadData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+this.showToast('↩ Wiederhergestellt!');
 }
 loadData() {
 try {
@@ -2163,8 +2257,8 @@ ${participantNameOptions}
 <option value="add-new">➕ Neuen Namen hinzufügen</option>
 </select>
 <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten">${coordsSvg}</button>
-<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}" data-index="${i}" data-type="participant-time-display" title="Tippen zum Ändern">
-${this.formatMinutes(p.time)}
+<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}${p.isFallback && !p.timeManuallyEdited ? ' is-fallback' : ''}" data-index="${i}" data-type="participant-time-display" title="${p.isFallback && !p.timeManuallyEdited ? 'Fahrzeit nicht bekannt – Schätzwert!' : 'Tippen zum Ändern'}">
+${this.formatMinutes(p.time)}${p.isFallback && !p.timeManuallyEdited ? ' ⚠' : ''}
 </div>
 <button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
   ${participantCalcIcon}
@@ -2505,8 +2599,25 @@ const participant = this.participants[index];
 coordsInput.value = participant.lat && participant.lng ? `${parseFloat(participant.lat.toFixed(6))},${parseFloat(participant.lng.toFixed(6))}` : '';
 }
 modal.style.display = 'flex';
-// Автофокус только при hinzugefügtии нового имени —
-// иначе на мобильном сразу выскакивает клавиатура
+// Авто-подсказка: если вставлена сокращённая ссылка — показываем hint
+// При нажатии ✅ parseCoordinates обработает её автоматически
+{
+  const inp = this.elements.coordsInput;
+  const hint = document.getElementById('coordsShortHint');
+  const updateHint = () => {
+    if (!hint) return;
+    const v = inp.value.trim();
+    const isShortUrl = v && /^https?:\/\//i.test(v) && !this._parseCoordsFromUrl(v);
+    hint.style.display = isShortUrl ? 'block' : 'none';
+    hint.textContent = isShortUrl
+      ? '⏳ Sieht wie ein gekürzter Link aus – wird beim Speichern (✅) automatisch verarbeitet.'
+      : 'Gekürzte Links werden einige Sekunden verarbeitet.';
+  };
+  inp.removeEventListener('input', inp._updateHint);
+  inp._updateHint = updateHint;
+  inp.addEventListener('input', updateHint);
+  updateHint();
+}
 if (isAddingNewName || isAddingNewKollege || isAddingNewSubPerson) {
 nameInput.focus();
 }
@@ -3872,8 +3983,39 @@ out+=this.useUhrBei
 ? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}\n`
 : `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}\n`;
 if (this.farewell) out += this.farewell + '\n';
-this.elements.output.innerHTML=out;
+// Оборачиваем каждую строку в span для long-press копирования
+const lines = out.split('\n').filter(l => l.trim() !== '');
+this.elements.output.innerHTML = lines
+  .map(l => `<span class="result-line">${l}</span>`)
+  .join('\n');
+this._initLineLongPress();
 this.updateHints();
+}
+_initLineLongPress() {
+const lines = this.elements.output.querySelectorAll('.result-line');
+lines.forEach(el => {
+  let timer = null;
+  const start = () => {
+    timer = setTimeout(() => {
+      // Копируем текст строки (без data-nocopy элементов)
+      const clone = el.cloneNode(true);
+      clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
+      const text = clone.textContent.trim();
+      navigator.clipboard.writeText(text).then(() => {
+        el.classList.add('copy-flash');
+        setTimeout(() => el.classList.remove('copy-flash'), 600);
+        this.showToast('📋 Zeile kopiert');
+      });
+    }, 600);
+  };
+  const cancel = () => clearTimeout(timer);
+  el.addEventListener('touchstart', start, { passive: true });
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchmove', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+});
 }
 
 // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ — С УЧЁТОМ ТВОЕГО УТОЧНЕНИЯ
