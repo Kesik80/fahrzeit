@@ -82,9 +82,9 @@ this.travelTimes = {
 // Пункты встречи (Treffpunkt)
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
-  'Gelsenkirchen': {lat: 51.535695, lng: 7.096155},
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
-  'Herten A2 Parkplatz': {lat: 51.572268, lng: 7.132545}
+  'Herten A2 Parkplatz': {lat: 51.572268, lng: 7.132545},
+  'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -98,15 +98,6 @@ this.trefftravelTimes = {
   'OLGA-Park-Maikel': 20,
   'OLGA-Park-René': 10,
   'OLGA-Park-Vasyl': 10,
-  'Gelsenkirchen-Sergii': 20,
-  'Gelsenkirchen-Andrii': 20,
-  'Gelsenkirchen-Anatolii': 20,
-  'Gelsenkirchen-Sergio': 10,
-  'Gelsenkirchen-Dima': 10,
-  'Gelsenkirchen-Marvin': 25,
-  'Gelsenkirchen-Maikel': 15,
-  'Gelsenkirchen-René': 20,
-  'Gelsenkirchen-Vasyl': 20,
   'Lirich P&R Parkplatz-Sergii': 20,
   'Lirich P&R Parkplatz-Anatolii': 15,
   'Lirich P&R Parkplatz-Andrii': 20,
@@ -126,7 +117,16 @@ this.trefftravelTimes = {
   'Herten A2 Parkplatz-Marvin': 5,
   'Herten A2 Parkplatz-Vasyl': 5,
   'Herten A2 Parkplatz-Maikel': 5,
-  'Herten A2 Parkplatz-Aleks': 5
+  'Herten A2 Parkplatz-Aleks': 5,
+  'P&R Parkplatz A42-Sergii': 20,
+  'P&R Parkplatz A42-Andrii': 20,
+  'P&R Parkplatz A42-Anatolii': 20,
+  'P&R Parkplatz A42-Sergio': 10,
+  'P&R Parkplatz A42-Dima': 10,
+  'P&R Parkplatz A42-Marvin': 25,
+  'P&R Parkplatz A42-Maikel': 15,
+  'P&R Parkplatz A42-René': 20,
+  'P&R Parkplatz A42-Vasyl': 20
 };
 
 // Приоритетные списки остановок и попутчики
