@@ -24,7 +24,8 @@ this.stations = {
   'Gutersloh': {lat: 51.907774, lng: 8.3882563},
   'Münster (Westf)': {lat: 51.9547178, lng: 7.6363929},
   'Hamm': {lat: 51.6727514, lng: 7.8114577},
-  'Dortmund Obereving': {lat: 51.5406353, lng: 7.478439}
+  'Dortmund Obereving': {lat: 51.5406353, lng: 7.478439},
+  'Schwerte': {lat: 51.440231, lng: 7.558396}
 };
 
 // Время в пути между участниками
