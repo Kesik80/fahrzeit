@@ -96,33 +96,24 @@ background: #6f42c1
 color: #ff9800 !important;
 font-weight: 700;
 }
-#shareButtons {
-display: none;
-gap: 8px;
-margin: 8px 0;
-flex-wrap: wrap;
-}
 .share-btn {
-flex: 0 0 auto;
-width: 54px;
-height: 54px;
+flex: 0 0 calc((100% - 24px) / 5);
+height: var(--button-size);
 padding: 0;
 border: none;
-border-radius: 50%;
+border-radius: var(--border-radius);
 cursor: pointer;
 display: flex;
 align-items: center;
 justify-content: center;
-box-shadow: 0 3px 10px rgba(0,0,0,.4);
+box-shadow: 0 2px 6px rgba(0,0,0,.25);
 transition: opacity .15s, transform .1s;
 }
-.share-btn:active { opacity: .75; transform: scale(.94); }
+.share-btn:active { opacity: .75; transform: scale(.97); }
 .maps-btn      { background: #4285f4; }
-.maps-back-btn { background: #34a853; }
+.maps-back-btn { background: #e67e00; }
 .wa-btn        { background: #25d366; }
 #output .result-line {
-display: block;
-padding: 1px 0;
 border-radius: 3px;
 cursor: pointer;
 transition: background .15s;
@@ -699,9 +690,9 @@ input,
 select {
 font-size: 1em
 }
-pre {
 .dest-label { font-style: normal; white-space: nowrap; display: inline; }
 .dest-label--muted { color: #888; }
+pre {
 background: var(--surface-color);
 padding: var(--spacing-unit);
 border-radius: var(--border-radius);
@@ -709,7 +700,7 @@ white-space: pre-wrap;
 font-size: 1.1em;
 margin-top: 15px;
 min-height: 50px;
-box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
+box-shadow: 0 1px 3px rgba(0,0,0,.1);
 }
 /* ── подсказки ── */
 #appHints { padding: 4px 0; }
@@ -728,19 +719,26 @@ position: fixed;
 top: 16px;
 left: 50%;
 transform: translateX(-50%);
-background: rgba(30,30,30,0.88);
-color: white;
+background: #222;
+color: #ffe066;
 padding: 10px 22px;
 border-radius: 24px;
 font-size: 0.97em;
 display: none;
 z-index: 9999;
-box-shadow: 0 4px 16px rgba(0,0,0,.25);
+border: 2px solid #ffe066;
+box-shadow: 0 4px 24px rgba(0,0,0,.7);
 text-align: center;
 white-space: normal;
 max-width: calc(100vw - 32px);
 width: max-content;
 word-break: break-word;
+}
+body:not(.dark) .toast {
+background: #fff;
+color: #333;
+border-color: #f0a500;
+box-shadow: 0 4px 24px rgba(0,0,0,.2);
 }
 .toast.show {
 display: block;
@@ -1442,31 +1440,76 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </button>
 </div>
 <pre id="output"></pre>
-<div id="shareButtons" style="display:none;gap:16px;margin:10px 0;justify-content:center;">
+<div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
   <button id="btnMapsTo" class="share-btn maps-btn" title="Скопировать маршрут туда">
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- машина вправо -->
-      <path d="M3 11l2-4h9l2 4" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-      <rect x="2" y="11" width="13" height="5" rx="1.2" fill="#fff" opacity=".9"/>
-      <circle cx="6" cy="17" r="1.5" fill="#fff"/>
-      <circle cx="12" cy="17" r="1.5" fill="#fff"/>
-      <!-- стрелка вправо -->
-      <path d="M17 12h4M19 10l2 2-2 2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="30" height="30"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+fill="#fff" stroke="none">
+<path d="M2316 4969 c-510 -66 -975 -332 -1276 -730 -194 -258 -313 -534 -371
+-864 -30 -167 -32 -455 -5 -610 66 -379 194 -698 438 -1090 287 -461 754
+-1007 1193 -1396 168 -149 182 -159 217 -159 42 0 60 12 188 124 217 191 531
+511 701 716 298 358 472 604 643 912 167 299 263 565 322 893 22 126 26 471 6
+585 -101 571 -402 1047 -845 1335 -225 145 -484 242 -750 280 -111 16 -351 18
+-461 4z m531 -238 c443 -93 828 -366 1074 -761 272 -439 326 -988 148 -1521
+-141 -423 -458 -929 -889 -1419 -196 -224 -617 -644 -659 -658 -26 -9 -480
+439 -683 674 -528 612 -840 1156 -944 1645 -38 184 -45 463 -14 642 56 335
+187 611 407 862 256 292 610 485 1010 550 130 21 417 14 550 -14z"/>
+<path d="M2957 4100 c-111 -28 -213 -114 -268 -226 -29 -58 -33 -77 -33 -148
+-1 -44 3 -95 7 -113 l8 -32 -143 -93 c-368 -241 -337 -224 -367 -204 -84 55
+-134 70 -231 71 -88 0 -101 -3 -161 -32 -84 -42 -150 -108 -191 -191 -31 -62
+-33 -74 -33 -167 0 -93 2 -105 32 -165 40 -82 92 -136 171 -178 113 -60 245
+-59 368 3 l73 37 43 -25 c24 -15 129 -82 233 -150 165 -108 190 -127 188 -148
+-1 -13 -5 -51 -9 -84 -25 -229 176 -430 413 -412 144 11 283 112 334 244 31
+82 31 205 -1 288 -32 84 -132 183 -214 214 -121 45 -244 35 -348 -29 -27 -17
+-52 -30 -56 -30 -7 1 -138 81 -348 215 l-125 80 8 45 c10 58 10 144 0 195 l-8
+40 73 45 c40 24 140 89 222 143 81 54 158 103 170 109 18 8 32 4 72 -21 75
+-47 171 -67 251 -54 177 31 304 156 334 332 31 175 -65 346 -235 422 -54 24
+-171 33 -229 19z m135 -200 c77 -22 137 -102 138 -185 0 -61 -48 -137 -103
+-164 -196 -95 -369 142 -217 297 54 56 109 72 182 52z m-1072 -769 c19 -10 49
+-37 65 -60 26 -37 30 -52 30 -106 0 -56 -4 -68 -31 -102 -55 -69 -89 -85 -166
+-81 -56 3 -73 8 -104 34 -57 46 -76 88 -72 160 3 49 10 69 32 98 63 83 153
+104 246 57z m1062 -721 c76 -21 138 -102 138 -180 0 -106 -107 -201 -210 -187
+-128 17 -201 134 -156 252 19 50 73 102 114 111 15 3 32 7 37 9 19 6 40 5 77
+-5z"/>
+</g></svg>
   </button>
   <button id="btnMapsBack" class="share-btn maps-back-btn" title="Скопировать маршрут обратно">
-    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- стрелка влево -->
-      <path d="M7 12H3M5 10l-2 2 2 2" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-      <!-- машина влево -->
-      <path d="M21 11l-2-4h-9l-2 4" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/>
-      <rect x="9" y="11" width="13" height="5" rx="1.2" fill="#fff" opacity=".9"/>
-      <circle cx="12" cy="17" r="1.5" fill="#fff"/>
-      <circle cx="18" cy="17" r="1.5" fill="#fff"/>
-    </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="30" height="30"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+fill="#fff" stroke="none">
+<path d="M2437 4810 c-112 -29 -120 -35 -1654 -1397 -470 -417 -481 -429 -497
+-530 -14 -96 33 -191 117 -235 35 -19 62 -23 169 -26 l127 -4 3 -976 c3 -910
+4 -980 21 -1022 39 -99 120 -179 215 -213 44 -16 160 -17 1637 -15 l1590 3 50
+26 c68 36 132 103 164 169 l26 55 5 985 5 985 145 5 c165 6 202 19 262 90 74
+85 77 224 8 321 -13 17 -118 115 -234 216 l-211 184 -5 382 -5 382 -27 47
+c-37 62 -101 115 -162 133 -73 22 -412 21 -487 -1 -105 -31 -189 -148 -189
+-262 0 -18 -4 -32 -10 -30 -5 2 -176 149 -379 328 -415 364 -463 397 -581 405
+-36 2 -82 0 -103 -5z m116 -244 c18 -7 88 -62 157 -122 160 -138 692 -608 789
+-696 84 -77 126 -94 176 -74 17 8 41 26 53 41 21 26 22 38 22 209 0 148 3 186
+16 204 15 21 21 22 176 22 136 0 164 -3 180 -17 17 -15 18 -41 18 -397 0 -344
+2 -384 18 -413 9 -18 116 -118 237 -223 230 -201 248 -218 239 -231 -3 -5 -87
+-9 -187 -9 -165 0 -185 -2 -215 -20 -65 -40 -62 14 -62 -1115 l0 -1025 -34
+-38 -34 -37 -1519 -3 c-1058 -2 -1529 0 -1555 8 -21 6 -46 23 -57 39 -20 28
+-21 41 -23 1067 -3 1002 -4 1040 -22 1067 -34 51 -60 57 -231 57 -87 0 -155 4
+-155 9 0 5 11 18 24 28 13 10 144 126 292 258 148 132 321 285 384 340 63 55
+306 268 540 474 234 206 476 420 539 475 101 88 169 136 193 136 5 0 23 -6 41
+-14z"/>
+<g transform="translate(0,420)"><path d="M2859 3317 c-79 -27 -138 -66 -185 -121 -72 -85 -112 -209 -100 -316
+l6 -55 -226 -144 -226 -144 -27 17 c-14 9 -54 31 -88 47 -153 75 -345 38 -464
+-88 -233 -246 -101 -640 233 -694 86 -14 174 2 266 48 l73 36 230 -154 230
+-154 -6 -56 c-32 -288 237 -517 520 -444 120 31 208 103 268 220 27 52 31 73
+35 157 3 73 0 109 -13 150 -37 115 -112 198 -224 252 -61 29 -74 31 -171 31
+-94 0 -111 -3 -165 -28 -32 -15 -74 -39 -91 -52 -18 -14 -37 -25 -43 -25 -6 0
+-110 66 -232 147 -210 140 -220 148 -212 172 4 15 7 73 8 130 l0 104 214 137
+214 137 51 -38 c81 -62 145 -82 256 -82 76 0 106 4 150 22 252 103 342 411
+186 638 -97 142 -303 208 -467 150z m240 -224 c107 -66 124 -227 35 -317 -92
+-92 -255 -73 -318 37 -33 58 -40 99 -25 159 14 60 77 131 131 147 52 16 126 5
+177 -26z m-1174 -682 c52 -23 101 -80 115 -133 51 -189 -179 -335 -326 -206
+-55 48 -77 100 -72 169 10 139 157 228 283 170z m1179 -748 c58 -41 86 -94 86
+-166 0 -101 -54 -172 -153 -198 -38 -11 -56 -11 -94 0 -191 51 -217 291 -41
+380 60 31 145 24 202 -16z"/></g>
+</g></svg>
   </button>
   <button id="btnWhatsApp" class="share-btn wa-btn" title="Поделиться графиком">
-    <svg viewBox="0 0 24 24" width="22" height="22" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
       <path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35A9.93 9.93 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.93 13.57c-.21.58-1.22 1.11-1.68 1.17-.44.06-.99.08-1.59-.1-.37-.11-.84-.26-1.44-.51-2.52-1.09-4.17-3.62-4.3-3.79-.13-.17-1.05-1.4-1.05-2.67 0-1.27.67-1.9.9-2.16.24-.26.52-.33.7-.33.18 0 .35.002.5.01.16.007.38-.06.6.45.21.52.72 1.76.78 1.89.06.13.1.28.02.45-.08.17-.12.28-.24.43-.12.15-.25.34-.36.45-.12.12-.24.25-.1.49.14.24.62.99 1.33 1.6.91.8 1.68 1.04 1.92 1.16.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.15 1.16z"/>
     </svg>
   </button>
@@ -1953,7 +1996,6 @@ this.loadData();
 this.renderParticipants();
 this.initSortable();
 this.calculate();
-this._setShareButtons(false);
 this.showToast('↩ Wiederhergestellt!');
 }
 loadData() {
@@ -3952,9 +3994,18 @@ this.calculate();
 });
 }
 showToast(message) {
-this.elements.toast.textContent = message;
-this.elements.toast.classList.add('show');
-setTimeout(() => this.elements.toast.classList.remove('show'), 3000);
+// Сбрасываем предыдущий таймер и интервал (Rückgängig)
+if (this._toastTimer) clearTimeout(this._toastTimer);
+clearInterval(this._undoInterval);
+const toast = this.elements.toast;
+toast.classList.remove('show');
+toast.innerHTML = '';
+toast.textContent = message;
+// Небольшая задержка чтобы remove/add show дал визуальный reset
+requestAnimationFrame(() => {
+  toast.classList.add('show');
+  this._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+});
 }
 formatTime(date) {
 if (this.useSuperscriptTime) {
@@ -3992,7 +4043,7 @@ if (passengers.length === 0) {
     ? `um ${this.formatTime(startTime)} Uhr fahren ${namesStr} los`
     : `${this.formatTime(startTime)}  ${namesStr} fahren los`;
 }
-out += startLine + '\n';
+out += '\n' + startLine;
 let current=new Date(startTime);
 valid.forEach(p=>{
 current.setMinutes(current.getMinutes()+p.time);
@@ -4011,10 +4062,8 @@ personsStr = `${persons[0]} und ${persons[1]} (${p.name})`;
 personsStr = persons.slice(0, -1).join(', ') + ' und ' + persons[persons.length - 1] + ` (${p.name})`;
 }
 line = this.useUhrBei
-? `um ${this.formatTime(current)} Uhr bei ${personsStr}
-`
-: `${this.formatTime(current)}  ${personsStr}
-`;
+? '\n' + `um ${this.formatTime(current)} Uhr bei ${personsStr}`
+: '\n' + `${this.formatTime(current)}  ${personsStr}`;
 } else {
 // Обычный участник (оригинальный код)
 let names = p.name;
@@ -4030,19 +4079,17 @@ names = all.slice(0, -1).join(', ') + ' und ' + all[all.length - 1];
 }
 }
 line = this.useUhrBei
-? `um ${this.formatTime(current)} Uhr bei ${names}
-`
-: `${this.formatTime(current)}  ${names}
-`;
+? '\n' + `um ${this.formatTime(current)} Uhr bei ${names}`
+: '\n' + `${this.formatTime(current)}  ${names}`;
 }
 out += line;
 });
 // Время прибытия к машине
 const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
-out+=this.useUhrBei
-? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}\n`
-: `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}\n`;
-if (this.farewell) out += this.farewell + '\n';
+out+='\n'+(this.useUhrBei
+? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}`
+: `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}`);
+if (this.farewell) out += '\n' + this.farewell;
 // Оборачиваем каждую строку в span для long-press копирования
 const lines = out.split('\n').filter(l => l.trim() !== '');
 this.elements.output.innerHTML = lines
@@ -4060,20 +4107,29 @@ if (sb) sb.style.display = visible ? 'flex' : 'none';
 _copyRouteLink(reverse) {
 const url = this._buildRouteUrl(reverse);
 if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
-navigator.clipboard.writeText(url).then(() => {
-  this.showToast(reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!');
-}).catch(() => {
-  // Fallback для старых браузеров
-  const ta = document.createElement('textarea');
-  ta.value = url;
-  ta.style.position = 'fixed';
-  ta.style.opacity = '0';
-  document.body.appendChild(ta);
-  ta.select();
-  document.execCommand('copy');
-  document.body.removeChild(ta);
-  this.showToast(reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!');
-});
+const msg = reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!';
+this._copyToClipboard(url, msg);
+}
+_copyToClipboard(text, successMsg) {
+if (navigator.clipboard && navigator.clipboard.writeText) {
+  navigator.clipboard.writeText(text)
+    .then(() => this.showToast(successMsg))
+    .catch(() => this._copyFallback(text, successMsg));
+} else {
+  this._copyFallback(text, successMsg);
+}
+}
+_copyFallback(text, successMsg) {
+const ta = document.createElement('textarea');
+ta.value = text;
+ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+document.body.appendChild(ta);
+ta.focus();
+ta.select();
+let ok = false;
+try { ok = document.execCommand('copy'); } catch(e) {}
+document.body.removeChild(ta);
+this.showToast(ok ? successMsg : '⚠ Не удалось скопировать');
 }
 _buildRouteUrl(reverse) {
 const enc = (lat, lng) => `${lat},${lng}`;
@@ -4206,11 +4262,9 @@ lines.forEach(el => {
       const clone = el.cloneNode(true);
       clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
       const text = clone.textContent.trim();
-      navigator.clipboard.writeText(text).then(() => {
-        el.classList.add('copy-flash');
-        setTimeout(() => el.classList.remove('copy-flash'), 600);
-        this.showToast('📋 Zeile kopiert');
-      });
+      this._copyToClipboard(text, '📋 Zeile kopiert');
+      el.classList.add('copy-flash');
+      setTimeout(() => el.classList.remove('copy-flash'), 600);
     }, 600);
   };
   const cancel = () => clearTimeout(timer);
@@ -4294,9 +4348,8 @@ openGoogleMaps(returnTrip = false) {
 // ❌ УДАЛЕНА ФУНКЦИЯ openGoogleMapsInNewTab
 
 _destLabel() {
-const machineName = this.machineStop.name;
 const stationName = this.machineStop.stationName || '';
-if (machineName !== 'an der Maschine' || !stationName) return '';
+if (!stationName) return '';
 if (this.showDestName) {
 return ` <span class="dest-label">(${stationName})</span>`;
 } else {
