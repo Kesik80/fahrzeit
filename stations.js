@@ -84,7 +84,8 @@ this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
   'Herten A2 Parkplatz': {lat: 51.572268, lng: 7.132545},
-  'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155}
+  'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155},
+  'Rathaus Osterfeld': {lat: 51.501, lng: 6.889374}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -126,7 +127,17 @@ this.trefftravelTimes = {
   'P&R Parkplatz A42-Marvin': 25,
   'P&R Parkplatz A42-Maikel': 15,
   'P&R Parkplatz A42-René': 20,
-  'P&R Parkplatz A42-Vasyl': 25
+  'P&R Parkplatz A42-Vasyl': 25,
+  'Rathaus Osterfeld-Sergii': 15,
+  'Rathaus Osterfeld-Anatolii': 15,
+  'Rathaus Osterfeld-Andrii': 15,
+  'Rathaus Osterfeld-Sergio': 10,
+  'Rathaus Osterfeld-Dima': 25,
+  'Rathaus Osterfeld-René': 10,
+  'Rathaus Osterfeld-Marvin': 20,
+  'Rathaus Osterfeld-Vasyl': 5,
+  'Rathaus Osterfeld-Maikel': 20,
+  'Rathaus Osterfeld-Aleks': 10
 };
 
 // Приоритетные списки остановок и попутчики
