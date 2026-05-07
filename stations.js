@@ -142,7 +142,7 @@ this.trefftravelTimes = {
 
 // Приоритетные списки остановок и попутчики
 this.participantOrders = {
-  'Sergii': ["Anatolii","Aleks","Sergio","Vasyl",{"treffpunkt":"Lirich P&R Parkplatz","persons":["René"]}],
+  'Sergii': ["Anatolii","Aleks","Sergio","Vasyl",{"treffpunkt":"Rathaus Osterfeld","persons":["René"]},{"treffpunkt":"P&R Parkplatz A42","persons":["Dima"]}],
   'Anatolii': ["Sergii","Sergio","Vasyl"],
   'Andrii': ["Sergii","Anatolii","Sergio","Dima"],
   'Sergio': ["Anatolii","Sergii","Andrii","Dima"],
