@@ -4104,11 +4104,25 @@ _setShareButtons(visible) {
 const sb = document.getElementById('shareButtons');
 if (sb) sb.style.display = visible ? 'flex' : 'none';
 }
-_copyRouteLink(reverse) {
+async _copyRouteLink(reverse) {
 const url = this._buildRouteUrl(reverse);
 if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
 const msg = reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!';
-this._copyToClipboard(url, msg);
+// Показываем индикатор
+this.showToast('⏳ Сокращаем ссылку…');
+try {
+  const r = await fetch(`/api/shorten?url=${encodeURIComponent(url)}`);
+  const data = await r.json();
+  if (data.short) {
+    this._copyToClipboard(data.short, msg);
+  } else {
+    // Если сокращение не удалось — копируем оригинал
+    this._copyToClipboard(url, msg);
+  }
+} catch(e) {
+  // Нет сети или ошибка — копируем оригинал
+  this._copyToClipboard(url, msg);
+}
 }
 _copyToClipboard(text, successMsg) {
 if (navigator.clipboard && navigator.clipboard.writeText) {
