@@ -110,6 +110,8 @@ box-shadow: 0 2px 6px rgba(0,0,0,.25);
 transition: opacity .15s, transform .1s;
 }
 .share-btn:active { opacity: .75; transform: scale(.97); }
+.google-all { background: #607d8b; }
+.google-all.active { background: #34a853; }
 .maps-btn      { background: #4285f4; }
 .maps-back-btn { background: #e67e00; }
 .wa-btn        { background: #25d366; }
@@ -119,6 +121,31 @@ cursor: pointer;
 transition: background .15s;
 user-select: none;
 }
+#outputWrapper {
+position: relative;
+}
+#copyOutputBtn {
+position: absolute;
+top: 8px;
+right: 8px;
+background: none;
+border: none;
+cursor: pointer;
+padding: 4px;
+border-radius: 6px;
+opacity: 0.5;
+transition: opacity .2s;
+width: auto;
+height: auto;
+margin: 0;
+display: flex;
+align-items: center;
+justify-content: center;
+color: #888;
+}
+body.dark #copyOutputBtn { color: #aaa; }
+#copyOutputBtn:hover { opacity: 1; }
+#copyOutputBtn:active { opacity: 0.6; transform: scale(.9); }
 #output .result-line:active {
 background: rgba(0,123,255,0.12);
 }
@@ -1389,42 +1416,78 @@ stroke="currentColor" stroke-width="2" fill="currentColor" />
 <div id="participants"></div>
 <div class="button-container">
 <button class="add" title="Teilnehmer hinzufügen">
-<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor">
 <path
 d="M480-80Q319-217 239.5-334.5T160-552q0-150 96.5-239T480-880h20q10 0 20 2v81q-10-2-19.5-2.5T480-800q-101 0-170.5 69.5T240-552q0 71 59 162.5T480-186q122-112 181-203.5T720-552v-8h80v8q0 100-79.5 217.5T480-80Zm0-400q33 0 56.5-23.5T560-560q0-33-23.5-56.5T480-640q-33 0-56.5 23.5T400-560q0 33 23.5 56.5T480-480Zm0-80Zm240-80h80v-120h120v-80H800v-120h-80v120H600v80h120v120Z" />
 </svg>
 </button>
 <button class="calculate" title="Berechnen">
-<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
+<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor">
 <path
 d="m226-559 78 33q14-28 29-54t33-52l-56-11-84 84Zm142 83 114 113q42-16 90-49t90-75q70-70 109.5-155.5T806-800q-72-5-158 34.5T492-656q-42 42-75 90t-49 90Zm178-65q-23-23-23-56.5t23-56.5q23-23 57-23t57 23q23 23 23 56.5T660-541q-23 23-57 23t-57-23Zm19 321 84-84-11-56q-26 18-52 32.5T532-299l33 79Zm313-653q19 121-23.5 235.5T708-419l20 99q4 20-2 39t-20 33L538-80l-84-197-171-171-197-84 167-168q14-14 33.5-20t39.5-2l99 20q104-104 218-147t235-24ZM157-321q35-35 85.5-35.5T328-322q35 35 34.5 85.5T327-151q-25 25-83.5 43T82-76q14-103 32-161.5t43-83.5Zm57 56q-10 10-20 36.5T180-175q27-4 53.5-13.5T270-208q12-12 13-29t-11-29q-12-12-29-11.5T214-265Z" />
 </svg>
 </button>
 <button class="route-back" title="Route zurück">
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
-width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
-<g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
-transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
-<path
-d="M 77.612 90 H 12.388 c -0.829 0 -1.5 -0.672 -1.5 -1.5 V 36.637 H 1.5 c -0.642 0 -1.212 -0.408 -1.419 -1.015 c -0.208 -0.607 -0.006 -1.279 0.502 -1.671 l 43.5 -33.637 c 0.54 -0.418 1.295 -0.418 1.835 0 l 43.5 33.637 c 0.507 0.393 0.709 1.064 0.502 1.671 c -0.208 0.607 -0.778 1.015 -1.42 1.015 h -9.388 V 88.5 C 79.112 89.328 78.44 90 77.612 90 z M 13.888 87 h 62.225 V 35.137 c 0 -0.829 0.672 -1.5 1.5 -1.5 h 6.496 L 45 3.396 L 5.892 33.637 h 6.496 c 0.829 0 1.5 0.671 1.5 1.5 V 87 z"
-style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
-transform="matrix(1 0 0 1 0 0)" stroke-linecap="round" />
-<path
-d="M 45 81.51 L 30.514 64.449 C 27.603 61.019 26 56.657 26 52.169 c 0 -10.477 8.523 -19 19 -19 s 19 8.523 19 19 c 0 4.489 -1.603 8.851 -4.514 12.28 L 45 81.51 z M 45 36.169 c -8.822 0 -16 7.177 -16 16 c 0 3.778 1.35 7.45 3.801 10.339 L 45 76.875 l 12.199 -14.367 C 59.65 59.619 61 55.948 61 52.169 C 61 43.347 53.822 36.169 45 36.169 z M 45 60.264 c -4.795 0 -8.697 -3.901 -8.697 -8.696 c 0 -4.796 3.901 -8.697 8.697 -8.697 c 4.796 0 8.697 3.901 8.697 8.697 C 53.697 56.362 49.796 60.264 45 60.264 z M 45 45.87 c -3.141 0 -5.697 2.556 -5.697 5.697 c 0 3.141 2.556 5.696 5.697 5.696 c 3.142 0 5.697 -2.556 5.697 -5.696 C 50.697 48.426 48.142 45.87 45 45.87 z"
-style="stroke: #e3e3e3; stroke-width: 3; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: #e3e3e3; fill-rule: nonzero; opacity: 1;"
-transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.000000 500.000000" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+fill="currentColor" stroke="none">
+<path d="M2430 4797 c-25 -7 -57 -20 -72 -28 -27 -14 -720 -630 -1512 -1344
+-110 -99 -252 -227 -315 -284 -223 -199 -250 -228 -267 -289 -30 -102 15 -205
+109 -254 33 -17 66 -22 159 -26 l118 -5 2 -986 3 -986 31 -65 c37 -78 99 -141
+174 -178 l55 -27 1585 0 1585 0 57 28 c72 35 131 95 171 172 l32 60 3 991 2
+992 148 4 c160 5 202 16 255 66 49 46 71 99 71 172 0 99 -20 128 -206 297 -89
+81 -196 180 -238 218 l-75 70 -5 405 c-5 391 -6 406 -27 445 -28 53 -68 89
+-126 115 -44 19 -65 21 -265 20 -211 0 -218 -1 -269 -25 -85 -42 -132 -119
+-140 -232 -3 -40 -9 -72 -13 -71 -4 2 -123 107 -265 233 -586 523 -567 508
+-670 519 -28 3 -70 0 -95 -7z m144 -261 c28 -24 168 -149 311 -277 560 -503
+631 -566 652 -577 27 -15 78 -15 104 -2 43 23 49 58 49 264 0 164 3 197 16
+210 23 23 319 23 352 0 l22 -15 0 -405 c0 -335 3 -410 15 -433 8 -16 127 -131
+265 -256 138 -124 249 -232 247 -238 -2 -8 -65 -14 -205 -17 l-202 -5 -27 -28
+-28 -27 -5 -1043 c-5 -1019 -5 -1043 -25 -1076 -11 -18 -36 -42 -55 -52 -34
+-19 -86 -19 -1572 -17 l-1538 3 -37 38 -38 37 -5 1048 c-4 825 -8 1052 -18
+1069 -25 45 -60 53 -222 53 -84 0 -150 4 -150 9 0 5 11 18 24 28 13 10 172
+151 352 313 181 163 475 426 654 584 446 397 856 763 910 813 60 57 87 56 154
+-1z"/>
+<path d="M2375 3429 c-355 -51 -660 -331 -756 -694 -30 -113 -37 -320 -15
+-438 30 -160 95 -316 211 -507 154 -255 554 -831 598 -862 18 -13 51 -23 81
+-26 76 -6 102 18 244 218 562 798 674 1026 674 1380 0 265 -108 512 -306 697
+-202 188 -461 271 -731 232z m263 -224 c97 -20 240 -89 310 -150 112 -100 193
+-237 233 -395 40 -156 14 -379 -64 -553 -53 -121 -114 -221 -312 -517 -209
+-313 -292 -430 -305 -430 -9 0 -224 308 -398 573 -241 366 -296 504 -296 742
+0 106 4 145 22 210 107 375 446 592 810 520z"/>
+<path d="M2448 2848 c-121 -15 -231 -99 -286 -216 -23 -49 -27 -70 -27 -152 0
+-82 4 -103 27 -152 35 -76 95 -138 170 -179 60 -33 68 -34 168 -34 96 0 110 2
+163 29 68 35 150 118 180 183 18 40 22 66 22 153 0 95 -3 111 -28 162 -72 147
+-225 228 -389 206z m166 -195 c79 -55 111 -142 86 -226 -27 -94 -103 -150
+-201 -150 -171 -1 -265 195 -162 332 14 18 49 44 77 58 68 32 142 27 200 -14z"/>
+</g></svg>
 </button>
-<button class="copy" title="Kopieren" aria-label="Kopieren">
-<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor">
-<path
-d="M360-240q-33 0-56.5-23.5T280-320v-480q0-33 23.5-56.5T360-880h360q33 0 56.5 23.5T800-800v480q0 33-23.5 56.5T720-240H360Zm0-80h360v-480H360v480ZM200-80q-33 0-56.5-23.5T120-160v-560h80v560h440v80H200Zm160-240v-480 480Z" />
-</svg>
+<button class="google-all" id="btnGoogleAll" title="Google-Zeit für alle / langer Tap = Runden auf 5 Min">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" height="28" width="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+fill="currentColor" stroke="none">
+<path d="M2325 4878 c-311 -35 -686 -191 -924 -385 -286 -233 -490 -519 -604
+-848 -141 -409 -140 -797 3 -1225 159 -475 487 -1001 979 -1570 137 -159 514
+-541 629 -638 65 -56 77 -62 117 -62 38 0 52 7 107 52 146 122 455 433 646
+653 505 578 856 1157 995 1640 59 203 72 302 72 545 0 194 -3 241 -23 340
+-133 675 -575 1196 -1192 1408 -268 92 -530 121 -805 90z m415 -229 c170 -21
+343 -75 517 -162 495 -249 825 -748 874 -1323 51 -599 -285 -1323 -995 -2143
+-139 -161 -391 -425 -504 -530 l-102 -93 -77 70 c-191 172 -514 523 -694 752
+-496 631 -772 1168 -834 1618 -77 563 181 1164 647 1504 227 166 510 280 773
+311 70 9 317 6 395 -4z"/>
+<path d="M2345 4005 c-404 -75 -734 -384 -846 -793 -33 -121 -38 -350 -10
+-478 45 -213 129 -375 275 -531 419 -450 1116 -452 1539 -4 281 298 371 724
+235 1109 -37 107 -57 147 -119 238 -149 222 -368 377 -628 445 -103 27 -334
+34 -446 14z m373 -215 c178 -43 313 -121 439 -253 252 -268 309 -643 148 -973
+-107 -219 -274 -365 -510 -447 -87 -30 -96 -31 -255 -32 -145 0 -174 3 -240
+23 -145 45 -265 117 -366 217 -281 281 -339 707 -143 1052 55 95 179 228 270
+289 83 55 207 107 304 128 103 21 253 20 353 -4z"/>
+<path d="M2469 3551 l-29 -29 0 -304 c0 -283 1 -305 20 -333 37 -59 404 -424
+432 -430 37 -9 93 20 108 55 23 55 8 77 -185 270 l-185 185 0 263 c0 279 -6
+318 -48 341 -38 20 -82 13 -113 -18z"/>
+</g></svg>
 </button>
 <button class="clear" title="Zurücksetzen">
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
-width="24px" height="24px" viewBox="0 0 256 256" xml:space="preserve">
+width="28" height="28" viewBox="0 0 256 256" xml:space="preserve">
 <g style="stroke: none; stroke-width: 0; stroke-dasharray: none; stroke-linecap: butt; stroke-linejoin: miter; stroke-miterlimit: 10; fill: none; fill-rule: nonzero; opacity: 1;"
 transform="translate(1.4065934065934016 1.4065934065934016) scale(2.81 2.81)">
 <path
@@ -1439,10 +1502,18 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </svg>
 </button>
 </div>
+<div id="outputWrapper">
 <pre id="output"></pre>
+<button id="copyOutputBtn" title="Ergebnis kopieren" data-nocopy="1">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+    <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+  </svg>
+</button>
+<div id="tripSummary" data-nocopy="1" style="display:none;text-align:center;font-size:0.82em;color:#888;margin:4px 0 2px;"></div>
+</div>
 <div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
   <button id="btnMapsTo" class="share-btn maps-btn" title="Скопировать маршрут туда">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="30" height="30"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
 fill="#fff" stroke="none">
 <path d="M2316 4969 c-510 -66 -975 -332 -1276 -730 -194 -258 -313 -534 -371
 -864 -30 -167 -32 -455 -5 -610 66 -379 194 -698 438 -1090 287 -461 754
@@ -1473,7 +1544,7 @@ fill="#fff" stroke="none">
 </g></svg>
   </button>
   <button id="btnMapsBack" class="share-btn maps-back-btn" title="Скопировать маршрут обратно">
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="30" height="30"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
 fill="#fff" stroke="none">
 <path d="M2437 4810 c-112 -29 -120 -35 -1654 -1397 -470 -417 -481 -429 -497
 -530 -14 -96 33 -191 117 -235 35 -19 62 -23 169 -26 l127 -4 3 -976 c3 -910
@@ -1509,7 +1580,7 @@ l6 -55 -226 -144 -226 -144 -27 17 c-14 9 -54 31 -88 47 -153 75 -345 38 -464
 </g></svg>
   </button>
   <button id="btnWhatsApp" class="share-btn wa-btn" title="Поделиться графиком">
-    <svg viewBox="0 0 24 24" width="26" height="26" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
       <path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35A9.93 9.93 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.93 13.57c-.21.58-1.22 1.11-1.68 1.17-.44.06-.99.08-1.59-.1-.37-.11-.84-.26-1.44-.51-2.52-1.09-4.17-3.62-4.3-3.79-.13-.17-1.05-1.4-1.05-2.67 0-1.27.67-1.9.9-2.16.24-.26.52-.33.7-.33.18 0 .35.002.5.01.16.007.38-.06.6.45.21.52.72 1.76.78 1.89.06.13.1.28.02.45-.08.17-.12.28-.24.43-.12.15-.25.34-.36.45-.12.12-.24.25-.1.49.14.24.62.99 1.33 1.6.91.8 1.68 1.04 1.92 1.16.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.15 1.16z"/>
     </svg>
   </button>
@@ -1595,7 +1666,7 @@ einige Sekunden verarbeitet.</p>
 </select>
 <div id="mapBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:20px;margin-bottom:4px;">
 <button class="map-button" id="openMap" title="Karte öffnen">
-<svg width="24" height="24" viewBox="0 0 90 90" fill="currentColor">
+<svg width="28" height="28" viewBox="0 0 90 90" fill="currentColor">
 <path d="M89 79.382H1c-.355 0-.683-.188-.863-.494-.179-.306-.183-.685-.01-.994L15.174 49.373c.177-.315.511-.512.873-.512h22.326c.552 0 1 .447 1 1s-.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-.553 0-1-.447-1-1s.447-1 1-1h22.325c.362 0 .696.196.873.512l15.947 28.521c.173.31.169.688-.011.994s-.778.484-1.132.484z" />
 <path d="M45 60.554L30.514 43.493C27.603 40.063 26 35.701 26 31.213c0-10.477 8.523-19 19-19s19 8.523 19 19c0 4.489-1.603 8.851-4.514 12.28L45 60.554zM45 15.713c-8.28 0-15.016 6.736-15.016 15.016 0 3.778 1.35 7.45 3.801 10.339L45 45.875l12.199-14.367C59.65 38.619 61 34.948 61 31.169c0-8.822-7.177-16-16-16z" />
 <path d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649s3.88-8.649 8.649-8.649 8.649 3.88 8.649 8.649-3.88 8.649-8.649 8.649zm0-15.298c-3.666 0-6.649 2.983-6.649 6.649s2.983 6.649 6.649 6.649 6.649-2.983 6.649-6.649-2.983-6.649-6.649-6.649z" />
@@ -1680,7 +1751,9 @@ this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; 
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.showDestName = false;
+this.shortenLinks = true;
 this.showDestName = false;
+this.shortenLinks = true;
 this.sortable = null;
 this.elements = {
 greetingSelect: document.getElementById('greeting'),
@@ -1691,7 +1764,7 @@ participantsContainer: document.getElementById('participants'),
 addButton: document.querySelector('.add'),
 calculateButton: document.querySelector('.calculate'),
 routeBackButton: document.querySelector('.route-back'),
-copyButton: document.querySelector('.copy'),
+copyButton: document.querySelector('.copy') || null,
 clearButton: document.querySelector('.clear'),
 output: document.getElementById('output'),
 toast: document.getElementById('toast'),
@@ -1897,6 +1970,7 @@ localStorage.setItem(k('farewell'), this.farewell);
 localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
+localStorage.setItem(k('shortenLinks'), this.shortenLinks);
 }
 resetToDefaults() {
 this._setShareButtons(false);
@@ -1934,7 +2008,7 @@ this._undoSnapshot = {
   _profileKey: this.startPoint,
 };
 ['greeting','greetings','participants','machineStop','machineDestinations',
-'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','startPassengers','farewell','farewells']
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','startPassengers','farewell','farewells']
 .forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
@@ -2016,6 +2090,7 @@ startPoint: localStorage.getItem(k('startPoint')),
 useUhrBei: localStorage.getItem(k('useUhrBei')),
 useSuperscript: localStorage.getItem(k('useSuperscript')),
 showDestName: localStorage.getItem(k('showDestName')),
+shortenLinks: localStorage.getItem(k('shortenLinks')),
 startPassengers: localStorage.getItem(k('startPassengers')),
 farewell: localStorage.getItem(k('farewell')),
 farewells: localStorage.getItem(k('farewells'))
@@ -2047,6 +2122,7 @@ if (saved.farewell) this.farewell = saved.farewell;
 if (saved.farewells) try { this.farewells = JSON.parse(saved.farewells); } catch {}
 if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
 if (saved.showDestName !== null) this.showDestName = saved.showDestName === 'true';
+if (saved.shortenLinks !== null && saved.shortenLinks !== undefined) this.shortenLinks = saved.shortenLinks !== 'false';
 } catch {
 this.resetToDefaults();
 }
@@ -2069,7 +2145,21 @@ if (addStartPassengerBtn) {
 this.elements.addButton.addEventListener('click', () => { this.addParticipant(); });
 this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
 this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
-this.elements.copyButton.addEventListener('click', () => this.copyResult());
+// Кнопка Google-все / округление
+this.elements.googleAllButton = document.getElementById('btnGoogleAll');
+if (this.elements.googleAllButton) {
+  let pressTimer = null;
+  this.elements.googleAllButton.addEventListener('pointerdown', () => {
+    pressTimer = setTimeout(() => { pressTimer = null; this._roundAllTimes(); }, 700);
+  });
+  this.elements.googleAllButton.addEventListener('pointerup', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; this._toggleGoogleAll(); }
+  });
+  this.elements.googleAllButton.addEventListener('pointerleave', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  });
+  this.elements.googleAllButton.addEventListener('contextmenu', e => e.preventDefault());
+}
 this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage());
 this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
 this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
@@ -2228,8 +2318,8 @@ ${nameOptions}
 `;
 const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
 const hasCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
-const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
-const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="24" height="24"><path fill="#999" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#999" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#999" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#999" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#999" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="28" height="28"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
+const grayMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="28" height="28"><path fill="#999" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#999" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#999" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#999" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#999" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
 this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? hasCoordsSvg : noCoordsSvg;
 
 // Рендерим субучастников начальной точки (попутчики)
@@ -2308,7 +2398,7 @@ ${this.formatMinutes(p.time)}
 <button class="add-sub-btn" data-index="${i}" title="Person hinzufügen" style="background:#28a745;">+</button>
 <div class="right-section">
 <span class="material-symbols-outlined" aria-label="Verschieben">
-<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
 </span>
 <button class="remove-btn" data-index="${i}" aria-label="Löschen"></button>
 </div>
@@ -2365,7 +2455,7 @@ ${this.formatMinutes(p.time)}${p.isFallback && !p.timeManuallyEdited ? ' ⚠' : 
 <button class="add-sub-btn" data-index="${i}" title="Mitfahrer hinzufügen">+</button>
 <div class="right-section">
 <span class="material-symbols-outlined" aria-label="Teilnehmer verschieben">
-<svg xmlns="http://www.w3.org/2000/svg" height="24" viewBox="0 -960 960 960" width="24" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" height="28" viewBox="0 -960 960 960" width="28" fill="currentColor"><path d="M320-440v-287L217-624l-57-56 200-200 200 200-57 56-103-103v287h-80ZM600-80 400-280l57-56 103 103v-287h80v287l103-103 57 56L600-80Z"/></svg>
 </span>
 <button class="remove-btn" data-index="${i}" aria-label="Teilnehmer löschen"></button>
 </div>
@@ -2534,6 +2624,9 @@ farewellDiv.innerHTML = `
   <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
     <input type="checkbox" id="showDestName" ${this.showDestName ? 'checked' : ''}> (...)
   </label>
+  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;" title="Ссылку сокращать">
+    <input type="checkbox" id="shortenLinks" ${this.shortenLinks ? 'checked' : ''}> 🔗
+  </label>
 </div>
 `;
 container.appendChild(farewellDiv);
@@ -2570,6 +2663,11 @@ showDestNameCb.addEventListener('change', () => {
   this.showDestName = showDestNameCb.checked;
   this.saveData();
   this.calculate();
+});
+const shortenLinksCb = farewellDiv.querySelector('#shortenLinks');
+shortenLinksCb.addEventListener('change', () => {
+  this.shortenLinks = shortenLinksCb.checked;
+  this.saveData();
 });
 const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
@@ -4098,17 +4196,87 @@ this.elements.output.innerHTML = lines
 this._initLineLongPress();
 // Показываем кнопки шаринга
 this._setShareButtons(!!out.trim());
+// Показываем общее время поездки
+const summary = document.getElementById('tripSummary');
+if (summary && out.trim()) {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const timeStr = h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
+  summary.textContent = `🕐 Gesamtfahrzeit: ${timeStr}`;
+  summary.style.display = 'block';
+} else if (summary) {
+  summary.style.display = 'none';
+}
 this.updateHints();
+}
+_deactivateGoogleAll() {
+const btn = document.getElementById('btnGoogleAll');
+if (btn) btn.classList.remove('active');
+this.googleAllActive = false;
+// Сбрасываем флаги routeCalculated и autoCalculated → иконки снова серые
+this.participants.forEach(p => { p.routeCalculated = false; });
+this.machineStop.autoCalculated = false;
+this.renderParticipants();
+}
+async _toggleGoogleAll() {
+const btn = document.getElementById('btnGoogleAll');
+const isActive = btn && btn.classList.contains('active');
+if (isActive) {
+  this._deactivateGoogleAll();
+  this.showToast('🔵 Google-Berechnung deaktiviert');
+  return;
+}
+if (btn) btn.classList.add('active');
+this.googleAllActive = true;
+this.showToast('🔄 Google berechnet alle Zeiten…');
+let success = 0, fail = 0;
+for (let i = 0; i < this.participants.length; i++) {
+  try { await this.calculateTravelTimeForParticipant(i); success++; }
+  catch(e) { fail++; }
+}
+try { await this.calculateTravelTimeToMachine(); success++; }
+catch(e) { fail++; }
+this.showToast(fail > 0 ? `✅ ${success} berechnet, ⚠ ${fail} Fehler` : `✅ Alle ${success} Zeiten berechnet`);
+}
+_roundAllTimes() {
+const round5 = (m) => {
+  const r = m % 5;
+  if (r <= 1) return m - r;
+  return m - r + 5;
+};
+let changed = 0;
+this.participants.forEach(p => {
+  if (p.time) { const r = round5(p.time); if (r !== p.time) { p.time = r; p.timeManuallyEdited = true; changed++; } }
+});
+if (this.machineStop.time) { const r = round5(this.machineStop.time); if (r !== this.machineStop.time) { this.machineStop.time = r; changed++; } }
+if (changed > 0) {
+  this.saveData(); this.renderParticipants(); this.calculate();
+  this._deactivateGoogleAll();
+  this.showToast(`⏱ ${changed} Zeit${changed>1?'en':''} gerundet`);
+} else { this.showToast('⏱ Bereits gerundet'); }
 }
 _setShareButtons(visible) {
 const sb = document.getElementById('shareButtons');
 if (sb) sb.style.display = visible ? 'flex' : 'none';
+const ts = document.getElementById('tripSummary');
+if (ts && !visible) ts.style.display = 'none';
 }
-_copyRouteLink(reverse) {
+async _copyRouteLink(reverse) {
 const url = this._buildRouteUrl(reverse);
 if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
 const msg = reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!';
-this._copyToClipboard(url, msg);
+if (!this.shortenLinks) {
+  this._copyToClipboard(url, msg);
+  return;
+}
+this.showToast('⏳ Сокращаем ссылку…');
+try {
+  const r = await fetch(`/api/shorten?url=${encodeURIComponent(url)}`);
+  const data = await r.json();
+  this._copyToClipboard(data.short || url, msg);
+} catch(e) {
+  this._copyToClipboard(url, msg);
+}
 }
 _copyToClipboard(text, successMsg) {
 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4136,22 +4304,31 @@ const enc = (lat, lng) => `${lat},${lng}`;
 const waypoints = [];
 const parts = this.participants.filter(p => p.name);
 const machine = this.machineStop;
-const startC = this.startPointCoords; // координаты водителя (Sergii)
+const startC = this.startPointCoords;
+
+// Получаем координаты участника
+// Для Treffpunkt — только координаты самой точки встречи (p.lat/p.lng)
+// Для обычного участника — из nameToCoordinates
+const getCoordsForParticipant = (p) => {
+  if (p.isTreffpunkt) {
+    if (p.lat && p.lng) return [enc(p.lat, p.lng)];
+    return [];
+  }
+  const c = this.nameToCoordinates[p.name];
+  if (c && c.lat && c.lng) return [enc(c.lat, c.lng)];
+  return [];
+};
 
 if (reverse) {
-  // Обратно: машина → участники в обратном порядке → водитель
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
   [...parts].reverse().forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+    getCoordsForParticipant(p).reverse().forEach(c => waypoints.push(c));
   });
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
 } else {
-  // Туда: водитель → участники по порядку → машина
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
   parts.forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
+    getCoordsForParticipant(p).forEach(c => waypoints.push(c));
   });
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
 }
@@ -4390,8 +4567,9 @@ app.loadStations();
 document.addEventListener('click', e => {
   const app = window.app;
   if (!app) return;
-  if (e.target.id === 'btnMapsTo')   { app._copyRouteLink(false); return; }
-  if (e.target.id === 'btnMapsBack') { app._copyRouteLink(true);  return; }
+  if (e.target.id === 'btnMapsTo' || e.target.closest('#btnMapsTo'))   { app._copyRouteLink(false); return; }
+  if (e.target.id === 'btnMapsBack' || e.target.closest('#btnMapsBack')) { app._copyRouteLink(true);  return; }
+  if (e.target.id === 'copyOutputBtn' || e.target.closest('#copyOutputBtn')) { app.copyResult(); return; }
   if (e.target.id === 'btnWhatsApp') {
     const clone = app.elements.output.cloneNode(true);
     clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
