@@ -89,8 +89,9 @@ export default async function handler(req, res) {
     const trafficMinutes = Math.ceil(trafficSeconds / 60);
 
     // Пробки есть если время с трафиком больше базового на 2+ мин
-    const hasTraffic = hasTrafficData && (trafficMinutes - durationMinutes) >= 2;
-    const trafficDeltaMin = trafficMinutes - durationMinutes;
+    const delta = trafficMinutes - durationMinutes;
+    const hasTraffic = hasTrafficData && delta >= 2;
+    const trafficDeltaMin = Math.max(0, delta); // не показываем отрицательные
 
     const distanceMeters = element.distance.value;
     const distanceKm = (distanceMeters / 1000).toFixed(1);
