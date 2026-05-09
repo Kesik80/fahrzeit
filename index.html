@@ -4365,6 +4365,7 @@ for (let i = 0; i < this.participants.length; i++) {
       body: JSON.stringify({ originLat: prevLat, originLng: prevLng, destLat: p.lat, destLng: p.lng, departureTime: depTs })
     });
     const data = await r.json();
+    console.log(`[Traffic API] p${i}:`, JSON.stringify(data));
     if (data.success) {
       p.time = data.duration.minutes;
       p.routeCalculated = true;
