@@ -96,6 +96,10 @@ background: #6f42c1
 color: #ff9800 !important;
 font-weight: 700;
 }
+.time-display.has-traffic {
+color: #ff9800 !important;
+font-weight: 700;
+}
 .share-btn {
 flex: 0 0 calc((100% - 24px) / 5);
 height: var(--button-size);
@@ -114,12 +118,25 @@ transition: opacity .15s, transform .1s;
 .google-all.active { background: #34a853; }
 .maps-btn      { background: #4285f4; }
 .maps-back-btn { background: #e67e00; }
-.wa-btn        { background: #25d366; }
+.traffic-btn       { background: #e65100; }
+.share-native-btn  { background: #607d8b; }
 #output .result-line {
 border-radius: 3px;
 cursor: pointer;
 transition: background .15s;
 user-select: none;
+}
+.participant-row {
+position: relative;
+overflow: hidden;
+}
+.participant-row.swiping {
+transition: transform 0.1s;
+}
+.participant-row.swipe-delete {
+transform: translateX(-100%);
+transition: transform 0.3s ease;
+opacity: 0;
 }
 #outputWrapper {
 position: relative;
@@ -1509,7 +1526,11 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
     <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
   </svg>
 </button>
-<div id="tripSummary" data-nocopy="1" style="display:none;text-align:center;font-size:0.82em;color:#888;margin:4px 0 2px;"></div>
+<div id="tripSummaryRow" data-nocopy="1" style="display:none;align-items:center;justify-content:center;gap:6px;margin:6px 0 2px;">
+  <div id="tripSummary" style="font-size:0.95em;color:#888;"></div>
+  <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:26px;height:26px;min-width:26px;border-radius:50%;background:#555;color:#fff;font-size:1.1em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
+  <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:26px;height:26px;min-width:26px;border-radius:50%;background:#555;color:#fff;font-size:1.1em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
+</div>
 </div>
 <div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
   <button id="btnMapsTo" class="share-btn maps-btn" title="Скопировать маршрут туда">
@@ -1579,9 +1600,66 @@ l6 -55 -226 -144 -226 -144 -27 17 c-14 9 -54 31 -88 47 -153 75 -345 38 -464
 380 60 31 145 24 202 -16z"/></g>
 </g></svg>
   </button>
-  <button id="btnWhatsApp" class="share-btn wa-btn" title="Поделиться графиком">
-    <svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#fff" d="M12 2C6.48 2 2 6.48 2 12c0 1.85.5 3.58 1.38 5.07L2 22l5.07-1.35A9.93 9.93 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2zm4.93 13.57c-.21.58-1.22 1.11-1.68 1.17-.44.06-.99.08-1.59-.1-.37-.11-.84-.26-1.44-.51-2.52-1.09-4.17-3.62-4.3-3.79-.13-.17-1.05-1.4-1.05-2.67 0-1.27.67-1.9.9-2.16.24-.26.52-.33.7-.33.18 0 .35.002.5.01.16.007.38-.06.6.45.21.52.72 1.76.78 1.89.06.13.1.28.02.45-.08.17-.12.28-.24.43-.12.15-.25.34-.36.45-.12.12-.24.25-.1.49.14.24.62.99 1.33 1.6.91.8 1.68 1.04 1.92 1.16.24.12.38.1.52-.06.14-.16.6-.7.76-.94.16-.24.32-.2.54-.12.22.08 1.4.66 1.64.78.24.12.4.18.46.28.06.1.06.58-.15 1.16z"/>
+  <button id="btnTraffic" class="share-btn traffic-btn" title="Пробки по расписанию">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.000000 500.000000" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
+fill="#fff" stroke="none">
+<path d="M2275 4784 c-121 -9 -250 -12 -356 -8 -191 7 -247 -2 -369 -63 -101
+-50 -224 -173 -314 -310 -37 -57 -112 -194 -166 -305 -97 -199 -101 -204 -163
+-254 -196 -158 -270 -446 -171 -664 32 -70 51 -90 85 -90 66 0 74 13 100 173
+55 345 165 503 403 579 41 13 103 21 186 25 107 5 138 2 210 -16 103 -26 111
+-26 138 -1 22 21 30 73 14 96 -45 68 -403 107 -597 66 -49 -11 -92 -18 -94
+-16 -6 5 79 154 148 259 89 137 185 231 286 281 92 45 30 43 660 26 446 -11
+485 -18 629 -110 73 -47 126 -45 176 6 75 74 63 154 -32 216 -165 110 -377
+140 -773 110z"/>
+<path d="M3115 3960 c-252 -8 -334 -21 -475 -74 -196 -73 -338 -216 -410 -415
+-35 -94 -37 -120 -12 -150 22 -29 77 -31 102 -5 10 10 36 62 59 114 68 156
+125 219 256 281 95 45 190 61 360 62 186 1 474 -18 581 -38 295 -56 478 -190
+653 -479 23 -37 41 -70 39 -72 -2 -2 -28 3 -58 11 -155 41 -253 48 -650 47
+-212 -1 -452 2 -535 7 -136 9 -154 8 -192 -9 -100 -44 -98 -187 3 -235 34 -16
+55 -17 194 -11 85 4 256 14 380 23 297 21 690 21 786 0 152 -33 257 -117 324
+-259 54 -118 73 -214 73 -388 1 -152 -17 -313 -36 -328 -7 -5 -86 -12 -177
+-16 -338 -14 -608 -45 -650 -75 -36 -26 -38 -73 -5 -107 23 -23 32 -26 68 -20
+86 12 279 28 283 23 3 -3 1 -22 -5 -44 -38 -135 28 -260 165 -313 124 -48 318
+-35 409 28 65 45 73 68 84 247 28 451 35 670 23 788 -20 189 -76 331 -171 432
+-33 35 -41 54 -65 155 -102 424 -353 697 -735 797 -113 30 -283 36 -666 23z
+m1393 -2124 c2 -3 -3 -26 -10 -53 l-14 -48 -54 -7 c-30 -4 -74 -5 -98 -2 -49
+7 -66 27 -77 88 l-6 39 127 -7 c70 -3 130 -8 132 -10z"/>
+<path d="M1336 3515 c-120 -42 -176 -196 -117 -319 70 -144 296 -166 385 -37
+80 114 40 293 -76 350 -52 25 -133 27 -192 6z"/>
+<path d="M1970 2788 c-242 -20 -698 -100 -821 -143 -104 -37 -214 -138 -290
+-265 -23 -38 -76 -148 -119 -242 -86 -192 -135 -281 -175 -318 -40 -37 -82
+-100 -105 -159 -40 -102 -51 -218 -60 -611 -5 -206 -13 -404 -19 -440 -11 -75
+-2 -141 26 -179 46 -64 256 -129 378 -118 179 17 295 126 295 279 l0 48 68 0
+c168 0 866 -22 1147 -35 171 -8 319 -15 331 -15 19 0 22 -7 27 -81 8 -95 34
+-159 75 -180 20 -10 83 -14 257 -16 272 -2 311 5 357 72 54 76 71 238 35 328
+-8 21 -10 53 -6 92 13 113 9 378 -6 480 -27 179 -110 389 -189 475 -12 14 -35
+61 -51 105 -202 579 -408 839 -726 915 -92 22 -236 25 -429 8z m220 -238 c110
+-17 203 -42 255 -68 68 -34 173 -138 244 -241 56 -82 161 -254 161 -264 0 -3
+-17 -1 -37 5 -43 10 -363 24 -798 34 -355 8 -977 -10 -1090 -31 -44 -8 -81
+-15 -82 -15 -10 -1 5 38 61 155 134 281 211 347 448 384 121 19 344 47 443 55
+76 6 322 -3 395 -14z m548 -720 c226 -38 364 -176 433 -429 26 -97 37 -355 20
+-497 -6 -54 -14 -100 -16 -102 -2 -3 -120 0 -262 6 -227 9 -259 12 -268 27
+-40 69 -167 224 -231 284 -92 86 -180 140 -289 177 -68 24 -101 28 -220 32
+-337 10 -447 -48 -643 -340 -51 -75 -95 -139 -100 -141 -4 -3 -134 -8 -290
+-12 l-284 -7 4 333 c4 306 6 339 25 397 34 102 83 157 178 201 101 48 263 74
+515 85 190 8 1367 -3 1428 -14z m-736 -704 c130 -35 202 -88 287 -211 29 -42
+51 -78 49 -80 -2 -3 -219 -2 -481 2 -333 4 -477 10 -477 17 0 15 65 121 102
+169 39 49 111 98 168 114 57 17 272 10 352 -11z m-1148 -494 c6 -9 -58 -63
+-103 -86 -39 -21 -125 -31 -175 -22 -36 7 -36 8 -36 56 l0 49 108 4 c59 1 128
+4 154 5 26 1 49 -1 52 -6z"/>
+<path d="M2525 1532 c-49 -23 -79 -55 -100 -104 -19 -46 -20 -128 -1 -172 68
+-162 313 -201 404 -63 23 35 27 51 27 117 0 68 -3 82 -30 126 -44 70 -109 108
+-194 112 -49 2 -76 -2 -106 -16z"/>
+<path d="M960 1511 c-19 -10 -49 -37 -67 -60 -110 -143 -38 -336 140 -373 137
+-28 237 71 237 234 0 93 -50 168 -137 205 -47 19 -132 17 -173 -6z"/>
+<path d="M3929 2697 c-119 -63 -153 -234 -67 -333 91 -103 236 -110 328 -15
+114 117 83 295 -62 355 -57 24 -146 21 -199 -7z"/>
+</g></svg>
+  </button>
+
+  <button id="btnShareNative" class="share-btn share-native-btn" title="Teilen / Поделиться">
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
     </svg>
   </button>
 </div>
@@ -2290,6 +2368,7 @@ this.updateParticipantTimes();
 this.saveData();
 this.renderParticipants();
 this.initSortable();
+this._initSwipeToDelete();
 this._initShareButtons();
 this.calculate();
 }
@@ -2446,7 +2525,7 @@ ${participantNameOptions}
 <option value="add-new">➕ Neuen Namen hinzufügen</option>
 </select>
 <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten">${coordsSvg}</button>
-<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}${p.isFallback && !p.timeManuallyEdited ? ' is-fallback' : ''}" data-index="${i}" data-type="participant-time-display" title="${p.isFallback && !p.timeManuallyEdited ? 'Fahrzeit nicht bekannt – Schätzwert!' : 'Tippen zum Ändern'}">
+<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}${p.isFallback && !p.timeManuallyEdited ? ' is-fallback' : ''}${p.hasTraffic ? ' has-traffic' : ''}" data-index="${i}" data-type="participant-time-display" title="${p.isFallback && !p.timeManuallyEdited ? 'Fahrzeit nicht bekannt – Schätzwert!' : p.hasTraffic ? `🚦 +${p.trafficDeltaMin || '?'} Min. durch Stau` : 'Tippen zum Ändern'}">
 ${this.formatMinutes(p.time)}${p.isFallback && !p.timeManuallyEdited ? ' ⚠' : ''}
 </div>
 <button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
@@ -3529,11 +3608,13 @@ try {
   if (data.success) {
     p.time = data.duration.minutes;
     p.routeCalculated = true;
+    p.hasTraffic = !!data.hasTraffic;
     p.timeManuallyEdited = false;
     this.saveData();
     this.renderParticipants();
     this.calculate();
-    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)`);
+    const trafficIcon = data.hasTraffic ? ' 🚦' : '';
+    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${trafficIcon}`);
   } else {
     throw new Error('Fehler in der API-Antwort');
   }
@@ -4074,6 +4155,44 @@ overlay.querySelector('#tpClear').onclick = () => {
 };
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
+_initSwipeToDelete() {
+const rows = document.querySelectorAll('.participant-group');
+rows.forEach(wrapper => {
+  let startX = 0, startY = 0, dx = 0, isHoriz = false;
+  const idx = parseInt(wrapper.dataset.index);
+  if (isNaN(idx)) return;
+  wrapper.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    dx = 0; isHoriz = false;
+  }, { passive: true });
+  wrapper.addEventListener('touchmove', e => {
+    const cx = e.touches[0].clientX;
+    const cy = e.touches[0].clientY;
+    dx = cx - startX;
+    const dy = Math.abs(cy - startY);
+    if (!isHoriz && dy > 10) return; // вертикальный скролл
+    if (Math.abs(dx) > 10) isHoriz = true;
+    if (isHoriz && dx < 0) {
+      wrapper.style.transform = `translateX(${Math.max(dx, -100)}px)`;
+      wrapper.style.transition = 'none';
+      wrapper.style.opacity = String(Math.max(0.2, 1 + dx/100));
+    }
+  }, { passive: true });
+  wrapper.addEventListener('touchend', () => {
+    if (dx < -70) {
+      wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
+      wrapper.style.transform = 'translateX(-110%)';
+      wrapper.style.opacity = '0';
+      setTimeout(() => this.removeParticipant(idx), 300);
+    } else {
+      wrapper.style.transition = 'transform 0.2s, opacity 0.2s';
+      wrapper.style.transform = '';
+      wrapper.style.opacity = '';
+    }
+  });
+});
+}
 initSortable() {
 if (this.sortable) this.sortable.destroy();
 this.sortable = new Sortable(this.elements.participantsContainer, {
@@ -4198,16 +4317,87 @@ this._initLineLongPress();
 this._setShareButtons(!!out.trim());
 // Показываем общее время поездки
 const summary = document.getElementById('tripSummary');
+const summaryRow = document.getElementById('tripSummaryRow');
 if (summary && out.trim()) {
   const h = Math.floor(total / 60);
   const m = total % 60;
   const timeStr = h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
   summary.textContent = `🕐 Gesamtfahrzeit: ${timeStr}`;
-  summary.style.display = 'block';
-} else if (summary) {
-  summary.style.display = 'none';
+  if (summaryRow) summaryRow.style.display = 'flex';
+} else if (summaryRow) {
+  summaryRow.style.display = 'none';
 }
 this.updateHints();
+}
+async checkTrafficForSchedule() {
+if (!this.machineStop.arrivalTime) {
+  this.showToast('⚠ Сначала задайте время прибытия');
+  return;
+}
+// Вычисляем время отъезда
+const [h, m] = this.machineStop.arrivalTime.split(':').map(Number);
+const totalMin = this.participants.reduce((s, p) => s + (p.time || 0), 0) + (this.machineStop.time || 0);
+const startDate = new Date();
+startDate.setHours(h, m, 0, 0);
+startDate.setMinutes(startDate.getMinutes() - totalMin);
+
+this.showToast('🔄 Проверяем пробки…');
+let success = 0, fail = 0, withTraffic = 0;
+let cumMin = 0;
+
+for (let i = 0; i < this.participants.length; i++) {
+  const p = this.participants[i];
+  if (!p.name || !p.lat || !p.lng) continue;
+  const depTs = Math.floor((startDate.getTime() + cumMin * 60000) / 1000).toString();
+  let prevLat, prevLng;
+  if (i === 0) {
+    if (!this.startPointCoords.lat) continue;
+    prevLat = this.startPointCoords.lat; prevLng = this.startPointCoords.lng;
+  } else {
+    const prev = this.participants[i-1];
+    if (!prev.lat || !prev.lng) continue;
+    prevLat = prev.lat; prevLng = prev.lng;
+  }
+  try {
+    const r = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ originLat: prevLat, originLng: prevLng, destLat: p.lat, destLng: p.lng, departureTime: depTs })
+    });
+    const data = await r.json();
+    if (data.success) {
+      p.time = data.duration.minutes;
+      p.routeCalculated = true;
+      p.hasTraffic = !!data.hasTraffic;
+      p.trafficDeltaMin = data.trafficDeltaMin || 0;
+      p.timeManuallyEdited = false;
+      if (data.hasTraffic) withTraffic++;
+      success++;
+    } else fail++;
+  } catch(e) { fail++; }
+  cumMin += p.time || 0;
+}
+try { await this.calculateTravelTimeToMachine(); success++; } catch(e) { fail++; }
+this.saveData(); this.renderParticipants(); this.calculate();
+const totalDelay = this.participants.reduce((s, p) => s + (p.trafficDeltaMin || 0), 0);
+const jam = withTraffic > 0 ? ` 🚦 +${totalDelay} Min.` : ' ✅ Kein Stau';
+this.showToast(fail > 0 ? `⚠ ${fail} Fehler${jam}` : `✅ Fertig${jam}`);
+}
+shiftArrivalTime(delta) {
+if (!this.machineStop.arrivalTime) return;
+const [h, m] = this.machineStop.arrivalTime.split(':').map(Number);
+let total = h * 60 + m + delta;
+if (total < 0) total += 1440;
+if (total >= 1440) total -= 1440;
+const nh = Math.floor(total / 60);
+const nm = total % 60;
+this.machineStop.arrivalTime = `${String(nh).padStart(2,'0')}:${String(nm).padStart(2,'0')}`;
+this.saveData();
+this.renderParticipants();
+this.calculate();
+// Обновляем отображение времени прибытия
+const timeDisplay = document.querySelector('[data-type="arrival-time-display"]');
+if (timeDisplay) timeDisplay.textContent = this.machineStop.arrivalTime;
 }
 _deactivateGoogleAll() {
 const btn = document.getElementById('btnGoogleAll');
@@ -4258,8 +4448,8 @@ if (changed > 0) {
 _setShareButtons(visible) {
 const sb = document.getElementById('shareButtons');
 if (sb) sb.style.display = visible ? 'flex' : 'none';
-const ts = document.getElementById('tripSummary');
-if (ts && !visible) ts.style.display = 'none';
+const tsr = document.getElementById('tripSummaryRow');
+if (tsr) tsr.style.display = visible ? 'flex' : 'none';
 }
 async _copyRouteLink(reverse) {
 const url = this._buildRouteUrl(reverse);
@@ -4418,16 +4608,10 @@ window.open(url, '_blank');
 _initShareButtons() {
 const btnTo   = document.getElementById('btnMapsTo');
 const btnBack = document.getElementById('btnMapsBack');
-const btnWa   = document.getElementById('btnWhatsApp');
 if (btnTo)   btnTo.onclick   = () => this._copyRouteLink(false);
 if (btnBack) btnBack.onclick = () => this._copyRouteLink(true);
-if (btnWa)   btnWa.onclick   = () => {
-  const clone = this.elements.output.cloneNode(true);
-  clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
-  const text = clone.textContent.trim();
-  const url = 'https://wa.me/?text=' + encodeURIComponent(text);
-  window.open(url, '_blank');
-};
+const btnTraffic = document.getElementById('btnTraffic');
+if (btnTraffic) btnTraffic.onclick = () => this.checkTrafficForSchedule();
 }
 _initLineLongPress() {
 const lines = this.elements.output.querySelectorAll('.result-line');
@@ -4563,6 +4747,10 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 app.loadStations();
+// Автопересчёт при открытии если есть сохранённые данные
+if (app.machineStop && app.machineStop.arrivalTime) {
+  app.calculate();
+}
 // Кнопки шаринга — делегирование, работает всегда
 document.addEventListener('click', e => {
   const app = window.app;
@@ -4570,11 +4758,19 @@ document.addEventListener('click', e => {
   if (e.target.id === 'btnMapsTo' || e.target.closest('#btnMapsTo'))   { app._copyRouteLink(false); return; }
   if (e.target.id === 'btnMapsBack' || e.target.closest('#btnMapsBack')) { app._copyRouteLink(true);  return; }
   if (e.target.id === 'copyOutputBtn' || e.target.closest('#copyOutputBtn')) { app.copyResult(); return; }
-  if (e.target.id === 'btnWhatsApp') {
+
+
+  if (e.target.id === 'btnShareNative' || e.target.closest('#btnShareNative')) {
     const clone = app.elements.output.cloneNode(true);
     clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
     const text = clone.textContent.trim();
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    if (navigator.share) {
+      navigator.share({ title: 'Fahrzeit', text }).catch(err => {
+        if (err.name !== 'AbortError') app._copyToClipboard(text, '📋 Текст скопирован!');
+      });
+    } else {
+      app._copyToClipboard(text, '📋 Текст скопирован!');
+    }
   }
 });
 // ---------- тема ----------
