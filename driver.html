@@ -31,7 +31,9 @@ textarea { height: 72px; font-size: 0.8em; }
 .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
 .status-dot.active { background: var(--success); animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-
+.map-preview { height: 200px; border-radius: 10px; overflow: hidden; background: #222; display: none; }
+.map-preview iframe { width: 100%; height: 100%; border: none; }
+.map-preview.show { display: block; }
 </style>
 </head>
 <body>
@@ -46,7 +48,9 @@ textarea { height: 72px; font-size: 0.8em; }
     <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
   </div>
 
-  <button class="btn" id="btnOpenRoute" style="background:#444;display:none;">🗺 Маршрут открыть в Google Maps</button>
+  <div class="map-preview" id="mapPreview">
+    <iframe id="mapFrame" src=""></iframe>
+  </div>
 
   <button class="btn btn-start" id="btnStart">▶ Старт — начать трекинг</button>
   <button class="btn btn-stop"  id="btnStop">■ Стоп — завершить поездку</button>
@@ -97,16 +101,15 @@ const infoBox   = document.getElementById('infoBox');
 const statusBadge = document.getElementById('statusBadge');
 const dot       = document.getElementById('dot');
 const routeInput = document.getElementById('routeUrl');
+const mapPreview = document.getElementById('mapPreview');
+const mapFrame   = document.getElementById('mapFrame');
 
-// Показываем кнопку открытия маршрута при вводе ссылки
-const btnOpenRoute = document.getElementById('btnOpenRoute');
+// Показываем превью маршрута при вводе ссылки
 routeInput.addEventListener('input', () => {
   const url = routeInput.value.trim();
-  if (url.includes('maps.google') || url.includes('google.com/maps')) {
-    btnOpenRoute.style.display = 'block';
-    btnOpenRoute.onclick = () => window.open(url, '_blank');
-  } else {
-    btnOpenRoute.style.display = 'none';
+  if (url.startsWith('https://www.google.com/maps/dir/') || url.startsWith('https://maps.google.com/maps/dir/')) {
+    mapFrame.src = url;
+    mapPreview.classList.add('show');
   }
 });
 
@@ -196,5 +199,6 @@ btnShare.addEventListener('click', () => {
   }
 });
 </script>
+<script src="console.js"></script>
 </body>
 </html>
