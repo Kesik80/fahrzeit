@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="manifest" href="/icons/manifest.json">
+<meta name="theme-color" content="#0d1117" id="theme-meta">
+<title>Fahrzeit – Live Tracking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, onValue }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  // ═══════════════════════════════════════════════════════
+  // ⚙️  ВСТАВЬ СВОИ ДАННЫЕ FIREBASE
+  //     https://console.firebase.google.com
+  //     Realtime Database → Rules → read/write: true
+  // ═══════════════════════════════════════════════════════
+  const firebaseConfig = {
+    apiKey:            "ТВОЙ_API_KEY",
+    authDomain:        "ТВОЙ_PROJECT.firebaseapp.com",
+    databaseURL:       "https://ТВОЙ_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "ТВОЙ_PROJECT_ID",
+    storageBucket:     "ТВОЙ_PROJECT.appspot.com",
+    messagingSenderId: "ТВОЙ_SENDER_ID",
+    appId:             "ТВОЙ_APP_ID"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db    = getDatabase(fbApp);
+  window._fb  = { db, ref, set, onValue };
+  document.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0d1117;
+  --surface: #161b22;
+  --surface2:#21262d;
+  --border:  #30363d;
+  --text:    #e6edf3;
+  --muted:   #8b949e;
+  --accent:  #58a6ff;
+  --green:   #3fb950;
+  --red:     #f85149;
+  --orange:  #d29922;
+  --radius:  10px;
+  --mono:    'JetBrains Mono', monospace;
+  --font:    'Outfit', sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  z-index: 100;
+  flex-shrink: 0;
+}
+.header-brand {
+  display: flex; align-items: center; gap: 9px;
+  text-decoration: none; color: var(--text);
+}
+.header-icon {
+  width: 30px; height: 30px;
+  background: var(--accent); border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.header-title { font-size: .95em; font-weight: 700; line-height: 1.1; }
+.header-sub   { font-size: .65em; color: var(--muted); letter-spacing: .5px; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 11px; border-radius: 20px;
+  font-size: .72em; font-weight: 600; font-family: var(--mono);
+  white-space: nowrap; transition: all .3s;
+}
+.status-pill.idle    { background:#21262d; color:var(--muted); border:1px solid var(--border); }
+.status-pill.active  { background:rgba(63,185,80,.15); color:var(--green); border:1px solid rgba(63,185,80,.4); }
+.status-pill.waiting { background:rgba(210,153,34,.15); color:var(--orange); border:1px solid rgba(210,153,34,.4); }
+.status-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+.status-pill.active .status-dot { animation: pulse 1.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+
+/* ── MAP ── */
+#map {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+.map-hint {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; color: var(--muted); font-size: .85em; text-align: center;
+  padding: 20px; z-index: 1; pointer-events: none;
+  background: var(--bg);
+}
+.map-hint .big { font-size: 2.8em; opacity: .3; }
+
+/* ── BOTTOM PANEL ── */
+.panel {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Role tabs */
+.role-tabs {
+  display: flex; background: var(--bg);
+  border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+}
+.role-tab {
+  flex: 1; padding: 8px 6px;
+  border: none; background: transparent;
+  color: var(--muted); font-family: var(--font); font-size: .8em; font-weight: 600;
+  cursor: pointer; transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.role-tab.active { background: var(--surface2); color: var(--accent); border-radius: 8px; }
+
+/* Input row */
+.input-row { display: flex; gap: 7px; align-items: stretch; }
+.main-input {
+  flex: 1; min-width: 0;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); color: var(--text);
+  font-family: var(--mono); font-size: .78em;
+  padding: 9px 11px; outline: none; transition: border-color .2s;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.main-input:focus { border-color: var(--accent); }
+.main-input::placeholder { color: var(--muted); font-size: .95em; font-family: var(--font); }
+.main-input.session-mode {
+  letter-spacing: 1.5px; text-transform: uppercase; font-size: .92em; text-align: center;
+}
+
+.icon-btn {
+  width: 38px; height: 38px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text);
+  font-size: .95em; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.icon-btn:hover  { border-color: var(--accent); color: var(--accent); }
+.icon-btn:active { transform: scale(.92); }
+
+/* Info bar */
+.info-bar {
+  display: none; grid-template-columns: repeat(3,1fr); gap: 7px;
+}
+.info-bar.visible { display: grid; }
+.info-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 6px; text-align: center;
+}
+.info-label { font-size: .6em; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; font-family: var(--mono); }
+.info-value { font-size: .95em; font-weight: 700; font-family: var(--mono); color: var(--text); margin-top: 2px; }
+.info-value.accent { color: var(--accent); }
+.info-value.green  { color: var(--green);  }
+
+/* Session share badge */
+.session-share { display: none; align-items: center; gap: 7px; }
+.session-share.visible { display: flex; }
+.session-code-badge {
+  flex: 1; background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px;
+  font-family: var(--mono); font-size: 1.05em; font-weight: 700;
+  color: var(--accent); letter-spacing: 2px; text-align: center;
+}
+
+/* Action button */
+.action-btn {
+  width: 100%; padding: 12px; border: none; border-radius: var(--radius);
+  font-family: var(--font); font-size: .92em; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: all .2s; letter-spacing: .3px;
+}
+.action-btn.start  { background: var(--green); color: #0d1117; }
+.action-btn.stop   { background: var(--red);   color: white;   }
+.action-btn.watch  { background: var(--accent); color: #0d1117; }
+.action-btn:hover  { filter: brightness(1.08); transform: translateY(-1px); }
+.action-btn:active { transform: translateY(0); filter: none; }
+
+/* Notice */
+.notice {
+  background: rgba(210,153,34,.1); border: 1px solid rgba(210,153,34,.35);
+  border-radius: var(--radius); padding: 9px 12px;
+  font-size: .76em; color: var(--orange); line-height: 1.5;
+}
+.notice a { color: var(--accent); }
+
+/* Toast */
+.toast {
+  position: fixed; bottom: 16px; left: 50%;
+  transform: translateX(-50%) translateY(14px);
+  background: var(--surface2); border: 1px solid var(--border);
+  color: var(--text); padding: 9px 16px;
+  border-radius: 20px; font-size: .82em; font-weight: 500;
+  z-index: 9999; opacity: 0; transition: all .3s;
+  pointer-events: none; max-width: 92vw;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <a href="/" class="header-brand">
+    <div class="header-icon">🚗</div>
+    <div>
+      <div class="header-title">Fahrzeit</div>
+      <div class="header-sub">LIVE TRACKING</div>
+    </div>
+  </a>
+  <div class="status-pill idle" id="statusPill">
+    <div class="status-dot"></div>
+    <span id="statusText">Bereit</span>
+  </div>
+</header>
+
+<div id="map">
+  <div class="map-hint" id="mapHint">
+    <div class="big">🗺️</div>
+    <div>Karte erscheint nach dem Start</div>
+    <div style="font-size:.8em;opacity:.6;margin-top:4px;">Google Maps URL einfügen → Start drücken</div>
+  </div>
+</div>
+
+<div class="panel">
+
+  <div class="notice" id="fbNotice" style="display:none;">
+    ⚠️ Firebase nicht konfiguriert —
+    <a href="https://console.firebase.google.com" target="_blank">Projekt erstellen</a>
+    und Config im &lt;script&gt; eintragen.
+  </div>
+
+  <!-- Role selector -->
+  <div class="role-tabs">
+    <button class="role-tab active" id="tabDriver"  onclick="setRole('driver')">🚗 Fahrer</button>
+    <button class="role-tab"        id="tabWatcher" onclick="setRole('watcher')">👁 Beobachter</button>
+  </div>
+
+  <!-- DRIVER panel -->
+  <div id="driverPanel">
+    <div class="input-row">
+      <input class="main-input" id="mapsUrlInput"
+             placeholder="Google Maps URL einfügen…"/>
+      <button class="icon-btn" onclick="pasteUrl()"        title="Aus Zwischenablage">📋</button>
+      <button class="icon-btn" onclick="loadLastFahrzeit()" title="Letzten Fahrzeit-Link laden">🔄</button>
+    </div>
+    <!-- Session-Code (появляется после старта) -->
+    <div class="session-share" id="sessionShareRow" style="margin-top:8px;">
+      <div style="font-size:.72em;color:var(--muted);white-space:nowrap;flex-shrink:0;">Code:</div>
+      <div class="session-code-badge" id="sessionCodeBadge">––––––</div>
+      <button class="icon-btn" onclick="shareSession()" title="Link teilen">📤</button>
+    </div>
+  </div>
+
+  <!-- WATCHER panel -->
+  <div id="watcherPanel" style="display:none;">
+    <div class="input-row">
+      <input class="main-input session-mode" id="sessionInput"
+             maxlength="8" placeholder="SESSION-CODE"
+             oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"/>
+      <button class="icon-btn" onclick="pasteSession()" title="Einfügen">📋</button>
+    </div>
+  </div>
+
+  <!-- Info bar -->
+  <div class="info-bar" id="infoBar">
+    <div class="info-card">
+      <div class="info-label">Geschw.</div>
+      <div class="info-value accent" id="infoSpeed">– km/h</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Dauer</div>
+      <div class="info-value green" id="infoTime">–:––</div>
+    </div>
+    <div class="info-card">
+      <div class="info-label">Update</div>
+      <div class="info-value" id="infoUpdate">–</div>
+    </div>
+  </div>
+
+  <button class="action-btn start" id="actionBtn" onclick="handleAction()">▶ Start</button>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let role        = 'driver';
+let isTracking  = false;
+let watchId     = null;
+let sessionCode = '';
+let map         = null;
+let fbReady     = false;
+let unsubFn     = null;
+let parsedRoute = null;   // { origin, destination, waypoints }
+let pathCoords  = [];
+let trackingStart  = null;
+let clockInterval  = null;
+let lastUpdateTime = null;
+
+// Map objects
+let driverMarker   = null;
+let pathPolyline   = null;
+let dirRenderer    = null;
+let stopMarkers    = [];
+
+/* ══════════════════════════════════════════
+   FIREBASE
+══════════════════════════════════════════ */
+document.addEventListener('firebase-ready', () => {
+  const s = document.querySelector('script[type="module"]');
+  if (s && s.textContent.includes('ТВОЙ_API_KEY')) {
+    document.getElementById('fbNotice').style.display = 'block';
+    fbReady = false;
+  } else {
+    fbReady = true;
+  }
+});
+
+/* ══════════════════════════════════════════
+   PARSE GOOGLE MAPS URL
+   https://www.google.com/maps/dir/?api=1
+     &origin=LAT,LNG
+     &destination=LAT,LNG
+     &waypoints=LAT,LNG|LAT,LNG|…
+     &travelmode=driving
+══════════════════════════════════════════ */
+function parseMapsUrl(raw) {
+  try {
+    const qIdx = raw.indexOf('?');
+    const p    = new URLSearchParams(qIdx >= 0 ? raw.slice(qIdx) : raw);
+
+    const ll = s => {
+      if (!s) return null;
+      const [la, ln] = s.split(',').map(Number);
+      return isNaN(la)||isNaN(ln) ? null : { lat:la, lng:ln };
+    };
+
+    const origin      = ll(p.get('origin'));
+    const destination = ll(p.get('destination'));
+    const wpRaw       = p.get('waypoints') || '';
+    const waypoints   = wpRaw.split('|').map(ll).filter(Boolean);
+
+    return destination ? { origin, destination, waypoints } : null;
+  } catch { return null; }
+}
+
+/* ══════════════════════════════════════════
+   UI
+══════════════════════════════════════════ */
+function setRole(r) {
+  role = r;
+  document.getElementById('tabDriver').classList.toggle('active',  r==='driver');
+  document.getElementById('tabWatcher').classList.toggle('active', r==='watcher');
+  document.getElementById('driverPanel').style.display  = r==='driver'  ? '' : 'none';
+  document.getElementById('watcherPanel').style.display = r==='watcher' ? '' : 'none';
+  refreshBtn();
+}
+
+function refreshBtn() {
+  const btn = document.getElementById('actionBtn');
+  if (role === 'driver') {
+    btn.innerHTML  = isTracking ? '⏹ Stop' : '▶ Start';
+    btn.className  = isTracking ? 'action-btn stop' : 'action-btn start';
+    btn.onclick    = handleAction;
+  } else {
+    btn.innerHTML  = '👁 Beobachten';
+    btn.className  = 'action-btn watch';
+    btn.onclick    = handleAction;
+  }
+}
+
+function setStatus(cls, txt) {
+  const pill = document.getElementById('statusPill');
+  pill.className = `status-pill ${cls}`;
+  document.getElementById('statusText').textContent = txt;
+}
+
+function showToast(msg, ms=3200) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ══════════════════════════════════════════
+   INPUT HELPERS
+══════════════════════════════════════════ */
+async function pasteUrl() {
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById('mapsUrlInput').value = t.trim();
+    showToast('📋 URL eingefügt');
+  } catch { showToast('⚠️ Zwischenablage-Zugriff erlauben'); }
+}
+
+async function pasteSession() {
+  try {
+    const t = await navigator.clipboard.readText();
+    document.getElementById('sessionInput').value =
+      t.trim().toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,8);
+    showToast('📋 Eingefügt');
+  } catch { showToast('⚠️ Zwischenablage-Zugriff erlauben'); }
+}
+
+// Ищем в localStorage последний скопированный Google Maps URL
+function loadLastFahrzeit() {
+  const all = { ...localStorage, ...sessionStorage };
+  for (const k of Object.keys(all)) {
+    const v = all[k];
+    if (typeof v === 'string' && v.includes('google.com/maps/dir')) {
+      const m = v.match(/(https:\/\/www\.google\.com\/maps\/dir[^\s"'<>]+)/);
+      if (m) {
+        document.getElementById('mapsUrlInput').value = m[1];
+        showToast('✅ Letzter Fahrzeit-Link geladen');
+        return;
+      }
+    }
+  }
+  showToast('⚠️ Kein gespeicherter Link — URL manuell einfügen');
+}
+
+/* ══════════════════════════════════════════
+   SESSION
+══════════════════════════════════════════ */
+function genCode() {
+  const c = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:6}, ()=>c[Math.floor(Math.random()*c.length)]).join('');
+}
+
+function shareSession() {
+  const url  = `${location.origin}${location.pathname}?session=${sessionCode}`;
+  const text = `🚗 Fahrzeit Live-Tracking\nCode: ${sessionCode}\n${url}`;
+  if (navigator.share) {
+    navigator.share({ title:'Fahrzeit Tracking', text, url }).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>showToast('📤 Link kopiert!'));
+  }
+}
+
+/* ══════════════════════════════════════════
+   ACTION BUTTON
+══════════════════════════════════════════ */
+function handleAction() {
+  if (!fbReady) { showToast('⚠️ Firebase nicht konfiguriert'); return; }
+  if (role === 'driver') {
+    isTracking ? stopTracking() : startTracking();
+  } else {
+    const code = document.getElementById('sessionInput').value.trim();
+    if (!code || code.length < 4) { showToast('⚠️ Session-Code eingeben'); return; }
+    sessionCode = code;
+    startWatching();
+  }
+}
+
+/* ══════════════════════════════════════════
+   DRIVER
+══════════════════════════════════════════ */
+function startTracking() {
+  if (!navigator.geolocation) { showToast('⚠️ Geolocation nicht unterstützt'); return; }
+
+  const url = document.getElementById('mapsUrlInput').value.trim();
+  if (!url) { showToast('⚠️ Google Maps URL einfügen'); return; }
+
+  parsedRoute = parseMapsUrl(url);
+  if (!parsedRoute) { showToast('⚠️ Ungültige URL — Ziel nicht gefunden'); return; }
+
+  sessionCode = genCode();
+  document.getElementById('sessionCodeBadge').textContent = sessionCode;
+  document.getElementById('sessionShareRow').classList.add('visible');
+
+  // Route in Firebase speichern (für Beobachter)
+  const { db, ref, set } = window._fb;
+  set(ref(db, `sessions/${sessionCode}/route`), { mapsUrl: url, startedAt: Date.now(), active: true });
+
+  isTracking    = true;
+  pathCoords    = [];
+  trackingStart = Date.now();
+
+  setStatus('active', '● Live');
+  refreshBtn();
+  document.getElementById('infoBar').classList.add('visible');
+  clockInterval = setInterval(updateClock, 1000);
+
+  watchId = navigator.geolocation.watchPosition(
+    onPosition,
+    err => showToast('⚠️ GPS: ' + err.message),
+    { enableHighAccuracy: true, maximumAge: 4000, timeout: 15000 }
+  );
+
+  showToast('🚗 Gestartet! Code: ' + sessionCode, 5000);
+}
+
+function stopTracking() {
+  isTracking = false;
+  if (watchId !== null) { navigator.geolocation.clearWatch(watchId); watchId = null; }
+  if (clockInterval)    { clearInterval(clockInterval); clockInterval = null; }
+  const { db, ref, set } = window._fb;
+  set(ref(db, `sessions/${sessionCode}/driver`), { active:false, endedAt:Date.now() });
+  setStatus('idle', 'Beendet');
+  refreshBtn();
+  showToast('⏹ Tracking beendet');
+}
+
+function onPosition(pos) {
+  const { latitude:lat, longitude:lng, speed, accuracy } = pos.coords;
+  lastUpdateTime = Date.now();
+  pathCoords.push({ lat, lng });
+
+  const kmh = speed != null ? Math.round(speed * 3.6) : null;
+  document.getElementById('infoSpeed').textContent  = kmh != null ? `${kmh} km/h` : '– km/h';
+  document.getElementById('infoUpdate').textContent = 'Jetzt';
+
+  const { db, ref, set } = window._fb;
+  set(ref(db, `sessions/${sessionCode}/driver`), {
+    lat, lng, speed:kmh,
+    heading:  pos.coords.heading,
+    accuracy: Math.round(accuracy),
+    ts:       Date.now(),
+    active:   true
+  });
+
+  updateDriverOnMap(lat, lng);
+}
+
+/* ══════════════════════════════════════════
+   WATCHER
+══════════════════════════════════════════ */
+function startWatching() {
+  const { db, ref, onValue } = window._fb;
+  setStatus('waiting', 'Warten…');
+  document.getElementById('infoBar').classList.add('visible');
+
+  const btn = document.getElementById('actionBtn');
+  btn.innerHTML = '🔴 Stop';
+  btn.className = 'action-btn stop';
+  btn.onclick   = () => { stopWatching(); refreshBtn(); };
+
+  // Маршрут
+  onValue(ref(db, `sessions/${sessionCode}/route`), snap => {
+    const r = snap.val();
+    if (!r) return;
+    parsedRoute = parseMapsUrl(r.mapsUrl || '');
+    if (parsedRoute && map) drawRouteOnMap();
+  });
+
+  // Позиция водителя
+  unsubFn = onValue(ref(db, `sessions/${sessionCode}/driver`), snap => {
+    const d = snap.val();
+    if (!d) { setStatus('waiting','Warten auf Fahrer…'); return; }
+    if (!d.active) { setStatus('idle','🏁 Fahrt beendet'); showToast('🏁 Fahrt beendet'); return; }
+
+    setStatus('active','● Live');
+    lastUpdateTime = d.ts;
+    document.getElementById('infoSpeed').textContent  = d.speed!=null ? `${d.speed} km/h` : '– km/h';
+    document.getElementById('infoUpdate').textContent = 'Jetzt';
+    pathCoords.push({ lat:d.lat, lng:d.lng });
+    updateDriverOnMap(d.lat, d.lng);
+  });
+
+  showToast('👁 Verbinde mit Session ' + sessionCode + '…');
+}
+
+function stopWatching() {
+  if (unsubFn) { unsubFn(); unsubFn = null; }
+  setStatus('idle','Bereit');
+  document.getElementById('infoBar').classList.remove('visible');
+}
+
+/* ══════════════════════════════════════════
+   GOOGLE MAPS
+══════════════════════════════════════════ */
+window.initMap = function() { /* Maps geladen, wartet auf GPS */ };
+
+function ensureMap(lat, lng) {
+  if (map) return;
+  document.getElementById('mapHint').style.display = 'none';
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat, lng }, zoom: 13,
+    mapTypeId: 'roadmap',
+    streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
+    styles: darkMapStyle()
+  });
+  if (parsedRoute) drawRouteOnMap();
+}
+
+function updateDriverOnMap(lat, lng) {
+  ensureMap(lat, lng);
+
+  // SVG-маркер машины
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" viewBox="0 0 42 42">
+    <circle cx="21" cy="21" r="19" fill="#1a73e8" stroke="white" stroke-width="2.5" opacity=".92"/>
+    <text x="21" y="27" text-anchor="middle" font-size="20">🚗</text>
+  </svg>`;
+  const icon = {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(42,42),
+    anchor:     new google.maps.Point(21,21)
+  };
+
+  if (!driverMarker) {
+    driverMarker = new google.maps.Marker({ position:{lat,lng}, map, icon, title:'Fahrer', zIndex:200 });
+  } else {
+    driverMarker.setPosition({ lat, lng });
+  }
+  map.panTo({ lat, lng });
+
+  // Синяя линия пройденного пути
+  if (pathPolyline) pathPolyline.setMap(null);
+  if (pathCoords.length > 1) {
+    pathPolyline = new google.maps.Polyline({
+      path: pathCoords, strokeColor:'#58a6ff',
+      strokeOpacity:.9, strokeWeight:5, map
+    });
+  }
+}
+
+/* Рисуем зелёный маршрут через Directions API */
+function drawRouteOnMap() {
+  if (!parsedRoute || !map) return;
+
+  // Очищаем старое
+  if (dirRenderer) { dirRenderer.setMap(null); dirRenderer = null; }
+  stopMarkers.forEach(m => m.setMap(null));
+  stopMarkers = [];
+
+  const { origin, destination, waypoints } = parsedRoute;
+
+  dirRenderer = new google.maps.DirectionsRenderer({
+    map,
+    suppressMarkers: true,
+    polylineOptions: { strokeColor:'#3fb950', strokeOpacity:.5, strokeWeight:6 }
+  });
+
+  const reqOrigin = origin
+    ? new google.maps.LatLng(origin.lat, origin.lng)
+    : (waypoints[0]
+        ? new google.maps.LatLng(waypoints[0].lat, waypoints[0].lng)
+        : new google.maps.LatLng(destination.lat, destination.lng));
+
+  new google.maps.DirectionsService().route({
+    origin:      reqOrigin,
+    destination: new google.maps.LatLng(destination.lat, destination.lng),
+    waypoints:   waypoints.map(wp => ({
+      location: new google.maps.LatLng(wp.lat, wp.lng), stopover: true
+    })),
+    travelMode: google.maps.TravelMode.DRIVING,
+    optimizeWaypoints: false
+  }, (result, status) => {
+    if (status === 'OK') {
+      dirRenderer.setDirections(result);
+    } else {
+      // Fallback: прямая линия по координатам
+      console.warn('DirectionsAPI:', status);
+      const pts = [];
+      if (origin) pts.push(origin);
+      pts.push(...waypoints, destination);
+      new google.maps.Polyline({
+        path: pts.map(p=>({lat:p.lat,lng:p.lng})),
+        strokeColor:'#3fb950', strokeOpacity:.5, strokeWeight:6, map
+      });
+    }
+    // Маркеры поверх маршрута
+    placeStopMarkers(origin, waypoints, destination);
+  });
+}
+
+function placeStopMarkers(origin, waypoints, destination) {
+  // Старт
+  if (origin) {
+    const m = new google.maps.Marker({
+      position: origin, map, zIndex:50,
+      icon: svgCircleIcon('#8b949e', '🏠', 32),
+      title: 'Startpunkt'
+    });
+    stopMarkers.push(m);
+  }
+
+  // Промежуточные — нумерованные зелёные кружки
+  waypoints.forEach((wp, i) => {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28">
+      <circle cx="14" cy="14" r="12" fill="#3fb950" stroke="white" stroke-width="2"/>
+      <text x="14" y="19" text-anchor="middle" font-size="11" font-weight="bold" fill="white">${i+1}</text>
+    </svg>`;
+    const m = new google.maps.Marker({
+      position: wp, map, zIndex: 60,
+      icon: {
+        url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+        scaledSize: new google.maps.Size(28,28),
+        anchor: new google.maps.Point(14,14)
+      },
+      title: `Haltepunkt ${i+1}`
+    });
+    const iw = new google.maps.InfoWindow({ content: `<b>Haltepunkt ${i+1}</b>` });
+    m.addListener('click', () => iw.open(map, m));
+    stopMarkers.push(m);
+  });
+
+  // Зиль — красный
+  const dm = new google.maps.Marker({
+    position: destination, map, zIndex: 80,
+    icon: svgCircleIcon('#f85149', '🏁', 36),
+    title: 'Ziel'
+  });
+  const diw = new google.maps.InfoWindow({ content: '<b>🏁 Ziel</b>' });
+  dm.addListener('click', () => diw.open(map, dm));
+  stopMarkers.push(dm);
+}
+
+function svgCircleIcon(fill, emoji, size) {
+  const r = size / 2;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${r}" cy="${r}" r="${r-2}" fill="${fill}" stroke="white" stroke-width="2"/>
+    <text x="${r}" y="${r+5}" text-anchor="middle" font-size="${r*.9}">${emoji}</text>
+  </svg>`;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new google.maps.Size(size, size),
+    anchor: new google.maps.Point(r, r)
+  };
+}
+
+/* ══════════════════════════════════════════
+   CLOCK
+══════════════════════════════════════════ */
+function updateClock() {
+  if (!trackingStart) return;
+  const s  = Math.floor((Date.now() - trackingStart) / 1000);
+  const mm = Math.floor(s/60).toString().padStart(2,'0');
+  const ss = (s%60).toString().padStart(2,'0');
+  document.getElementById('infoTime').textContent = `${mm}:${ss}`;
+  if (lastUpdateTime) {
+    const ago = Math.floor((Date.now() - lastUpdateTime)/1000);
+    document.getElementById('infoUpdate').textContent = ago < 5 ? 'Jetzt' : `${ago}s`;
+  }
+}
+
+/* ══════════════════════════════════════════
+   DARK MAP STYLE
+══════════════════════════════════════════ */
+function darkMapStyle() {
+  return [
+    {elementType:'geometry',stylers:[{color:'#1d2c4d'}]},
+    {elementType:'labels.text.fill',stylers:[{color:'#8ec3b9'}]},
+    {elementType:'labels.text.stroke',stylers:[{color:'#1a3646'}]},
+    {featureType:'road',elementType:'geometry',stylers:[{color:'#38414e'}]},
+    {featureType:'road',elementType:'geometry.stroke',stylers:[{color:'#212a37'}]},
+    {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#746855'}]},
+    {featureType:'road.highway',elementType:'labels.text.fill',stylers:[{color:'#f3d19c'}]},
+    {featureType:'water',elementType:'geometry',stylers:[{color:'#0e1626'}]},
+    {featureType:'poi',stylers:[{visibility:'off'}]},
+    {featureType:'transit',stylers:[{visibility:'off'}]}
+  ];
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(location.search);
+
+  // ?session=XXX → режим наблюдателя
+  const s = p.get('session');
+  if (s) {
+    document.getElementById('sessionInput').value = s.toUpperCase().replace(/[^A-Z0-9]/g,'');
+    setRole('watcher');
+    showToast('👁 Session erkannt: ' + s.toUpperCase(), 4000);
+    return;
+  }
+
+  // ?mapsUrl=... → режим водителя, URL уже подставлен
+  const mapsUrl = p.get('mapsUrl');
+  if (mapsUrl) {
+    setRole('driver');
+    document.getElementById('mapsUrlInput').value = mapsUrl;
+
+    // Парсим и показываем маршрут предварительно на карте
+    parsedRoute = parseMapsUrl(mapsUrl);
+
+    // Ждём инициализации Firebase и карты, затем предпросмотр
+    const tryPreview = () => {
+      if (!window.google || !window.google.maps) {
+        setTimeout(tryPreview, 300);
+        return;
+      }
+      // Центрируем карту на origin или первой точке маршрута
+      const center = parsedRoute?.origin
+        || parsedRoute?.waypoints?.[0]
+        || parsedRoute?.destination;
+      if (center) {
+        document.getElementById('mapHint').style.display = 'none';
+        map = new google.maps.Map(document.getElementById('map'), {
+          center, zoom: 11,
+          mapTypeId: 'roadmap',
+          streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
+          styles: darkMapStyle()
+        });
+        drawRouteOnMap();
+      }
+    };
+    tryPreview();
+
+    showToast('🗺️ Route geladen – Start drücken!', 4000);
+  }
+});
+</script>
+
+<!--
+  ⚠️  ЗАМЕНИ YOUR_GOOGLE_MAPS_API_KEY своим ключом!
+  https://console.cloud.google.com
+  Включи: Maps JavaScript API + Directions API
+-->
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap&libraries=geometry"
+  async defer>
+</script>
+
+</body>
+</html>
