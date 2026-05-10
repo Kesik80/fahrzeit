@@ -17,14 +17,19 @@
   import { getDatabase, ref, set, onValue }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
+  // ═══════════════════════════════════════════════════════
+  // ⚙️  ВСТАВЬ СВОИ ДАННЫЕ FIREBASE
+  //     https://console.firebase.google.com
+  //     Realtime Database → Rules → read/write: true
+  // ═══════════════════════════════════════════════════════
   const firebaseConfig = {
-    apiKey: "AIzaSyAaqzMLxG9NAE7J9IVeAn73Bd0BtPbX6t8",
-    authDomain: "realtime-database-bfa1f.firebaseapp.com",
-    databaseURL: "https://realtime-database-bfa1f-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "realtime-database-bfa1f",
-    storageBucket: "realtime-database-bfa1f.firebasestorage.app",
-    messagingSenderId: "172587156682",
-    appId: "1:172587156682:web:39d013f6eaa8709cc0a033"
+    apiKey:            "ТВОЙ_API_KEY",
+    authDomain:        "ТВОЙ_PROJECT.firebaseapp.com",
+    databaseURL:       "https://ТВОЙ_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId:         "ТВОЙ_PROJECT_ID",
+    storageBucket:     "ТВОЙ_PROJECT.appspot.com",
+    messagingSenderId: "ТВОЙ_SENDER_ID",
+    appId:             "ТВОЙ_APP_ID"
   };
 
   const fbApp = initializeApp(firebaseConfig);
@@ -792,50 +797,13 @@ function darkMapStyle() {
    INIT
 ══════════════════════════════════════════ */
 window.addEventListener('DOMContentLoaded', () => {
+  // Если открыли по ссылке ?session=XXX
   const p = new URLSearchParams(location.search);
-
-  // ?session=XXX → режим наблюдателя
   const s = p.get('session');
   if (s) {
     document.getElementById('sessionInput').value = s.toUpperCase().replace(/[^A-Z0-9]/g,'');
     setRole('watcher');
     showToast('👁 Session erkannt: ' + s.toUpperCase(), 4000);
-    return;
-  }
-
-  // ?mapsUrl=... → режим водителя, URL уже подставлен
-  const mapsUrl = p.get('mapsUrl');
-  if (mapsUrl) {
-    setRole('driver');
-    document.getElementById('mapsUrlInput').value = mapsUrl;
-
-    // Парсим и показываем маршрут предварительно на карте
-    parsedRoute = parseMapsUrl(mapsUrl);
-
-    // Ждём инициализации Firebase и карты, затем предпросмотр
-    const tryPreview = () => {
-      if (!window.google || !window.google.maps) {
-        setTimeout(tryPreview, 300);
-        return;
-      }
-      // Центрируем карту на origin или первой точке маршрута
-      const center = parsedRoute?.origin
-        || parsedRoute?.waypoints?.[0]
-        || parsedRoute?.destination;
-      if (center) {
-        document.getElementById('mapHint').style.display = 'none';
-        map = new google.maps.Map(document.getElementById('map'), {
-          center, zoom: 11,
-          mapTypeId: 'roadmap',
-          streetViewControl: false, mapTypeControl: false, fullscreenControl: true,
-          styles: darkMapStyle()
-        });
-        drawRouteOnMap();
-      }
-    };
-    tryPreview();
-
-    showToast('🗺️ Route geladen – Start drücken!', 4000);
   }
 });
 </script>
