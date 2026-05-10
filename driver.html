@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Fahrer – Live Tracking</title>
+<style>
+:root { --bg: #1a1a2e; --surface: #16213e; --primary: #4285f4; --success: #34a853; --danger: #ea4335; --text: #eee; --muted: #888; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); padding: 14px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+header h1 { font-size: 1.1em; font-weight: 700; }
+.badge { font-size: 0.75em; background: var(--danger); color: #fff; padding: 2px 8px; border-radius: 12px; display: none; }
+.badge.active { display: inline-block; background: var(--success); }
+main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 14px; max-width: 480px; margin: 0 auto; width: 100%; }
+label { font-size: 0.85em; color: var(--muted); display: block; margin-bottom: 4px; }
+input[type=text], textarea {
+  width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #333;
+  background: var(--surface); color: var(--text); font-size: 0.95em; resize: none;
+}
+textarea { height: 72px; font-size: 0.8em; }
+.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1em; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; }
+.btn:active { opacity: .8; transform: scale(.98); }
+.btn-start { background: var(--success); color: #fff; }
+.btn-stop  { background: var(--danger); color: #fff; display: none; }
+.btn-share { background: var(--primary); color: #fff; display: none; }
+.info-box { background: var(--surface); border-radius: 10px; padding: 12px 14px; font-size: 0.85em; color: var(--muted); line-height: 1.6; display: none; }
+.info-box.show { display: block; }
+.info-row { display: flex; justify-content: space-between; }
+.info-val { color: var(--text); font-weight: 600; }
+.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
+.status-dot.active { background: var(--success); animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.map-preview { height: 200px; border-radius: 10px; overflow: hidden; background: #222; display: none; }
+.map-preview iframe { width: 100%; height: 100%; border: none; }
+.map-preview.show { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <span>🚗</span>
+  <h1>Fahrer – Live Tracking</h1>
+  <span class="badge" id="statusBadge">●  LIVE</span>
+</header>
+<main>
+  <div>
+    <label>Маршрут (ссылка из Fahrzeit Rechner)</label>
+    <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
+  </div>
+
+  <div class="map-preview" id="mapPreview">
+    <iframe id="mapFrame" src=""></iframe>
+  </div>
+
+  <button class="btn btn-start" id="btnStart">▶ Старт — начать трекинг</button>
+  <button class="btn btn-stop"  id="btnStop">■ Стоп — завершить поездку</button>
+  <button class="btn btn-share" id="btnShare">📋 Скопировать ссылку для наблюдателей</button>
+
+  <div class="info-box" id="infoBox">
+    <div class="info-row">
+      <span><span class="status-dot" id="dot"></span>Статус</span>
+      <span class="info-val" id="infoStatus">—</span>
+    </div>
+    <div class="info-row">
+      <span>📍 Координаты</span>
+      <span class="info-val" id="infoCoords">—</span>
+    </div>
+    <div class="info-row">
+      <span>🕐 Обновлено</span>
+      <span class="info-val" id="infoTime">—</span>
+    </div>
+    <div class="info-row">
+      <span>🔄 Обновлений</span>
+      <span class="info-val" id="infoCount">0</span>
+    </div>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const FIREBASE_URL = 'https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app';
+
+const app = initializeApp({
+  databaseURL: FIREBASE_URL,
+  projectId: 'fahrzeit-tracker-22f33',
+  appId: 'fahrzeit-tracker'
+});
+const db = getDatabase(app);
+
+let sessionId = null;
+let watchId = null;
+let updateCount = 0;
+let isTracking = false;
+
+const btnStart  = document.getElementById('btnStart');
+const btnStop   = document.getElementById('btnStop');
+const btnShare  = document.getElementById('btnShare');
+const infoBox   = document.getElementById('infoBox');
+const statusBadge = document.getElementById('statusBadge');
+const dot       = document.getElementById('dot');
+const routeInput = document.getElementById('routeUrl');
+const mapPreview = document.getElementById('mapPreview');
+const mapFrame   = document.getElementById('mapFrame');
+
+// Показываем превью маршрута при вводе ссылки
+routeInput.addEventListener('input', () => {
+  const url = routeInput.value.trim();
+  if (url.startsWith('https://www.google.com/maps/dir/') || url.startsWith('https://maps.google.com/maps/dir/')) {
+    mapFrame.src = url;
+    mapPreview.classList.add('show');
+  }
+});
+
+function genSessionId() {
+  return Math.random().toString(36).substr(2, 6).toUpperCase();
+}
+
+function setStatus(text, active) {
+  document.getElementById('infoStatus').textContent = text;
+  dot.className = 'status-dot' + (active ? ' active' : '');
+  statusBadge.className = 'badge' + (active ? ' active' : '');
+}
+
+async function writeLocation(lat, lng) {
+  const sessionRef = ref(db, `sessions/${sessionId}`);
+  await set(sessionRef, {
+    lat, lng,
+    ts: Date.now(),
+    route: routeInput.value.trim(),
+    active: true
+  });
+  updateCount++;
+  document.getElementById('infoCoords').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+  document.getElementById('infoTime').textContent = new Date().toLocaleTimeString('de-DE');
+  document.getElementById('infoCount').textContent = updateCount;
+}
+
+btnStart.addEventListener('click', async () => {
+  if (!navigator.geolocation) {
+    alert('Геолокация не поддерживается');
+    return;
+  }
+  sessionId = genSessionId();
+  isTracking = true;
+  updateCount = 0;
+
+  btnStart.style.display = 'none';
+  btnStop.style.display = 'block';
+  btnShare.style.display = 'block';
+  infoBox.classList.add('show');
+  setStatus('Подключение...', false);
+
+  // При разрыве соединения — помечаем сессию неактивной
+  const sessionRef = ref(db, `sessions/${sessionId}`);
+  onDisconnect(sessionRef).update({ active: false });
+
+  // Запускаем слежение за GPS
+  watchId = navigator.geolocation.watchPosition(
+    pos => {
+      writeLocation(pos.coords.latitude, pos.coords.longitude);
+      setStatus('Активен', true);
+    },
+    err => {
+      setStatus('Ошибка GPS: ' + err.message, false);
+    },
+    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+  );
+});
+
+btnStop.addEventListener('click', async () => {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  isTracking = false;
+
+  // Помечаем сессию завершённой
+  if (sessionId) {
+    await set(ref(db, `sessions/${sessionId}/active`), false);
+  }
+
+  btnStop.style.display = 'none';
+  btnShare.style.display = 'none';
+  btnStart.style.display = 'block';
+  setStatus('Завершено', false);
+  statusBadge.className = 'badge';
+});
+
+btnShare.addEventListener('click', () => {
+  if (!sessionId) return;
+  const base = window.location.href.replace('driver.html', 'tracker.html');
+  const url = `${base}?session=${sessionId}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => {
+      btnShare.textContent = '✅ Скопировано!';
+      setTimeout(() => { btnShare.textContent = '📋 Скопировать ссылку для наблюдателей'; }, 2000);
+    });
+  } else {
+    prompt('Скопируй ссылку:', url);
+  }
+});
+</script>
+</body>
+</html>

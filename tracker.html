@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Live Tracker – Fahrzeit</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: sans-serif; background: #1a1a2e; color: #eee; height: 100vh; display: flex; flex-direction: column; }
+header {
+  background: #16213e; padding: 10px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10;
+}
+header h1 { font-size: 1em; font-weight: 700; }
+.badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
+.badge-live { background: #34a853; color: #fff; }
+.badge-wait { background: #f9ab00; color: #000; }
+.badge-end  { background: #ea4335; color: #fff; }
+#map { flex: 1; width: 100%; }
+.info-bar {
+  background: #16213e; padding: 8px 16px;
+  display: flex; align-items: center; gap: 16px; font-size: 0.82em;
+  color: #aaa; flex-shrink: 0; flex-wrap: wrap;
+}
+.info-bar span { color: #eee; font-weight: 600; }
+.no-session {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  color: #888; font-size: 0.95em; text-align: center; padding: 20px;
+}
+.no-session h2 { color: #eee; font-size: 1.2em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🗺 Live Tracker</h1>
+  <span class="badge badge-wait" id="statusBadge">⏳ Warten...</span>
+</header>
+
+<div id="noSession" class="no-session">
+  <h2>Keine aktive Sitzung</h2>
+  <p>Bitte öffne den Link, den der Fahrer geteilt hat.</p>
+  <p style="margin-top:8px;color:#555;">?session=XXXXXX</p>
+</div>
+
+<div id="map"></div>
+
+<div class="info-bar" id="infoBar" style="display:none;">
+  <span>📍 Fahrer:</span> <span id="infoCoords">—</span>
+  <span>🕐</span> <span id="infoTime">—</span>
+  <span>🔄</span> <span id="infoUpdates">0</span>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const FIREBASE_URL = 'https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app';
+const MAPS_KEY_URL = 'https://fahrzeit.vercel.app/api/maps-key';
+
+const params = new URLSearchParams(location.search);
+const sessionId = params.get('session');
+
+if (!sessionId) {
+  document.getElementById('noSession').style.display = 'flex';
+  document.getElementById('map').style.display = 'none';
+} else {
+  document.getElementById('noSession').style.display = 'none';
+  document.getElementById('map').style.display = 'block';
+  initTracker();
+}
+
+async function initTracker() {
+  // Получаем Google Maps API ключ
+  let apiKey;
+  try {
+    const r = await fetch(MAPS_KEY_URL);
+    const d = await r.json();
+    apiKey = d.key;
+  } catch(e) {
+    document.getElementById('statusBadge').textContent = '❌ API Fehler';
+    return;
+  }
+
+  // Подключаем Google Maps
+  await new Promise((resolve) => {
+    window.__mapsReady = resolve;
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__mapsReady&language=de`;
+    document.head.appendChild(s);
+  });
+
+  // Инициализируем карту
+  const mapEl = document.getElementById('map');
+  const map = new google.maps.Map(mapEl, {
+    center: { lat: 51.5, lng: 7.0 },
+    zoom: 12,
+    mapTypeId: 'roadmap',
+    disableDefaultUI: false,
+    zoomControl: true,
+    streetViewControl: false,
+    fullscreenControl: true,
+  });
+
+  // Иконка водителя — синяя машина
+  const driverIcon = {
+    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+    scaledSize: new google.maps.Size(40, 40),
+    anchor: new google.maps.Point(20, 20),
+  };
+
+  let driverMarker = null;
+  let routeRendered = false;
+  let updateCount = 0;
+  const badge = document.getElementById('statusBadge');
+  const infoBar = document.getElementById('infoBar');
+
+  // Подключаемся к Firebase
+  const app = initializeApp({
+    databaseURL: FIREBASE_URL,
+    projectId: 'fahrzeit-tracker-22f33',
+    appId: 'fahrzeit-tracker'
+  });
+  const db = getDatabase(app);
+  const sessionRef = ref(db, `sessions/${sessionId}`);
+
+  onValue(sessionRef, (snapshot) => {
+    const data = snapshot.val();
+    if (!data) {
+      badge.className = 'badge badge-wait';
+      badge.textContent = '⏳ Warten auf Fahrer...';
+      return;
+    }
+
+    const { lat, lng, ts, route, active } = data;
+
+    // Обновляем статус
+    if (active === false) {
+      badge.className = 'badge badge-end';
+      badge.textContent = '🏁 Fahrt beendet';
+    } else {
+      badge.className = 'badge badge-live';
+      badge.textContent = '● LIVE';
+    }
+
+    // Обновляем маркер водителя
+    const pos = { lat, lng };
+    if (!driverMarker) {
+      driverMarker = new google.maps.Marker({
+        position: pos,
+        map,
+        icon: driverIcon,
+        title: 'Fahrer',
+        animation: google.maps.Animation.DROP,
+        zIndex: 999,
+      });
+    } else {
+      driverMarker.setPosition(pos);
+    }
+    map.panTo(pos);
+
+    // Рисуем маршрут один раз при первом получении данных
+    if (!routeRendered && route) {
+      routeRendered = true;
+      renderRoute(map, route);
+    }
+
+    // Обновляем инфо-бар
+    updateCount++;
+    infoBar.style.display = 'flex';
+    document.getElementById('infoCoords').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    document.getElementById('infoTime').textContent = new Date(ts).toLocaleTimeString('de-DE');
+    document.getElementById('infoUpdates').textContent = updateCount;
+  });
+}
+
+async function renderRoute(map, routeUrl) {
+  // Парсим waypoints из URL Google Maps
+  try {
+    const url = new URL(routeUrl);
+    const origin = url.searchParams.get('origin');
+    const destination = url.searchParams.get('destination');
+    const waypointsStr = url.searchParams.get('waypoints');
+
+    if (!origin || !destination) return;
+
+    const directionsService = new google.maps.DirectionsService();
+    const directionsRenderer = new google.maps.DirectionsRenderer({
+      map,
+      suppressMarkers: false,
+      polylineOptions: {
+        strokeColor: '#4285f4',
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      },
+    });
+
+    const waypoints = waypointsStr
+      ? waypointsStr.split('|').map(wp => ({
+          location: wp,
+          stopover: true,
+        }))
+      : [];
+
+    directionsService.route({
+      origin,
+      destination,
+      waypoints,
+      travelMode: google.maps.TravelMode.DRIVING,
+      optimizeWaypoints: false,
+    }, (result, status) => {
+      if (status === 'OK') {
+        directionsRenderer.setDirections(result);
+      }
+    });
+  } catch(e) {
+    console.warn('Route render error:', e);
+  }
+}
+</script>
+</body>
+</html>
