@@ -17,19 +17,14 @@
   import { getDatabase, ref, set, onValue }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-  // ═══════════════════════════════════════════════════════
-  // ⚙️  ВСТАВЬ СВОИ ДАННЫЕ FIREBASE
-  //     https://console.firebase.google.com
-  //     Realtime Database → Rules → read/write: true
-  // ═══════════════════════════════════════════════════════
   const firebaseConfig = {
-    apiKey:            "ТВОЙ_API_KEY",
-    authDomain:        "ТВОЙ_PROJECT.firebaseapp.com",
-    databaseURL:       "https://ТВОЙ_PROJECT-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId:         "ТВОЙ_PROJECT_ID",
-    storageBucket:     "ТВОЙ_PROJECT.appspot.com",
-    messagingSenderId: "ТВОЙ_SENDER_ID",
-    appId:             "ТВОЙ_APP_ID"
+    apiKey: "AIzaSyAaqzMLxG9NAE7J9IVeAn73Bd0BtPbX6t8",
+    authDomain: "realtime-database-bfa1f.firebaseapp.com",
+    databaseURL: "https://realtime-database-bfa1f-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "realtime-database-bfa1f",
+    storageBucket: "realtime-database-bfa1f.firebasestorage.app",
+    messagingSenderId: "172587156682",
+    appId: "1:172587156682:web:39d013f6eaa8709cc0a033"
   };
 
   const fbApp = initializeApp(firebaseConfig);
