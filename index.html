@@ -115,6 +115,8 @@ transition: opacity .15s, transform .1s;
 }
 .share-btn:active { opacity: .75; transform: scale(.97); }
 .google-all { background: #607d8b; }
+.driver-btn { background: #1565c0; }
+.driver-btn.active { background: #34a853; }
 .google-all.active { background: #34a853; }
 .maps-btn      { background: #4285f4; }
 .maps-back-btn { background: #e67e00; }
@@ -1518,6 +1520,11 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </g>
 </svg>
 </button>
+<button class="driver-btn" id="btnGoDriver" title="Live Tracking starten" onclick="window._openDriver()">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+  <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+</svg>
+</button>
 </div>
 <div id="outputWrapper">
 <pre id="output"></pre>
@@ -1526,10 +1533,13 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
     <path d="M16 1H4C2.9 1 2 1.9 2 3v14h2V3h12V1zm3 4H8C6.9 5 6 5.9 6 7v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
   </svg>
 </button>
-<div id="tripSummaryRow" data-nocopy="1" style="display:none;align-items:center;justify-content:center;gap:6px;margin:6px 0 2px;">
+<div id="tripSummaryRow" data-nocopy="1" style="display:none;align-items:center;justify-content:center;gap:10px;margin:8px 12px 4px;">
   <div id="tripSummary" style="font-size:0.95em;color:#888;"></div>
-  <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:26px;height:26px;min-width:26px;border-radius:50%;background:#555;color:#fff;font-size:1.1em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
-  <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:26px;height:26px;min-width:26px;border-radius:50%;background:#555;color:#fff;font-size:1.1em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
+  <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
+  <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
+  <label data-nocopy="1" title="Ссылки сокращать" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#888;margin-left:2px;">
+    <input type="checkbox" id="shortenLinks2" checked style="width:16px;height:16px;cursor:pointer;accent-color:#4285f4;"> 🔗
+  </label>
 </div>
 </div>
 <div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
@@ -1828,8 +1838,6 @@ this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: nu
 this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
-this.showDestName = false;
-this.shortenLinks = true;
 this.showDestName = false;
 this.shortenLinks = true;
 this.sortable = null;
@@ -2703,9 +2711,7 @@ farewellDiv.innerHTML = `
   <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
     <input type="checkbox" id="showDestName" ${this.showDestName ? 'checked' : ''}> (...)
   </label>
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;" title="Ссылку сокращать">
-    <input type="checkbox" id="shortenLinks" ${this.shortenLinks ? 'checked' : ''}> 🔗
-  </label>
+
 </div>
 `;
 container.appendChild(farewellDiv);
@@ -2744,10 +2750,12 @@ showDestNameCb.addEventListener('change', () => {
   this.calculate();
 });
 const shortenLinksCb = farewellDiv.querySelector('#shortenLinks');
-shortenLinksCb.addEventListener('change', () => {
-  this.shortenLinks = shortenLinksCb.checked;
-  this.saveData();
-});
+if (shortenLinksCb) {
+  shortenLinksCb.addEventListener('change', () => {
+    this.shortenLinks = shortenLinksCb.checked;
+    this.saveData();
+  });
+}
 const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
 timeControl.addEventListener('keydown', (e) => {
@@ -4606,6 +4614,8 @@ const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination
 window.open(url, '_blank');
 }
 _initShareButtons() {
+const sl2 = document.getElementById('shortenLinks2');
+if (sl2) sl2.checked = !!this.shortenLinks;
 const btnTo   = document.getElementById('btnMapsTo');
 const btnBack = document.getElementById('btnMapsBack');
 if (btnTo)   btnTo.onclick   = () => this._copyRouteLink(false);
@@ -4752,9 +4762,24 @@ if (app.machineStop && app.machineStop.arrivalTime) {
   app.calculate();
 }
 // Кнопки шаринга — делегирование, работает всегда
+window._openDriver = function() {
+  const app = window.app;
+  if (!app) return;
+  const url = app._buildRouteUrl ? app._buildRouteUrl(false) : null;
+  let driverUrl = '/driver.html';
+  if (url) driverUrl += '?route=' + encodeURIComponent(url);
+  window.open(driverUrl, '_blank');
+};
 document.addEventListener('click', e => {
   const app = window.app;
   if (!app) return;
+  if (e.target.id === 'shortenLinks2') {
+    app.shortenLinks = e.target.checked;
+    const old = document.getElementById('shortenLinks');
+    if (old) old.checked = e.target.checked;
+    app.saveData();
+    return;
+  }
   if (e.target.id === 'btnMapsTo' || e.target.closest('#btnMapsTo'))   { app._copyRouteLink(false); return; }
   if (e.target.id === 'btnMapsBack' || e.target.closest('#btnMapsBack')) { app._copyRouteLink(true);  return; }
   if (e.target.id === 'copyOutputBtn' || e.target.closest('#copyOutputBtn')) { app.copyResult(); return; }

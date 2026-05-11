@@ -7,198 +7,209 @@
 <style>
 :root { --bg: #1a1a2e; --surface: #16213e; --primary: #4285f4; --success: #34a853; --danger: #ea4335; --text: #eee; --muted: #888; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-header { background: var(--surface); padding: 14px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
-header h1 { font-size: 1.1em; font-weight: 700; }
-.badge { font-size: 0.75em; background: var(--danger); color: #fff; padding: 2px 8px; border-radius: 12px; display: none; }
-.badge.active { display: inline-block; background: var(--success); }
-main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 14px; max-width: 480px; margin: 0 auto; width: 100%; }
-label { font-size: 0.85em; color: var(--muted); display: block; margin-bottom: 4px; }
-input[type=text], textarea {
-  width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #333;
-  background: var(--surface); color: var(--text); font-size: 0.95em; resize: none;
-}
-textarea { height: 72px; font-size: 0.8em; }
-.btn { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1em; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s; }
-.btn:active { opacity: .8; transform: scale(.98); }
-.btn-start { background: var(--success); color: #fff; }
-.btn-stop  { background: var(--danger); color: #fff; display: none; }
-.btn-share { background: var(--primary); color: #fff; display: none; }
-.info-box { background: var(--surface); border-radius: 10px; padding: 12px 14px; font-size: 0.85em; color: var(--muted); line-height: 1.6; display: none; }
-.info-box.show { display: block; }
-.info-row { display: flex; justify-content: space-between; }
-.info-val { color: var(--text); font-weight: 600; }
-.status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); display: inline-block; margin-right: 6px; }
-.status-dot.active { background: var(--success); animation: pulse 1.5s infinite; }
+body { font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
+header { background: var(--surface); padding: 12px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10; }
+header h1 { font-size: 1em; font-weight: 700; flex: 1; }
+.badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
+.badge-live { background: #34a853; color: #fff; }
+.badge-off  { background: #555; color: #ccc; }
+#map { flex: 1; width: 100%; display: none; }
+.setup-panel { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
+.bottom-panel { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,.4); display: none; }
+label { font-size: 0.82em; color: var(--muted); display: block; margin-bottom: 3px; }
+textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #333; background: #0f172a; color: var(--text); font-size: 0.78em; resize: none; height: 80px; }
+.btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95em; font-weight: 700; cursor: pointer; color: #fff; }
+.btn-start { background: #34a853; }
+.btn-stop  { background: #ea4335; }
+.btn-share { background: #4285f4; }
+.btn-nav   { background: #f9ab00; color: #000; }
+.btn-row   { display: flex; gap: 8px; }
+.btn-row .btn { padding: 11px 6px; font-size: 0.8em; flex: 1; }
+.info-bar { display: flex; justify-content: space-between; font-size: 0.8em; color: var(--muted); }
+.info-bar b { color: var(--text); }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; margin-right: 4px; }
+.dot.active { background: #34a853; animation: pulse 1.5s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
-.map-preview { height: 200px; border-radius: 10px; overflow: hidden; background: #222; display: none; }
-.map-preview iframe { width: 100%; height: 100%; border: none; }
-.map-preview.show { display: block; }
 </style>
 </head>
 <body>
 <header>
   <span>🚗</span>
   <h1>Fahrer – Live Tracking</h1>
-  <span class="badge" id="statusBadge">●  LIVE</span>
+  <span class="badge badge-off" id="statusBadge">● Bereit</span>
 </header>
-<main>
+
+<div class="setup-panel" id="setupPanel">
   <div>
     <label>Маршрут (ссылка из Fahrzeit Rechner)</label>
     <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
   </div>
-
-  <div class="map-preview" id="mapPreview">
-    <iframe id="mapFrame" src=""></iframe>
-  </div>
-
   <button class="btn btn-start" id="btnStart">▶ Старт — начать трекинг</button>
-  <button class="btn btn-stop"  id="btnStop">■ Стоп — завершить поездку</button>
-  <button class="btn btn-share" id="btnShare">📋 Скопировать ссылку для наблюдателей</button>
+</div>
 
-  <div class="info-box" id="infoBox">
-    <div class="info-row">
-      <span><span class="status-dot" id="dot"></span>Статус</span>
-      <span class="info-val" id="infoStatus">—</span>
-    </div>
-    <div class="info-row">
-      <span>📍 Координаты</span>
-      <span class="info-val" id="infoCoords">—</span>
-    </div>
-    <div class="info-row">
-      <span>🕐 Обновлено</span>
-      <span class="info-val" id="infoTime">—</span>
-    </div>
-    <div class="info-row">
-      <span>🔄 Обновлений</span>
-      <span class="info-val" id="infoCount">0</span>
-    </div>
+<div id="map"></div>
+
+<div class="bottom-panel" id="bottomPanel">
+  <div class="info-bar">
+    <span><span class="dot" id="dot"></span>GPS: <b id="infoCoords">—</b></span>
+    <span>🔄 <b id="infoCount">0</b></span>
+    <span>🕐 <b id="infoTime">—</b></span>
   </div>
-</main>
+  <div class="btn-row">
+    <button class="btn btn-nav"   id="btnNav">🧭 Navigation</button>
+    <button class="btn btn-share" id="btnShare">📋 Ссылка</button>
+    <button class="btn btn-stop"  id="btnStop">■ Стоп</button>
+  </div>
+</div>
 
 <script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
-const FIREBASE_URL = 'https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app';
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+import { getDatabase, ref, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js';
 
 const app = initializeApp({
-  databaseURL: FIREBASE_URL,
-  projectId: 'fahrzeit-tracker-22f33',
-  appId: 'fahrzeit-tracker'
+  apiKey: "AIzaSyDPD_dheNbYyskB9JwgnoNCBCnY-yWWOYg",
+  authDomain: "fahrzeit-tracker-22f33.firebaseapp.com",
+  databaseURL: "https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "fahrzeit-tracker-22f33",
+  storageBucket: "fahrzeit-tracker-22f33.firebasestorage.app",
+  messagingSenderId: "400087462292",
+  appId: "1:400087462292:web:d8ae84ab452968da161f81"
 });
 const db = getDatabase(app);
 
-let sessionId = null;
-let watchId = null;
-let updateCount = 0;
-let isTracking = false;
+let sessionId=null, watchId=null, updateCount=0, map=null, driverMarker=null;
+const routeInput   = document.getElementById('routeUrl');
+const setupPanel   = document.getElementById('setupPanel');
+const bottomPanel  = document.getElementById('bottomPanel');
+const mapEl        = document.getElementById('map');
+const statusBadge  = document.getElementById('statusBadge');
 
-const btnStart  = document.getElementById('btnStart');
-const btnStop   = document.getElementById('btnStop');
-const btnShare  = document.getElementById('btnShare');
-const infoBox   = document.getElementById('infoBox');
-const statusBadge = document.getElementById('statusBadge');
-const dot       = document.getElementById('dot');
-const routeInput = document.getElementById('routeUrl');
-const mapPreview = document.getElementById('mapPreview');
-const mapFrame   = document.getElementById('mapFrame');
+// Автовставка маршрута из URL параметра
+const rp = new URLSearchParams(location.search).get('route');
+if (rp) routeInput.value = decodeURIComponent(rp);
 
-// Показываем превью маршрута при вводе ссылки
-routeInput.addEventListener('input', () => {
-  const url = routeInput.value.trim();
-  if (url.startsWith('https://www.google.com/maps/dir/') || url.startsWith('https://maps.google.com/maps/dir/')) {
-    mapFrame.src = url;
-    mapPreview.classList.add('show');
-  }
-});
-
-function genSessionId() {
-  return Math.random().toString(36).substr(2, 6).toUpperCase();
-}
-
-function setStatus(text, active) {
-  document.getElementById('infoStatus').textContent = text;
-  dot.className = 'status-dot' + (active ? ' active' : '');
-  statusBadge.className = 'badge' + (active ? ' active' : '');
+function setStatus(text, live) {
+  statusBadge.className = 'badge ' + (live ? 'badge-live' : 'badge-off');
+  statusBadge.textContent = '● ' + text;
+  document.getElementById('dot').className = 'dot' + (live ? ' active' : '');
 }
 
 async function writeLocation(lat, lng) {
-  const sessionRef = ref(db, `sessions/${sessionId}`);
-  await set(sessionRef, {
-    lat, lng,
-    ts: Date.now(),
-    route: routeInput.value.trim(),
-    active: true
-  });
-  updateCount++;
-  document.getElementById('infoCoords').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-  document.getElementById('infoTime').textContent = new Date().toLocaleTimeString('de-DE');
-  document.getElementById('infoCount').textContent = updateCount;
+  try {
+    await set(ref(db, 'sessions/' + sessionId), {
+      lat, lng, ts: Date.now(), route: routeInput.value.trim(), active: true
+    });
+    updateCount++;
+    document.getElementById('infoCoords').textContent = lat.toFixed(4) + ', ' + lng.toFixed(4);
+    document.getElementById('infoTime').textContent = new Date().toLocaleTimeString('de-DE');
+    document.getElementById('infoCount').textContent = updateCount;
+    if (map) {
+      const pos = {lat, lng};
+      if (!driverMarker) {
+        driverMarker = new google.maps.Marker({
+          position: pos, map,
+          icon: {url:'https://maps.google.com/mapfiles/ms/icons/blue-dot.png', scaledSize: new google.maps.Size(44,44)},
+          title: 'Ich', zIndex: 999
+        });
+      } else { driverMarker.setPosition(pos); }
+    }
+    setStatus('LIVE', true);
+  } catch(e) { setStatus('DB Fehler', false); }
 }
 
-btnStart.addEventListener('click', async () => {
-  if (!navigator.geolocation) {
-    alert('Геолокация не поддерживается');
-    return;
-  }
-  sessionId = genSessionId();
-  isTracking = true;
+function renderRoute(routeUrl) {
+  try {
+    const url = new URL(routeUrl);
+    const origin = decodeURIComponent(url.searchParams.get('origin')||'');
+    const destination = decodeURIComponent(url.searchParams.get('destination')||'');
+    const wps = url.searchParams.get('waypoints')||'';
+    const waypoints = wps ? decodeURIComponent(wps).split('|').filter(Boolean)
+      .map(w => ({location:w.trim(), stopover:true})) : [];
+    if (!origin||!destination) return;
+    const ds = new google.maps.DirectionsService();
+    const dr = new google.maps.DirectionsRenderer({
+      map, suppressMarkers: false,
+      polylineOptions: {strokeColor:'#4285f4', strokeWeight:5, strokeOpacity:0.85}
+    });
+    ds.route({origin, destination, waypoints, travelMode:'DRIVING', optimizeWaypoints:false},
+      (result, status) => {
+        if (status==='OK') {
+          dr.setDirections(result);
+          const bounds = new google.maps.LatLngBounds();
+          result.routes[0].legs.forEach(l => { bounds.extend(l.start_location); bounds.extend(l.end_location); });
+          map.fitBounds(bounds);
+        }
+      });
+  } catch(e) { console.warn('Route:', e); }
+}
+
+document.getElementById('btnStart').addEventListener('click', async () => {
+  const routeUrl = routeInput.value.trim();
+  if (!routeUrl) { alert('Bitte Routenlink einfügen'); return; }
+  if (!navigator.geolocation) { alert('Geolocation nicht verfügbar'); return; }
+
+  sessionId = Math.random().toString(36).substr(2,6).toUpperCase();
   updateCount = 0;
+  setStatus('Verbinde...', false);
+  onDisconnect(ref(db,'sessions/'+sessionId)).update({active:false});
 
-  btnStart.style.display = 'none';
-  btnStop.style.display = 'block';
-  btnShare.style.display = 'block';
-  infoBox.classList.add('show');
-  setStatus('Подключение...', false);
+  // Получаем ключ и грузим карту
+  let apiKey;
+  try { apiKey = (await (await fetch('https://fahrzeit.vercel.app/api/maps-key')).json()).key; }
+  catch(e) { alert('Maps API Fehler'); return; }
 
-  // При разрыве соединения — помечаем сессию неактивной
-  const sessionRef = ref(db, `sessions/${sessionId}`);
-  onDisconnect(sessionRef).update({ active: false });
+  await new Promise(resolve => {
+    window.__driverMapCb = resolve;
+    const s = document.createElement('script');
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__driverMapCb&language=de`;
+    document.head.appendChild(s);
+  });
 
-  // Запускаем слежение за GPS
+  setupPanel.style.display = 'none';
+  mapEl.style.display = 'block';
+  bottomPanel.style.display = 'flex';
+  bottomPanel.style.flexDirection = 'column';
+
+  map = new google.maps.Map(mapEl, {
+    center:{lat:51.5,lng:7.0}, zoom:12,
+    zoomControl:true, streetViewControl:false, fullscreenControl:true, mapTypeControl:false
+  });
+
+  renderRoute(routeUrl);
+
+  document.getElementById('btnNav').onclick = () => window.open(routeUrl, '_blank');
+
+  navigator.geolocation.getCurrentPosition(
+    p => writeLocation(p.coords.latitude, p.coords.longitude),
+    e => setStatus('GPS: '+e.message, false),
+    {enableHighAccuracy:true, timeout:15000}
+  );
   watchId = navigator.geolocation.watchPosition(
-    pos => {
-      writeLocation(pos.coords.latitude, pos.coords.longitude);
-      setStatus('Активен', true);
-    },
-    err => {
-      setStatus('Ошибка GPS: ' + err.message, false);
-    },
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    p => writeLocation(p.coords.latitude, p.coords.longitude),
+    e => setStatus('GPS Fehler', false),
+    {enableHighAccuracy:true, maximumAge:5000, timeout:10000}
   );
 });
 
-btnStop.addEventListener('click', async () => {
-  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
-  isTracking = false;
-
-  // Помечаем сессию завершённой
-  if (sessionId) {
-    await set(ref(db, `sessions/${sessionId}/active`), false);
-  }
-
-  btnStop.style.display = 'none';
-  btnShare.style.display = 'none';
-  btnStart.style.display = 'block';
-  setStatus('Завершено', false);
-  statusBadge.className = 'badge';
+document.getElementById('btnStop').addEventListener('click', async () => {
+  if (watchId!==null) navigator.geolocation.clearWatch(watchId);
+  if (sessionId) await set(ref(db,'sessions/'+sessionId+'/active'), false);
+  setStatus('Beendet', false);
+  mapEl.style.display = 'none';
+  bottomPanel.style.display = 'none';
+  setupPanel.style.display = 'flex';
+  map=null; driverMarker=null; sessionId=null;
 });
 
-btnShare.addEventListener('click', () => {
+document.getElementById('btnShare').addEventListener('click', () => {
   if (!sessionId) return;
-  const base = window.location.href.replace('driver.html', 'tracker.html');
-  const url = `${base}?session=${sessionId}`;
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(url).then(() => {
-      btnShare.textContent = '✅ Скопировано!';
-      setTimeout(() => { btnShare.textContent = '📋 Скопировать ссылку для наблюдателей'; }, 2000);
-    });
-  } else {
-    prompt('Скопируй ссылку:', url);
-  }
+  const url = location.origin + '/tracker.html?session=' + sessionId;
+  navigator.clipboard ? navigator.clipboard.writeText(url).then(() => {
+    const b = document.getElementById('btnShare');
+    b.textContent = '✅ Скопировано!';
+    setTimeout(() => b.textContent = '📋 Ссылка', 2000);
+  }) : prompt('Ссылка:', url);
 });
 </script>
-<script src="console.js"></script>
 </body>
 </html>
