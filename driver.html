@@ -2,20 +2,29 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#16213e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="theme-color" content="#16213e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>Fahrer – Live Tracking</title>
+<link rel="manifest" href="/driver-manifest.json"/>
 <style>
 :root { --bg: #1a1a2e; --surface: #16213e; --primary: #4285f4; --success: #34a853; --danger: #ea4335; --text: #eee; --muted: #888; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; }
-header { background: var(--surface); padding: 12px 16px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10; }
+header { background: var(--surface); padding: 8px 14px; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10; }
 header h1 { font-size: 1em; font-weight: 700; flex: 1; }
 .badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
 .badge-live { background: #34a853; color: #fff; }
 .badge-off  { background: #555; color: #ccc; }
 #map { flex: 1; width: 100%; display: none; }
 .setup-panel { padding: 16px; display: flex; flex-direction: column; gap: 12px; flex: 1; overflow-y: auto; }
-.bottom-panel { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,.4); display: none; }
+.bottom-panel { background: var(--surface); padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; box-shadow: 0 -2px 8px rgba(0,0,0,.4); display: none; }
 label { font-size: 0.82em; color: var(--muted); display: block; margin-bottom: 3px; }
 textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #333; background: #0f172a; color: var(--text); font-size: 0.78em; resize: none; height: 80px; }
 .btn { width: 100%; padding: 13px; border: none; border-radius: 10px; font-size: 0.95em; font-weight: 700; cursor: pointer; color: #fff; }
@@ -23,9 +32,9 @@ textarea { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px soli
 .btn-stop  { background: #ea4335; }
 .btn-share { background: #4285f4; }
 .btn-nav   { background: #f9ab00; color: #000; }
-.btn-row   { display: flex; gap: 8px; }
-.btn-row .btn { padding: 11px 6px; font-size: 0.8em; flex: 1; }
-.info-bar { display: flex; justify-content: space-between; font-size: 0.8em; color: var(--muted); }
+.btn-row   { display: flex; gap: 6px; }
+.btn-row .btn { padding: 9px 4px; font-size: 0.78em; flex: 1; }
+.info-bar { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--muted); padding: 2px 0; }
 .info-bar b { color: var(--text); }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; margin-right: 4px; }
 .dot.active { background: #34a853; animation: pulse 1.5s infinite; }
