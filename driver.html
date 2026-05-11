@@ -229,6 +229,7 @@ document.getElementById('btnStart').addEventListener('click', async () => {
   });
 
   renderRoute(routeUrl);
+  setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
 
   document.getElementById('btnNav').onclick = () => window.open(routeUrl, '_blank');
 
