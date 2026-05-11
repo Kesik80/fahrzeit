@@ -223,13 +223,15 @@ document.getElementById('btnStart').addEventListener('click', async () => {
   bottomPanel.style.display = 'flex';
   bottomPanel.style.flexDirection = 'column';
 
+  // Ждём пока браузер применит layout, затем инициализируем карту
+  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
   map = new google.maps.Map(mapEl, {
     center:{lat:51.5,lng:7.0}, zoom:12,
     zoomControl:true, streetViewControl:false, fullscreenControl:true, mapTypeControl:false
   });
 
   renderRoute(routeUrl);
-  setTimeout(() => google.maps.event.trigger(map, 'resize'), 100);
 
   document.getElementById('btnNav').onclick = () => window.open(routeUrl, '_blank');
 
