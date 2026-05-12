@@ -4757,6 +4757,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 app.loadStations();
+app._initShareButtons();
 // Автопересчёт при открытии если есть сохранённые данные
 if (app.machineStop && app.machineStop.arrivalTime) {
   app.calculate();
