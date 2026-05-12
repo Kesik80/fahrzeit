@@ -4347,6 +4347,8 @@ const [h, m] = this.machineStop.arrivalTime.split(':').map(Number);
 const totalMin = this.participants.reduce((s, p) => s + (p.time || 0), 0) + (this.machineStop.time || 0);
 const startDate = new Date();
 startDate.setHours(h, m, 0, 0);
+// Если время уже прошло сегодня — берём завтра
+if (startDate <= new Date()) startDate.setDate(startDate.getDate() + 1);
 startDate.setMinutes(startDate.getMinutes() - totalMin);
 
 this.showToast('🔄 Проверяем пробки…');
