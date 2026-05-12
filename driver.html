@@ -38,8 +38,7 @@ header h1 { font-size: 1em; font-weight: 700; flex: 1; }
 .badge-off  { background: #555; color: #ccc; }
 #map {
   width: 100%;
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
   display: none;
 }
 .setup-panel {
@@ -132,13 +131,12 @@ const app = initializeApp({
 const db = getDatabase(app);
 
 let sessionId=null, watchId=null, updateCount=0, map=null, driverMarker=null;
-const routeInput   = document.getElementById('routeUrl');
-const setupPanel   = document.getElementById('setupPanel');
-const bottomPanel  = document.getElementById('bottomPanel');
-const mapEl        = document.getElementById('map');
-const statusBadge  = document.getElementById('statusBadge');
+const routeInput  = document.getElementById('routeUrl');
+const setupPanel  = document.getElementById('setupPanel');
+const bottomPanel = document.getElementById('bottomPanel');
+const mapEl       = document.getElementById('map');
+const statusBadge = document.getElementById('statusBadge');
 
-// Автовставка маршрута из URL параметра
 const rp = new URLSearchParams(location.search).get('route');
 if (rp) routeInput.value = decodeURIComponent(rp);
 
@@ -146,6 +144,15 @@ function setStatus(text, live) {
   statusBadge.className = 'badge ' + (live ? 'badge-live' : 'badge-off');
   statusBadge.textContent = '● ' + text;
   document.getElementById('dot').className = 'dot' + (live ? ' active' : '');
+}
+
+function fixMapHeight() {
+  const headerH = document.querySelector('header').getBoundingClientRect().height;
+  const bottomH = bottomPanel.getBoundingClientRect().height;
+  const totalH  = window.innerHeight;
+  const mapH    = Math.floor(totalH - headerH - bottomH);
+  mapEl.style.height = mapH + 'px';
+  if (map) google.maps.event.trigger(map, 'resize');
 }
 
 async function writeLocation(lat, lng) {
@@ -218,14 +225,19 @@ document.getElementById('btnStart').addEventListener('click', async () => {
     document.head.appendChild(s);
   });
 
+  // Сначала показываем bottom-panel чтобы она заняла место
   setupPanel.style.display = 'none';
-  mapEl.style.display = 'block';
   bottomPanel.style.display = 'flex';
   bottomPanel.style.flexDirection = 'column';
 
-  // Ждём пока браузер применит layout, затем инициализируем карту
-  await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+  // Ждём один кадр — браузер применяет размеры bottom-panel
+  await new Promise(r => requestAnimationFrame(r));
 
+  // Теперь вычисляем точную высоту карты и показываем её
+  fixMapHeight();
+  mapEl.style.display = 'block';
+
+  // Инициализируем карту
   map = new google.maps.Map(mapEl, {
     center:{lat:51.5,lng:7.0}, zoom:12,
     zoomControl:true, streetViewControl:false, fullscreenControl:true, mapTypeControl:false
@@ -252,6 +264,7 @@ document.getElementById('btnStop').addEventListener('click', async () => {
   if (sessionId) await set(ref(db,'sessions/'+sessionId+'/active'), false);
   setStatus('Beendet', false);
   mapEl.style.display = 'none';
+  mapEl.style.height = '';
   bottomPanel.style.display = 'none';
   setupPanel.style.display = 'flex';
   map=null; driverMarker=null; sessionId=null;
