@@ -4,8 +4,8 @@
   "description": "Rechner für Fahrzeiten und Routen",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#007bff",
+  "background_color": "#1a1a1a",
+  "theme_color": "#1a1a1a",
   "icons": [
     {
       "src": "/icons/icon-192.png",
