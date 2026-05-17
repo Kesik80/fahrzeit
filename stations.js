@@ -26,7 +26,8 @@ this.stations = {
   'Hamm': {lat: 51.6727514, lng: 7.8114577},
   'Dortmund Obereving': {lat: 51.5406353, lng: 7.478439},
   'Schwerte': {lat: 51.440231, lng: 7.558396},
-  'Köln Kalk Süden': {lat: 50.94759, lng: 7.012243}
+  'Köln Kalk Süden': {lat: 50.94759, lng: 7.012243},
+  'Wuppertal': {lat: 51.24571, lng: 7.130845}
 };
 
 // Время в пути между участниками
