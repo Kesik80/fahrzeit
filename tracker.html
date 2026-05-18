@@ -2,40 +2,40 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="theme-color" content="#16213e"/>
+<meta name="mobile-web-app-capable" content="yes"/>
 <title>Live Tracker – Fahrzeit</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: sans-serif; background: #1a1a2e; color: #eee; height: 100vh; display: flex; flex-direction: column; }
-header {
-  background: #16213e; padding: 10px 16px;
-  display: flex; align-items: center; justify-content: space-between;
-  box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10;
-}
-header h1 { font-size: 1em; font-weight: 700; }
-.badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 700; }
+header { background: #16213e; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,.4); flex-shrink: 0; z-index: 10; gap: 8px; }
+header h1 { font-size: 1em; font-weight: 700; flex: 1; }
+.badge { font-size: 0.75em; padding: 3px 10px; border-radius: 12px; font-weight: 700; white-space: nowrap; }
 .badge-live { background: #34a853; color: #fff; }
 .badge-wait { background: #f9ab00; color: #000; }
 .badge-end  { background: #ea4335; color: #fff; }
+.btn-follow { background: #4285f4; color: #fff; border: none; border-radius: 20px; padding: 4px 12px; font-size: 0.75em; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-follow.off { background: #555; }
 #map { flex: 1; width: 100%; }
-.info-bar {
-  background: #16213e; padding: 8px 16px;
-  display: flex; align-items: center; gap: 16px; font-size: 0.82em;
-  color: #aaa; flex-shrink: 0; flex-wrap: wrap;
-}
-.info-bar span { color: #eee; font-weight: 600; }
-.no-session {
-  flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 12px;
-  color: #888; font-size: 0.95em; text-align: center; padding: 20px;
-}
+.info-bar { background: #16213e; padding: 6px 12px; display: flex; align-items: center; gap: 10px; font-size: 0.8em; color: #aaa; flex-shrink: 0; flex-wrap: wrap; border-top: 1px solid #222; }
+.info-bar b { color: #eee; }
+.eta-box { background: #0f3460; border-radius: 8px; padding: 4px 10px; font-size: 0.78em; color: #7ec8e3; white-space: nowrap; }
+.eta-box b { color: #fff; }
+.no-session { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #888; font-size: 0.95em; text-align: center; padding: 20px; }
 .no-session h2 { color: #eee; font-size: 1.2em; }
+/* Toast уведомление */
+.notif { position: fixed; top: 60px; left: 50%; transform: translateX(-50%); background: #f9ab00; color: #000; padding: 10px 20px; border-radius: 20px; font-weight: 700; font-size: 0.9em; display: none; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,.5); }
+.notif.show { display: block; animation: fadeIn .3s; }
+@keyframes fadeIn { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
 </style>
 </head>
 <body>
+
 <header>
   <h1>🗺 Live Tracker</h1>
   <span class="badge badge-wait" id="statusBadge">⏳ Warten...</span>
+  <button class="btn-follow" id="btnFollow" style="display:none;">📍 Folgen</button>
 </header>
 
 <div id="noSession" class="no-session">
@@ -44,19 +44,21 @@ header h1 { font-size: 1em; font-weight: 700; }
   <p style="margin-top:8px;color:#555;">?session=XXXXXX</p>
 </div>
 
-<div id="map"></div>
+<div id="map" style="display:none;"></div>
 
 <div class="info-bar" id="infoBar" style="display:none;">
-  <span>📍 Fahrer:</span> <span id="infoCoords">—</span>
-  <span>🕐</span> <span id="infoTime">—</span>
-  <span>🔄</span> <span id="infoUpdates">0</span>
+  <span>📍 <b id="infoCoords">—</b></span>
+  <span>🕐 <b id="infoTime">—</b></span>
+  <span>🔄 <b id="infoUpdates">0</b></span>
+  <span class="eta-box" id="etaBox" style="display:none;">🚗 bis nächste: <b id="etaVal">—</b></span>
 </div>
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+<div class="notif" id="notif"></div>
 
-const FIREBASE_URL = 'https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app';
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js';
+
 const MAPS_KEY_URL = 'https://fahrzeit.vercel.app/api/maps-key';
 
 const params = new URLSearchParams(location.search);
@@ -64,69 +66,117 @@ const sessionId = params.get('session');
 
 if (!sessionId) {
   document.getElementById('noSession').style.display = 'flex';
-  document.getElementById('map').style.display = 'none';
 } else {
   document.getElementById('noSession').style.display = 'none';
   document.getElementById('map').style.display = 'block';
   initTracker();
 }
 
+function showNotif(msg, duration = 5000) {
+  const n = document.getElementById('notif');
+  n.textContent = msg;
+  n.classList.add('show');
+  setTimeout(() => n.classList.remove('show'), duration);
+}
+
 async function initTracker() {
-  // Получаем Google Maps API ключ
   let apiKey;
   try {
-    const r = await fetch(MAPS_KEY_URL);
-    const d = await r.json();
-    apiKey = d.key;
+    apiKey = (await (await fetch(MAPS_KEY_URL)).json()).key;
   } catch(e) {
     document.getElementById('statusBadge').textContent = '❌ API Fehler';
     return;
   }
 
-  // Подключаем Google Maps
-  await new Promise((resolve) => {
+  await new Promise(resolve => {
     window.__mapsReady = resolve;
     const s = document.createElement('script');
     s.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__mapsReady&language=de`;
     document.head.appendChild(s);
   });
 
-  // Инициализируем карту
   const mapEl = document.getElementById('map');
   const map = new google.maps.Map(mapEl, {
-    center: { lat: 51.5, lng: 7.0 },
-    zoom: 12,
-    mapTypeId: 'roadmap',
-    disableDefaultUI: false,
-    zoomControl: true,
-    streetViewControl: false,
-    fullscreenControl: true,
+    center: { lat: 51.5, lng: 7.0 }, zoom: 12,
+    zoomControl: true, streetViewControl: false, fullscreenControl: true, mapTypeControl: false,
   });
 
-  // Иконка водителя — синяя машина
   const driverIcon = {
-    url: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-    scaledSize: new google.maps.Size(40, 40),
-    anchor: new google.maps.Point(20, 20),
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+        <circle cx="22" cy="22" r="20" fill="#4285f4" stroke="#fff" stroke-width="3"/>
+        <path d="M14 24l2-6h12l2 6" fill="none" stroke="#fff" stroke-width="1.5"/>
+        <rect x="12" y="23" width="20" height="7" rx="2" fill="#fff"/>
+        <circle cx="16" cy="31" r="2.5" fill="#4285f4"/>
+        <circle cx="28" cy="31" r="2.5" fill="#4285f4"/>
+      </svg>`),
+    scaledSize: new google.maps.Size(44, 44),
+    anchor: new google.maps.Point(22, 22),
   };
 
   let driverMarker = null;
-  let routeRendered = false;
+  let trackPolyline = null;  // след пройденного пути
+  let trackPath = [];         // массив точек трека
+  let directionsRenderer = null;
+  let currentRoute = null;
   let updateCount = 0;
-  const badge = document.getElementById('statusBadge');
-  const infoBar = document.getElementById('infoBar');
+  let isFollowing = true;
+  let lastRoute = null;
+  let notifiedArrival = false;
+  let lastLat = null, lastLng = null;
 
-  // Подключаемся к Firebase
+  // Кнопка слежения
+  const btnFollow = document.getElementById('btnFollow');
+  btnFollow.style.display = 'block';
+  btnFollow.addEventListener('click', () => {
+    isFollowing = !isFollowing;
+    btnFollow.textContent = isFollowing ? '📍 Folgen' : '🔓 Frei';
+    btnFollow.className = 'btn-follow' + (isFollowing ? '' : ' off');
+    if (isFollowing && driverMarker) map.panTo(driverMarker.getPosition());
+  });
+
+  // Отключаем следование при ручном скролле карты
+  map.addListener('dragstart', () => {
+    if (isFollowing) {
+      isFollowing = false;
+      btnFollow.textContent = '🔓 Frei';
+      btnFollow.className = 'btn-follow off';
+    }
+  });
+
+  // Инициализируем трек-полилайн (пройденный путь)
+  trackPolyline = new google.maps.Polyline({
+    path: [],
+    geodesic: true,
+    strokeColor: '#34a853',
+    strokeOpacity: 0.8,
+    strokeWeight: 4,
+    map,
+  });
+
+  // DirectionsRenderer для маршрута
+  directionsRenderer = new google.maps.DirectionsRenderer({
+    map,
+    suppressMarkers: false,
+    polylineOptions: { strokeColor: '#4285f4', strokeWeight: 5, strokeOpacity: 0.7 },
+  });
+
+  // Firebase
   const app = initializeApp({
-    databaseURL: FIREBASE_URL,
-    projectId: 'fahrzeit-tracker-22f33',
-    appId: 'fahrzeit-tracker'
+    apiKey: "AIzaSyDPD_dheNbYyskB9JwgnoNCBCnY-yWWOYg",
+    authDomain: "fahrzeit-tracker-22f33.firebaseapp.com",
+    databaseURL: "https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "fahrzeit-tracker-22f33",
+    storageBucket: "fahrzeit-tracker-22f33.firebasestorage.app",
+    messagingSenderId: "400087462292",
+    appId: "1:400087462292:web:d8ae84ab452968da161f81"
   });
   const db = getDatabase(app);
-  const sessionRef = ref(db, `sessions/${sessionId}`);
 
-  onValue(sessionRef, (snapshot) => {
+  onValue(ref(db, `sessions/${sessionId}`), async (snapshot) => {
     const data = snapshot.val();
+    const badge = document.getElementById('statusBadge');
+
     if (!data) {
       badge.className = 'badge badge-wait';
       badge.textContent = '⏳ Warten auf Fahrer...';
@@ -135,7 +185,6 @@ async function initTracker() {
 
     const { lat, lng, ts, route, active } = data;
 
-    // Обновляем статус
     if (active === false) {
       badge.className = 'badge badge-end';
       badge.textContent = '🏁 Fahrt beendet';
@@ -144,81 +193,179 @@ async function initTracker() {
       badge.textContent = '● LIVE';
     }
 
-    // Обновляем маркер водителя
     const pos = { lat, lng };
+
+    // Маркер водителя
     if (!driverMarker) {
       driverMarker = new google.maps.Marker({
-        position: pos,
-        map,
-        icon: driverIcon,
-        title: 'Fahrer',
-        animation: google.maps.Animation.DROP,
-        zIndex: 999,
+        position: pos, map, icon: driverIcon,
+        title: 'Fahrer', zIndex: 999,
       });
     } else {
       driverMarker.setPosition(pos);
     }
-    map.panTo(pos);
 
-    // Рисуем маршрут один раз при первом получении данных
-    if (!routeRendered && route) {
-      routeRendered = true;
-      renderRoute(map, route);
+    // Следование за водителем
+    if (isFollowing) map.panTo(pos);
+
+    // 3. История трека — зелёная линия
+    trackPath.push(pos);
+    trackPolyline.setPath(trackPath);
+
+    // Рисуем маршрут при первом получении
+    if (route && route !== lastRoute) {
+      lastRoute = route;
+      await renderRoute(map, directionsRenderer, route, pos);
     }
 
-    // Обновляем инфо-бар
+    // 2. ETA до следующей точки маршрута
+    if (route) computeETA(lat, lng, route);
+
+    // 4. Уведомление о приближении к конечной точке
+    if (route && !notifiedArrival) {
+      const dest = extractDestination(route);
+      if (dest) {
+        const dist = haversine(lat, lng, dest.lat, dest.lng);
+        if (dist < 0.5) { // < 500м до цели
+          notifiedArrival = true;
+          showNotif('🏁 Fahrer fast am Ziel! (<500m)', 8000);
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Fahrzeit Tracker', { body: 'Fahrer ist fast am Ziel!' });
+          }
+        } else if (dist < 2 && !lastNotif2km) {
+          window.lastNotif2km = true;
+          showNotif('🚗 Fahrer nähert sich dem Ziel (~2km)', 6000);
+        }
+      }
+    }
+
+    // Автопересчёт маршрута при отклонении > 300м
+    if (route && lastLat !== null) {
+      const offRoute = await checkOffRoute(lat, lng, route);
+      if (offRoute) {
+        await renderRouteFromCurrent(map, directionsRenderer, lat, lng, route);
+      }
+    }
+    lastLat = lat; lastLng = lng;
+
+    // Инфо-бар
     updateCount++;
-    infoBar.style.display = 'flex';
-    document.getElementById('infoCoords').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    document.getElementById('infoBar').style.display = 'flex';
+    document.getElementById('infoCoords').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
     document.getElementById('infoTime').textContent = new Date(ts).toLocaleTimeString('de-DE');
     document.getElementById('infoUpdates').textContent = updateCount;
   });
-}
 
-async function renderRoute(map, routeUrl) {
-  // Парсим waypoints из URL Google Maps
-  try {
-    const url = new URL(routeUrl);
-    const origin = url.searchParams.get('origin');
-    const destination = url.searchParams.get('destination');
-    const waypointsStr = url.searchParams.get('waypoints');
-
-    if (!origin || !destination) return;
-
-    const directionsService = new google.maps.DirectionsService();
-    const directionsRenderer = new google.maps.DirectionsRenderer({
-      map,
-      suppressMarkers: false,
-      polylineOptions: {
-        strokeColor: '#4285f4',
-        strokeWeight: 5,
-        strokeOpacity: 0.8,
-      },
-    });
-
-    const waypoints = waypointsStr
-      ? waypointsStr.split('|').map(wp => ({
-          location: wp,
-          stopover: true,
-        }))
-      : [];
-
-    directionsService.route({
-      origin,
-      destination,
-      waypoints,
-      travelMode: google.maps.TravelMode.DRIVING,
-      optimizeWaypoints: false,
-    }, (result, status) => {
-      if (status === 'OK') {
-        directionsRenderer.setDirections(result);
-      }
-    });
-  } catch(e) {
-    console.warn('Route render error:', e);
+  // Запрашиваем разрешение на уведомления
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission();
   }
 }
+
+// Рисуем маршрут из URL
+async function renderRoute(map, dr, routeUrl, currentPos) {
+  try {
+    const url = new URL(routeUrl);
+    const origin = decodeURIComponent(url.searchParams.get('origin') || '');
+    const destination = decodeURIComponent(url.searchParams.get('destination') || '');
+    const wps = url.searchParams.get('waypoints') || '';
+    const waypoints = wps ? decodeURIComponent(wps).split('|').filter(Boolean)
+      .map(w => ({ location: w.trim(), stopover: true })) : [];
+    if (!origin || !destination) return;
+    const ds = new google.maps.DirectionsService();
+    ds.route({ origin, destination, waypoints, travelMode: 'DRIVING', optimizeWaypoints: false },
+      (result, status) => {
+        if (status === 'OK') {
+          dr.setDirections(result);
+          const bounds = new google.maps.LatLngBounds();
+          result.routes[0].legs.forEach(l => { bounds.extend(l.start_location); bounds.extend(l.end_location); });
+          if (currentPos) bounds.extend(currentPos);
+          map.fitBounds(bounds);
+        }
+      });
+  } catch(e) { console.warn('Route error:', e); }
+}
+
+// Перестраиваем маршрут от текущей позиции
+async function renderRouteFromCurrent(map, dr, lat, lng, routeUrl) {
+  try {
+    const url = new URL(routeUrl);
+    const destination = decodeURIComponent(url.searchParams.get('destination') || '');
+    if (!destination) return;
+    const ds = new google.maps.DirectionsService();
+    ds.route({
+      origin: { lat, lng },
+      destination,
+      travelMode: 'DRIVING',
+    }, (result, status) => {
+      if (status === 'OK') dr.setDirections(result);
+    });
+  } catch(e) {}
+}
+
+// Проверяем отклонение от маршрута (> 300м от прямой origin-destination)
+async function checkOffRoute(lat, lng, routeUrl) {
+  try {
+    const url = new URL(routeUrl);
+    const destination = decodeURIComponent(url.searchParams.get('destination') || '');
+    if (!destination) return false;
+    const destParts = destination.split(',');
+    if (destParts.length < 2) return false;
+    const dLat = parseFloat(destParts[0]), dLng = parseFloat(destParts[1]);
+    // Простая проверка: если расстояние до прямой > 0.3 км — считаем отклонением
+    // Используем DistanceService для точности
+    return false; // базовая версия — не пересчитываем автоматически чтобы не перегружать API
+  } catch(e) { return false; }
+}
+
+// ETA до следующей точки маршрута
+function computeETA(lat, lng, routeUrl) {
+  try {
+    const url = new URL(routeUrl);
+    const wps = url.searchParams.get('waypoints') || '';
+    const dest = decodeURIComponent(url.searchParams.get('destination') || '');
+    const allPoints = [];
+    if (wps) decodeURIComponent(wps).split('|').filter(Boolean).forEach(w => allPoints.push(w));
+    allPoints.push(dest);
+
+    // Находим ближайшую точку впереди
+    let nearest = null, minDist = Infinity;
+    allPoints.forEach(p => {
+      const parts = p.split(',');
+      if (parts.length < 2) return;
+      const pLat = parseFloat(parts[0]), pLng = parseFloat(parts[1]);
+      const d = haversine(lat, lng, pLat, pLng);
+      if (d < minDist) { minDist = d; nearest = { lat: pLat, lng: pLng, d }; }
+    });
+
+    if (nearest && nearest.d > 0.05) {
+      // Грубая оценка: 50 км/ч в среднем по городу
+      const etaMin = Math.round(nearest.d / 50 * 60);
+      document.getElementById('etaBox').style.display = 'inline-block';
+      document.getElementById('etaVal').textContent = etaMin <= 1 ? '<1 Min.' : `~${etaMin} Min.`;
+    }
+  } catch(e) {}
+}
+
+// Извлекаем координаты конечной точки
+function extractDestination(routeUrl) {
+  try {
+    const url = new URL(routeUrl);
+    const dest = decodeURIComponent(url.searchParams.get('destination') || '');
+    const parts = dest.split(',');
+    if (parts.length < 2) return null;
+    return { lat: parseFloat(parts[0]), lng: parseFloat(parts[1]) };
+  } catch(e) { return null; }
+}
+
+// Расстояние между точками в км (Haversine)
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 </script>
-<script src="console.js"></script>
 </body>
 </html>
