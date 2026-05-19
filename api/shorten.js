@@ -10,12 +10,12 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`,
+      `https://v.gd/create.php?format=simple&url=${encodeURIComponent(url)}`,
       { headers: { 'User-Agent': 'FahrzeitRechner/1.0' } }
     );
     const short = await response.text();
     console.log('[shorten] status:', response.status, 'body:', short);
-    if (!response.ok) throw new Error(`is.gd error: ${response.status} — ${short}`);
+    if (!response.ok) throw new Error(`v.gd error: ${response.status} — ${short}`);
     if (!short.startsWith('https://')) throw new Error(`Unexpected response: ${short}`);
     res.status(200).json({ short });
   } catch (e) {
