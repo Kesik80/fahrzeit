@@ -236,36 +236,33 @@ document.getElementById('btnStart').addEventListener('click', async () => {
 
   renderRoute(routeUrl);
   document.getElementById('btnNav').onclick = () => {
-    try {
-      const url = new URL(routeUrl);
-      const destination = decodeURIComponent(url.searchParams.get('destination') || '');
-      const waypoints = url.searchParams.get('waypoints')
-        ? decodeURIComponent(url.searchParams.get('waypoints')) : '';
-
-      // geo: URI — открывает Google Maps напрямую в режиме навигации на Android
-      // Для маршрута с несколькими точками используем google.navigation:
-      const destParts = destination.split(',');
-      if (destParts.length >= 2) {
-        const dLat = destParts[0].trim();
-        const dLng = destParts[1].trim();
-        // Пробуем google.navigation URI (запускает навигацию напрямую)
-        const intentUrl = `google.navigation:q=${dLat},${dLng}&mode=d`;
-        window.location.href = intentUrl;
-        // Fallback через 500мс если intent не сработал
-        setTimeout(() => {
-          const fallback = 'https://www.google.com/maps/dir/?api=1'
-            + '&destination=' + encodeURIComponent(destination)
-            + (waypoints ? '&waypoints=' + encodeURIComponent(waypoints) : '')
-            + '&travelmode=driving&dir_action=navigate';
-          window.open(fallback, '_blank');
-        }, 500);
-      } else {
-        window.open(routeUrl + '&dir_action=navigate', '_blank');
-      }
-    } catch(e) {
-      window.open(routeUrl + '&dir_action=navigate', '_blank');
+    // Берём текущий GPS как origin — тогда Google Maps показывает "В путь"
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        openMapsWithOrigin(pos.coords.latitude, pos.coords.longitude);
+      }, () => {
+        // Без GPS — открываем без origin
+        window.open(routeUrl, '_blank');
+      }, { timeout: 5000, maximumAge: 10000 });
+    } else {
+      window.open(routeUrl, '_blank');
     }
   };
+  function openMapsWithOrigin(lat, lng) {
+    try {
+      const url = new URL(routeUrl);
+      const destination = url.searchParams.get('destination') || '';
+      const waypoints = url.searchParams.get('waypoints') || '';
+      const mapsUrl = 'https://www.google.com/maps/dir/?api=1'
+        + '&origin=' + lat + ',' + lng
+        + '&destination=' + destination
+        + (waypoints ? '&waypoints=' + waypoints : '')
+        + '&travelmode=driving';
+      window.open(mapsUrl, '_blank');
+    } catch(e) {
+      window.open(routeUrl, '_blank');
+    }
+  }
 
   navigator.geolocation.getCurrentPosition(
     p=>writeLocation(p.coords.latitude,p.coords.longitude),
