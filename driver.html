@@ -236,17 +236,32 @@ document.getElementById('btnStart').addEventListener('click', async () => {
 
   renderRoute(routeUrl);
   document.getElementById('btnNav').onclick = () => {
-    // Строим навигационный URL с dir_action=navigate
     try {
       const url = new URL(routeUrl);
-      url.searchParams.set('dir_action', 'navigate');
-      // Используем comgooglemaps:// на iOS, maps:// на Android если доступен
-      const navUrl = 'https://www.google.com/maps/dir/?api=1' +
-        '&origin=' + (url.searchParams.get('origin')||'') +
-        '&destination=' + (url.searchParams.get('destination')||'') +
-        (url.searchParams.get('waypoints') ? '&waypoints=' + url.searchParams.get('waypoints') : '') +
-        '&travelmode=driving&dir_action=navigate';
-      window.open(navUrl, '_blank');
+      const destination = decodeURIComponent(url.searchParams.get('destination') || '');
+      const waypoints = url.searchParams.get('waypoints')
+        ? decodeURIComponent(url.searchParams.get('waypoints')) : '';
+
+      // geo: URI — открывает Google Maps напрямую в режиме навигации на Android
+      // Для маршрута с несколькими точками используем google.navigation:
+      const destParts = destination.split(',');
+      if (destParts.length >= 2) {
+        const dLat = destParts[0].trim();
+        const dLng = destParts[1].trim();
+        // Пробуем google.navigation URI (запускает навигацию напрямую)
+        const intentUrl = `google.navigation:q=${dLat},${dLng}&mode=d`;
+        window.location.href = intentUrl;
+        // Fallback через 500мс если intent не сработал
+        setTimeout(() => {
+          const fallback = 'https://www.google.com/maps/dir/?api=1'
+            + '&destination=' + encodeURIComponent(destination)
+            + (waypoints ? '&waypoints=' + encodeURIComponent(waypoints) : '')
+            + '&travelmode=driving&dir_action=navigate';
+          window.open(fallback, '_blank');
+        }, 500);
+      } else {
+        window.open(routeUrl + '&dir_action=navigate', '_blank');
+      }
     } catch(e) {
       window.open(routeUrl + '&dir_action=navigate', '_blank');
     }
