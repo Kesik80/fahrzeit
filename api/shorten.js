@@ -13,9 +13,10 @@ export default async function handler(req, res) {
       `https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`,
       { headers: { 'User-Agent': 'FahrzeitRechner/1.0' } }
     );
-    if (!response.ok) throw new Error(`is.gd error: ${response.status}`);
     const short = await response.text();
-    if (!short.startsWith('https://')) throw new Error('Invalid response');
+    console.log('[shorten] status:', response.status, 'body:', short);
+    if (!response.ok) throw new Error(`is.gd error: ${response.status} — ${short}`);
+    if (!short.startsWith('https://')) throw new Error(`Unexpected response: ${short}`);
     res.status(200).json({ short });
   } catch (e) {
     res.status(500).json({ error: e.message });
