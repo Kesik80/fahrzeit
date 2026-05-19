@@ -10,10 +10,10 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      `https://tinyurl.com/api-create.php?url=${encodeURIComponent(url)}`,
+      `https://is.gd/create.php?format=simple&url=${encodeURIComponent(url)}`,
       { headers: { 'User-Agent': 'FahrzeitRechner/1.0' } }
     );
-    if (!response.ok) throw new Error(`TinyURL error: ${response.status}`);
+    if (!response.ok) throw new Error(`is.gd error: ${response.status}`);
     const short = await response.text();
     if (!short.startsWith('https://')) throw new Error('Invalid response');
     res.status(200).json({ short });
