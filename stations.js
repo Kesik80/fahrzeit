@@ -88,7 +88,7 @@ this.treffpunkt = {
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
   'Herten A2 Parkplatz': {lat: 51.572268, lng: 7.132545},
   'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155},
-  'Rathaus Osterfeld': {lat: 51.501, lng: 6.889374}
+  'Rathaus Osterfeld': {lat: 51.501092, lng: 6.889317}
 };
 
 // Время в пути от пункта встречи до каждого участника
