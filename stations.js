@@ -27,7 +27,8 @@ this.stations = {
   'Dortmund Obereving': {lat: 51.5406353, lng: 7.478439},
   'Schwerte': {lat: 51.440231, lng: 7.558396},
   'Köln Kalk Süden': {lat: 50.94759, lng: 7.012243},
-  'Wuppertal': {lat: 51.24571, lng: 7.130845}
+  'Wuppertal': {lat: 51.24571, lng: 7.130845},
+  'Wuppertal-Vohwinkel': {lat: 51.233474, lng: 7.072435}
 };
 
 // Время в пути между участниками
