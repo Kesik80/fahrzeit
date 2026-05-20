@@ -4533,15 +4533,15 @@ if (reverse) {
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
 }
 if (waypoints.length < 2) return null;
-if (reverse) {
-  // Без origin — Google Maps использует текущее местоположение → кнопка "В путь"
-  const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
-  return `https://www.google.com/maps/dir/?api=1&destination=${destination}${wps}&travelmode=driving`;
-}
 const [origin, ...rest] = waypoints;
 const destination = rest.pop();
 const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
+if (reverse) {
+  // Обратно: убираем origin — Google Maps возьмёт текущий GPS → покажет "В путь"
+  // Бывший origin становится первым waypoint
+  const allWps = [origin, ...( rest.length ? rest : [])].join('%7C');
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${allWps}&travelmode=driving`;
+}
 return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
 }
 _buildMapsUrl(reverse) {
