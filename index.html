@@ -4479,7 +4479,18 @@ if (reverse) {
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
 } else {
-  const url = this._buildRouteUrl(false);
+  // Для маршрута туда тоже берём GPS — Google Maps покажет "В путь"
+  this.showToast('📍 GPS wird ermittelt...');
+  const getGps = () => new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  });
+  const gps = await getGps();
+  const url = this._buildRouteUrl(false, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
 }
@@ -4552,16 +4563,18 @@ if (reverse) {
     return `https://www.google.com/maps/dir/?api=1&destination=${destination}${wps}&travelmode=driving`;
   }
 } else {
-  if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
+  // Туда: GPS телефона (или дом водителя) → участники → машина
+  const originStr = gpsCoords
+    ? enc(gpsCoords.lat, gpsCoords.lng)
+    : (startC && startC.lat && startC.lng ? enc(startC.lat, startC.lng) : null);
   parts.forEach(p => {
     getCoordsForParticipant(p).forEach(c => waypoints.push(c));
   });
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-  if (waypoints.length < 2) return null;
-  const [origin, ...rest] = waypoints;
-  const destination = rest.pop();
-  const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
-  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
+  if (!originStr || waypoints.length < 1) return null;
+  const destination = waypoints.pop();
+  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
 }
 }
 _buildMapsUrl(reverse) {
