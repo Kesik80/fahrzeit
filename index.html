@@ -4462,21 +4462,36 @@ const tsr = document.getElementById('tripSummaryRow');
 if (tsr) tsr.style.display = visible ? 'flex' : 'none';
 }
 async _copyRouteLink(reverse) {
-const url = this._buildRouteUrl(reverse);
-if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
 const msg = reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!';
-if (!this.shortenLinks) {
-  this._copyToClipboard(url, msg);
-  return;
+if (reverse) {
+  // Для обратного маршрута берём текущий GPS как точку старта
+  this.showToast('📍 GPS wird ermittelt...');
+  const getGps = () => new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  });
+  const gps = await getGps();
+  const url = this._buildRouteUrl(true, gps);
+  if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+  await this._shortenAndCopy(url, msg);
+} else {
+  const url = this._buildRouteUrl(false);
+  if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+  await this._shortenAndCopy(url, msg);
 }
+}
+async _shortenAndCopy(url, msg) {
+if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
 this.showToast('⏳ Сокращаем ссылку…');
 try {
   const r = await fetch(`/api/shorten?url=${encodeURIComponent(url)}`);
   const data = await r.json();
   this._copyToClipboard(data.short || url, msg);
-} catch(e) {
-  this._copyToClipboard(url, msg);
-}
+} catch(e) { this._copyToClipboard(url, msg); }
 }
 _copyToClipboard(text, successMsg) {
 if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -4499,16 +4514,13 @@ try { ok = document.execCommand('copy'); } catch(e) {}
 document.body.removeChild(ta);
 this.showToast(ok ? successMsg : '⚠ Не удалось скопировать');
 }
-_buildRouteUrl(reverse) {
+_buildRouteUrl(reverse, gpsCoords) {
 const enc = (lat, lng) => `${lat},${lng}`;
 const waypoints = [];
 const parts = this.participants.filter(p => p.name);
 const machine = this.machineStop;
 const startC = this.startPointCoords;
 
-// Получаем координаты участника
-// Для Treffpunkt — только координаты самой точки встречи (p.lat/p.lng)
-// Для обычного участника — из nameToCoordinates
 const getCoordsForParticipant = (p) => {
   if (p.isTreffpunkt) {
     if (p.lat && p.lng) return [enc(p.lat, p.lng)];
@@ -4520,29 +4532,37 @@ const getCoordsForParticipant = (p) => {
 };
 
 if (reverse) {
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+  // Обратно: GPS телефона → участники в обратном порядке → дом водителя
+  // Машина НЕ включается — она уже уехала
+  const originStr = gpsCoords
+    ? enc(gpsCoords.lat, gpsCoords.lng)
+    : null;
   [...parts].reverse().forEach(p => {
     getCoordsForParticipant(p).reverse().forEach(c => waypoints.push(c));
   });
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
+  if (waypoints.length < 1) return null;
+  const destination = waypoints.pop();
+  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  if (originStr) {
+    // С GPS — Google Maps покажет "В путь"
+    return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
+  } else {
+    // Без GPS — без origin, Google Maps сам определит
+    return `https://www.google.com/maps/dir/?api=1&destination=${destination}${wps}&travelmode=driving`;
+  }
 } else {
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
   parts.forEach(p => {
     getCoordsForParticipant(p).forEach(c => waypoints.push(c));
   });
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
+  if (waypoints.length < 2) return null;
+  const [origin, ...rest] = waypoints;
+  const destination = rest.pop();
+  const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
 }
-if (waypoints.length < 2) return null;
-const [origin, ...rest] = waypoints;
-const destination = rest.pop();
-const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
-if (reverse) {
-  // Обратно: убираем origin — Google Maps возьмёт текущий GPS → покажет "В путь"
-  // Бывший origin становится первым waypoint
-  const allWps = [origin, ...( rest.length ? rest : [])].join('%7C');
-  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${allWps}&travelmode=driving`;
-}
-return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
 }
 _buildMapsUrl(reverse) {
 // Собираем точки маршрута: GPS → участники → машина (туда)
