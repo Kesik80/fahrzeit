@@ -4499,7 +4499,7 @@ async _shortenAndCopy(url, msg) {
 if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
 this.showToast('⏳ Сокращаем ссылку…');
 try {
-  const r = await fetch(`/api/shorten?url=${encodeURIComponent(url)}`);
+  const r = await fetch(`https://fhr.pp.ua/api/shorten?url=${encodeURIComponent(url)}`);
   const data = await r.json();
   this._copyToClipboard(data.short || url, msg);
 } catch(e) { this._copyToClipboard(url, msg); }
