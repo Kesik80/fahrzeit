@@ -4497,9 +4497,18 @@ if (reverse) {
 }
 async _shortenAndCopy(url, msg) {
 if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
+
 this.showToast('⏳ Сокращаем ссылку…');
 try {
-  const r = await fetch(`https://fhr-shortener.vercel.app/api/shorten?url=${encodeURIComponent(url)}`);
+  // DDMMYYHHmmss по времени Германии
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+  const pad = n => String(n).padStart(2, '0');
+  const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const r = await fetch('https://fhr.pp.ua/api/shorten', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url, customCode })
+  });
   const data = await r.json();
   this._copyToClipboard(data.short || url, msg);
 } catch(e) { this._copyToClipboard(url, msg); }
