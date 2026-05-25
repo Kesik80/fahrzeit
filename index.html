@@ -4508,7 +4508,8 @@ try {
   let data;
   try {
     const r = await fetch('https://fhr.pp.ua/api/shorten', { method: 'POST', headers, body });
-    if (!r.ok) throw new Error('primary failed');
+    const ct = r.headers.get('content-type') || '';
+    if (!r.ok || !ct.includes('application/json')) throw new Error('primary failed');
     data = await r.json();
     if (!data.short) throw new Error('no short');
   } catch {
