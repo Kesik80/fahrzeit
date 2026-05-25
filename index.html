@@ -4505,17 +4505,8 @@ try {
   const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   const body = JSON.stringify({ url, customCode });
   const headers = { 'Content-Type': 'application/json' };
-  let data;
-  try {
-    const r = await fetch('https://fhr.pp.ua/api/shorten', { method: 'POST', headers, body });
-    const ct = r.headers.get('content-type') || '';
-    if (!r.ok || !ct.includes('application/json')) throw new Error('primary failed');
-    data = await r.json();
-    if (!data.short) throw new Error('no short');
-  } catch {
-    const r2 = await fetch('https://fhr-shortener.vercel.app/api/shorten', { method: 'POST', headers, body });
-    data = await r2.json();
-  }
+  const r = await fetch('https://fhr-shortener.vercel.app/api/shorten', { method: 'POST', headers, body });
+  const data = await r.json();
   this._copyToClipboard(data.short || url, msg);
 } catch(e) { this._copyToClipboard(url, msg); }
 }
