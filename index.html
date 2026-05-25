@@ -4665,8 +4665,7 @@ const sl2 = document.getElementById('shortenLinks2');
 if (sl2) sl2.checked = !!this.shortenLinks;
 const btnTo   = document.getElementById('btnMapsTo');
 const btnBack = document.getElementById('btnMapsBack');
-if (btnTo)   btnTo.onclick   = () => this._copyRouteLink(false);
-if (btnBack) btnBack.onclick = () => this._copyRouteLink(true);
+// handlers via delegated listener below
 const btnTraffic = document.getElementById('btnTraffic');
 if (btnTraffic) btnTraffic.onclick = () => this.checkTrafficForSchedule();
 }
