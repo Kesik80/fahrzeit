@@ -4500,7 +4500,7 @@ if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
 
 this.showToast('⏳ Сокращаем ссылку…');
 try {
-  // ── ВАРИАНТ: Bitly через /api/shorten (временно, пока fhr.pp.ua не заработал) ──
+    // ── ВАРИАНТ: Bitly через /api/shorten (временно, пока fhr.pp.ua не заработал) ──
   const r = await fetch('/api/bitly', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
