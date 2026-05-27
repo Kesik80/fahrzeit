@@ -4500,6 +4500,16 @@ if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
 
 this.showToast('⏳ Сокращаем ссылку…');
 try {
+  // ── ВАРИАНТ: Bitly через /api/shorten (временно, пока fhr.pp.ua не заработал) ──
+  const r = await fetch('/api/bitly', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ url })
+  });
+  const data = await r.json();
+  this._copyToClipboard(data.short || url, msg);
+
+  /* ── ВАРИАНТ: fhr-shortener с кодом даты-времени (включить когда fhr.pp.ua заработает) ──
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
   const pad = n => String(n).padStart(2, '0');
   const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
@@ -4508,6 +4518,8 @@ try {
   const r = await fetch('https://fhr-shortener.vercel.app/api/shorten', { method: 'POST', headers, body });
   const data = await r.json();
   this._copyToClipboard(data.short || url, msg);
+  ── конец варианта fhr-shortener ── */
+
 } catch(e) { this._copyToClipboard(url, msg); }
 }
 _copyToClipboard(text, successMsg) {
