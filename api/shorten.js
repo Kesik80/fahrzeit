@@ -1,34 +1,48 @@
+// bitly
+
 export default async function handler(req, res) {
+  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
+  // Получаем URL из query или body
   const { url } = req.query || (req.method === 'POST' && req.body) || {};
   if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
-  // DDMMYYHHmmss по времени Германии
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const dd  = String(now.getDate()).padStart(2, '0');
-  const mm  = String(now.getMonth() + 1).padStart(2, '0');
-  const yy  = String(now.getFullYear()).slice(-2);
-  const HH  = String(now.getHours()).padStart(2, '0');
-  const min = String(now.getMinutes()).padStart(2, '0');
-  const ss  = String(now.getSeconds()).padStart(2, '0');
-  const customCode = `${dd}${mm}${yy}${HH}${min}${ss}`; // e.g. 240526232030
+  // 🔐 Токен из переменных окружения
+  const BITLY_TOKEN = process.env.BITLY_ACCESS_TOKEN;
+  if (!BITLY_TOKEN) {
+    console.error('❌ BITLY_ACCESS_TOKEN not configured');
+    return res.status(500).json({ error: 'Bitly token not configured' });
+  }
 
   try {
-    const response = await fetch('https://fhr.pp.ua/api/shorten', {
+    const response = await fetch('https://api-ssl.bitly.com/v4/shorten', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, customCode })
+      headers: {
+        'Authorization': `Bearer ${BITLY_TOKEN}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'FahrzeitRechner/1.0'
+      },
+      body: JSON.stringify({
+        long_url: url,
+        title: 'Fahrzeit Route'
+      })
     });
 
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Error');
-    if (!data.short) throw new Error('No short URL returned');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Bitly API error ${response.status}: ${errorData.message || 'Unknown error'}`);
+    }
 
-    res.status(200).json({ short: data.short });
+    const data = await response.json();
+    if (!data.link) throw new Error('No short URL returned from Bitly');
+
+    // Возвращаем в том же формате — фронтенд менять не нужно ✅
+    res.status(200).json({ short: data.link });
+
   } catch (e) {
     console.error('❌ URL shortening failed:', e.message);
     res.status(500).json({ error: e.message });
