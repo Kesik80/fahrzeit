@@ -8,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   // Получаем URL из query или body
-  const { url } = req.query || (req.method === 'POST' && req.body) || {};
+  const url = req.query?.url || req.body?.url;
   if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
   // 🔐 Токен из переменных окружения
