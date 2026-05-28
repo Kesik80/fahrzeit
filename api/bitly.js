@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     if (!data.link) throw new Error('No short URL returned from Bitly');
 
     // Сохраняем bit.ly ссылку в fhr-shortener для мониторинга в админке
+    // (когда fhr.pp.ua заработает — заменить data.link на url, чтобы хранить оригинал)
     try {
       const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
       const pad = n => String(n).padStart(2, '0');
@@ -43,8 +44,7 @@ export default async function handler(req, res) {
       await fetch('https://fhr-shortener.vercel.app/api/shorten', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Сохраняем оригинальный URL, код = дата-время
-        body: JSON.stringify({ url, customCode })
+        body: JSON.stringify({ url: data.link, customCode }) // ← сохраняем bit.ly ссылку
       });
     } catch (e) {
       console.warn('fhr-shortener save failed (non-critical):', e.message);
