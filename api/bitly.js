@@ -1,17 +1,14 @@
 // bitly
 
 export default async function handler(req, res) {
-  // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // Получаем URL из query или body
   const url = req.query?.url || req.body?.url;
   if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
-  // 🔐 Токен из переменных окружения
   const BITLY_TOKEN = process.env.BITLY_ACCESS_TOKEN;
   if (!BITLY_TOKEN) {
     console.error('❌ BITLY_ACCESS_TOKEN not configured');
@@ -19,6 +16,7 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Сокращаем через Bitly
     const response = await fetch('https://api-ssl.bitly.com/v4/shorten', {
       method: 'POST',
       headers: {
@@ -26,10 +24,7 @@ export default async function handler(req, res) {
         'Content-Type': 'application/json',
         'User-Agent': 'FahrzeitRechner/1.0'
       },
-      body: JSON.stringify({
-        long_url: url,
-        title: 'Fahrzeit Route'
-      })
+      body: JSON.stringify({ long_url: url, title: 'Fahrzeit Route' })
     });
 
     if (!response.ok) {
@@ -40,7 +35,21 @@ export default async function handler(req, res) {
     const data = await response.json();
     if (!data.link) throw new Error('No short URL returned from Bitly');
 
-    // Возвращаем в том же формате — фронтенд менять не нужно ✅
+    // Сохраняем bit.ly ссылку в fhr-shortener для мониторинга в админке
+    try {
+      const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+      const pad = n => String(n).padStart(2, '0');
+      const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      await fetch('https://fhr-shortener.vercel.app/api/shorten', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // Сохраняем оригинальный URL, код = дата-время
+        body: JSON.stringify({ url, customCode })
+      });
+    } catch (e) {
+      console.warn('fhr-shortener save failed (non-critical):', e.message);
+    }
+
     res.status(200).json({ short: data.link });
 
   } catch (e) {
