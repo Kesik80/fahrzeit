@@ -181,8 +181,7 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
 display: flex;
 align-items: center;
 gap: var(--spacing-unit);
-flex-wrap: nowrap;
-overflow: hidden
+flex-wrap: wrap
 }
 .greeting-container select {
 width: 35%;
@@ -1539,7 +1538,12 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
   <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
   <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
   <label data-nocopy="1" title="Ссылки сокращать" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#888;margin-left:2px;">
-    <input type="checkbox" id="shortenLinks2" checked style="width:16px;height:16px;cursor:pointer;accent-color:#4285f4;"> 🔗
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85em;">
+      <input type="checkbox" id="shortenBitly" style="width:16px;height:16px;cursor:pointer;accent-color:#4285f4;"> bit.ly
+    </label>
+    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85em;">
+      <input type="checkbox" id="shortenFhr" style="width:16px;height:16px;cursor:pointer;accent-color:#00e5ff;"> fhr.pp.ua
+    </label>
   </label>
 </div>
 </div>
@@ -1841,6 +1845,7 @@ this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.showDestName = false;
 this.shortenLinks = true;
+this.shortenMode = "bitly";
 this.sortable = null;
 this.elements = {
 greetingSelect: document.getElementById('greeting'),
@@ -2058,6 +2063,7 @@ localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
 localStorage.setItem(k('shortenLinks'), this.shortenLinks);
+localStorage.setItem(k('shortenMode'), this.shortenMode || 'bitly');
 }
 resetToDefaults() {
 this._setShareButtons(false);
@@ -2095,7 +2101,7 @@ this._undoSnapshot = {
   _profileKey: this.startPoint,
 };
 ['greeting','greetings','participants','machineStop','machineDestinations',
-'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','startPassengers','farewell','farewells']
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','shortenMode','startPassengers','farewell','farewells']
 .forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
@@ -2210,6 +2216,7 @@ if (saved.farewells) try { this.farewells = JSON.parse(saved.farewells); } catch
 if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
 if (saved.showDestName !== null) this.showDestName = saved.showDestName === 'true';
 if (saved.shortenLinks !== null && saved.shortenLinks !== undefined) this.shortenLinks = saved.shortenLinks !== 'false';
+if (saved.shortenMode) this.shortenMode = saved.shortenMode;
 } catch {
 this.resetToDefaults();
 }
@@ -4331,7 +4338,7 @@ if (summary && out.trim()) {
   const h = Math.floor(total / 60);
   const m = total % 60;
   const timeStr = h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
-  summary.textContent = `🕐 Gesamtfahrzeit: ${timeStr}`;
+  summary.textContent = `⏱️ ${timeStr}`;
   if (summaryRow) summaryRow.style.display = 'flex';
 } else if (summaryRow) {
   summaryRow.style.display = 'none';
@@ -4497,30 +4504,32 @@ if (reverse) {
 }
 }
 async _shortenAndCopy(url, msg) {
-if (!this.shortenLinks) { this._copyToClipboard(url, msg); return; }
+if (!this.shortenLinks || !this.shortenMode) { this._copyToClipboard(url, msg); return; }
 
 this.showToast('⏳ Сокращаем ссылку…');
 try {
-  // ── ВАРИАНТ: Bitly через /api/shorten (временно, пока fhr.pp.ua не заработал) ──
-  const r = await fetch('/api/bitly', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url })
-  });
-  const data = await r.json();
+  let r, data;
+  if (this.shortenMode === 'bitly') {
+    // ── Bitly (временно, пока fhr.pp.ua не заработал) ──
+    r = await fetch('/api/bitly', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+    data = await r.json();
+  } else {
+    // ── fhr.pp.ua (включить когда домен заработает) ──
+    const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
+    const pad = n => String(n).padStart(2, '0');
+    const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    r = await fetch('https://fhr-shortener.vercel.app/api/shorten', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, customCode })
+    });
+    data = await r.json();
+  }
   this._copyToClipboard(data.short || url, msg);
-
-  /* ── ВАРИАНТ: fhr-shortener с кодом даты-времени (включить когда fhr.pp.ua заработает) ──
-  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Europe/Berlin' }));
-  const pad = n => String(n).padStart(2, '0');
-  const customCode = `${pad(now.getDate())}${pad(now.getMonth()+1)}${String(now.getFullYear()).slice(-2)}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  const body = JSON.stringify({ url, customCode });
-  const headers = { 'Content-Type': 'application/json' };
-  const r = await fetch('https://fhr-shortener.vercel.app/api/shorten', { method: 'POST', headers, body });
-  const data = await r.json();
-  this._copyToClipboard(data.short || url, msg);
-  ── конец варианта fhr-shortener ── */
-
 } catch(e) { this._copyToClipboard(url, msg); }
 }
 _copyToClipboard(text, successMsg) {
@@ -4674,8 +4683,10 @@ const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination
 window.open(url, '_blank');
 }
 _initShareButtons() {
-const sl2 = document.getElementById('shortenLinks2');
-if (sl2) sl2.checked = !!this.shortenLinks;
+const slBitly = document.getElementById('shortenBitly');
+const slFhr = document.getElementById('shortenFhr');
+if (slBitly) slBitly.checked = this.shortenLinks && this.shortenMode === 'bitly';
+if (slFhr) slFhr.checked = this.shortenLinks && this.shortenMode === 'fhr';
 const btnTo   = document.getElementById('btnMapsTo');
 const btnBack = document.getElementById('btnMapsBack');
 // handlers via delegated listener below
@@ -4833,10 +4844,19 @@ window._openDriver = function() {
 document.addEventListener('click', e => {
   const app = window.app;
   if (!app) return;
-  if (e.target.id === 'shortenLinks2') {
+  if (e.target.id === 'shortenBitly') {
     app.shortenLinks = e.target.checked;
-    const old = document.getElementById('shortenLinks');
-    if (old) old.checked = e.target.checked;
+    app.shortenMode = e.target.checked ? 'bitly' : null;
+    const slFhr = document.getElementById('shortenFhr');
+    if (slFhr) slFhr.checked = false;
+    app.saveData();
+    return;
+  }
+  if (e.target.id === 'shortenFhr') {
+    app.shortenLinks = e.target.checked;
+    app.shortenMode = e.target.checked ? 'fhr' : null;
+    const slBitly = document.getElementById('shortenBitly');
+    if (slBitly) slBitly.checked = false;
     app.saveData();
     return;
   }
