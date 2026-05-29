@@ -173,7 +173,7 @@ background: rgba(40,167,69,0.25);
 transition: background 0s;
 }
 .greeting-container {
-background: var(--surface-color);
+background: var(--surface);
 border-radius: var(--border-radius);
 padding: var(--spacing-unit);
 margin-bottom: var(--spacing-unit);
@@ -181,7 +181,8 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
 display: flex;
 align-items: center;
 gap: var(--spacing-unit);
-flex-wrap: wrap
+flex-wrap: nowrap;
+overflow: hidden
 }
 .greeting-container select {
 width: 35%;
@@ -206,7 +207,7 @@ flex-shrink: 0;
 line-height: 1;
 padding: 0;
 color: var(--text) !important;
-transform: translate(5px, -5px););
+transform: translate(5px, -5px);
 }
 
 .greeting-container .start-point-coords {
@@ -227,7 +228,7 @@ transform: translateY(-5px);
 
 }
 .participant {
-background: var(--surface-color);
+background: var(--surface);
 border-radius: var(--border-radius);
 padding: var(--spacing-unit);
 margin-bottom: var(--spacing-unit);
@@ -739,7 +740,7 @@ font-size: 1em
 .dest-label { font-style: normal; white-space: nowrap; display: inline; }
 .dest-label--muted { color: #888; }
 pre {
-background: var(--surface-color);
+background: var(--surface);
 padding: var(--spacing-unit);
 border-radius: var(--border-radius);
 white-space: pre-wrap;
@@ -940,7 +941,7 @@ justify-content: center;
 align-items: center
 }
 .modal-content {
-background: var(--surface-color);
+background: var(--surface);
 padding: 20px;
 border-radius: var(--border-radius);
 box-shadow: 0 2px 8px rgba(0, 0, 0, .2);
@@ -1154,11 +1155,6 @@ min-width: 0;
 max-width: 35%;
 width: 35%;
 }
-/* обязательно «покрасить» всё, что было белым/серым */
-body {
-background: var(--bg) !important;
-color: var(--text) !important;
-}
 /* контейнеры, карточки, модалки, поля ввода */
 .greeting-container,
 .participant,
@@ -1177,8 +1173,8 @@ border: 1px solid #b0c4de;
 border-radius: 4px;
 font-size: 1em;
 box-sizing: border-box;
-background: var(--surface-color);
-color: var(--text-color);
+background: var(--surface);
+color: var(--text);
 }
 /* кнопки сохраняют цвет, но текст перекрашиваем/* обязательно покрасить сами кнопки */
 button.calculate { background: var(--primary-color) !important; }
@@ -1198,6 +1194,7 @@ z-index: 999;
 cursor: pointer;
 font-size: 24px;
 user-select: none;
+}
 /* жёстко тёмный фон и светлый текст */
 body.dark pre#output {
 background: #1e1e1e !important;
