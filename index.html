@@ -2338,7 +2338,6 @@ this.elements.editGreetingButton.addEventListener('click', () => this.openGreeti
 document.getElementById('startPoint').addEventListener('click', () => {
   const names = Object.keys(this.nameToCoordinates);
   const items = [
-    { label: 'Startpunkt wählen', value: '' },
     ...names.map(n => ({ label: n, value: n })),
     { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
   ];
@@ -2711,7 +2710,6 @@ div.querySelector('[data-type="participant-name"]').addEventListener('click', ()
     const names = Object.keys(this.nameToCoordinates)
       .filter(n => n !== this.startPoint && (!usedForMain.has(n) || n === p.name));
     const items = [
-      { label: 'Name wählen', value: '' },
       ...names.map(n => ({ label: n, value: n })),
       { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
     ];
