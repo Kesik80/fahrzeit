@@ -88,9 +88,9 @@ this.travelTimes = {
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
-  'Herten A2 Parkplatz': {lat: 51.572436, lng: 7.133005},
   'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155},
-  'Rathaus Osterfeld': {lat: 51.501092, lng: 6.889317}
+  'Rathaus Osterfeld': {lat: 51.501092, lng: 6.889317},
+  'P&R Herten A2': {lat: 51.572438, lng: 7.133029}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -114,16 +114,6 @@ this.trefftravelTimes = {
   'Lirich P&R Parkplatz-Vasyl': 15,
   'Lirich P&R Parkplatz-Maikel': 25,
   'Lirich P&R Parkplatz-Aleks': 15,
-  'Herten A2 Parkplatz-Sergii': 25,
-  'Herten A2 Parkplatz-Anatolii': 25,
-  'Herten A2 Parkplatz-Andrii': 25,
-  'Herten A2 Parkplatz-Sergio': 25,
-  'Herten A2 Parkplatz-Dima': 10,
-  'Herten A2 Parkplatz-René': 30,
-  'Herten A2 Parkplatz-Marvin': 35,
-  'Herten A2 Parkplatz-Vasyl': 25,
-  'Herten A2 Parkplatz-Maikel': 20,
-  'Herten A2 Parkplatz-Aleks': 25,
   'P&R Parkplatz A42-Sergii': 25,
   'P&R Parkplatz A42-Andrii': 25,
   'P&R Parkplatz A42-Anatolii': 20,
@@ -142,7 +132,17 @@ this.trefftravelTimes = {
   'Rathaus Osterfeld-Marvin': 20,
   'Rathaus Osterfeld-Vasyl': 5,
   'Rathaus Osterfeld-Maikel': 20,
-  'Rathaus Osterfeld-Aleks': 10
+  'Rathaus Osterfeld-Aleks': 10,
+  'P&R Herten A2-Sergii': 25,
+  'P&R Herten A2-Anatolii': 25,
+  'P&R Herten A2-Andrii': 25,
+  'P&R Herten A2-Sergio': 25,
+  'P&R Herten A2-Dima': 10,
+  'P&R Herten A2-René': 30,
+  'P&R Herten A2-Marvin': 35,
+  'P&R Herten A2-Vasyl': 25,
+  'P&R Herten A2-Maikel': 20,
+  'P&R Herten A2-Aleks': 25
 };
 
 // Приоритетные списки остановок и попутчики
