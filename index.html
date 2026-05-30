@@ -1335,7 +1335,7 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
 /* farewell cp-trigger */
 #farewellTrigger { flex: 1; min-width: 0; }
 /* sub-participant cp-trigger */
-.sub-participant .cp-trigger { flex: 1; min-width: 0; }
+.sub-participant .cp-trigger { flex: 0 0 35%; min-width: 0; max-width: 35%; }
 
 /* ── Universal Bottom Sheet Modal ─────────────────────────────── */
 .bs-overlay {
@@ -1518,7 +1518,7 @@ title="Bearbeitungsmodus">
 </div>
 <button class="start-point-coords" title="Startpunkt-Koordinaten bearbeiten"></button>
 <div id="greeting" class="cp-trigger" aria-label="Begrüßung wählen" role="button" tabindex="0">
-  <span id="greetingLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
+  <span id="greetingTriggerLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
 </div>
 <button class="edit-greeting-btn pencil-icon" title="Begrüßung bearbeiten">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
@@ -1618,11 +1618,16 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </g>
 </svg>
 </button>
+<!--
+  КНОПКА btnGoDriver — временно отключена (Live Tracking / водительский режим).
+  Раскомментировать когда функция window._openDriver() будет готова к использованию.
+
 <button class="driver-btn" id="btnGoDriver" title="Live Tracking starten" onclick="window._openDriver()">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
   <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
 </svg>
 </button>
+-->
 </div>
 <div id="outputWrapper">
 <pre id="output"></pre>
@@ -1770,11 +1775,16 @@ c168 0 866 -22 1147 -35 171 -8 319 -15 331 -15 19 0 22 -7 27 -81 8 -95 34
 </g></svg>
   </button>
 
+  <!--
+    КНОПКА btnShareNative — временно отключена (нативный Share / Поделиться текстом маршрута).
+    Раскомментировать когда функция будет снова нужна.
+
   <button id="btnShareNative" class="share-btn share-native-btn" title="Teilen / Поделиться">
     <svg viewBox="0 0 24 24" width="28" height="28" fill="#fff" xmlns="http://www.w3.org/2000/svg">
       <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/>
     </svg>
   </button>
+  -->
 </div>
 <div id="appHints">
   <div id="hintDriver" class="app-hint">👤 Fahrer auswählen</div>
@@ -1943,7 +1953,7 @@ this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.showDestName = false;
 this.shortenLinks = true;
-this.shortenMode = "bitly";
+this.shortenMode = "fhr";
 this.sortable = null;
 this.elements = {
 greetingSelect: document.getElementById('greeting'),
@@ -2092,7 +2102,7 @@ try {
   this.calculate();
   // Перерендерить greeting dropdown с загруженным списком
   if (this.elements && this.elements.greetingSelect) {
-    document.getElementById('greetingLabel').textContent = this.greeting || '';
+    document.getElementById('greetingTriggerLabel').textContent = this.greeting || '';
   }
 } catch (e) {
   console.warn('stations.js nicht geladen:', e.message);
@@ -2328,7 +2338,7 @@ document.getElementById('greeting').addEventListener('click', () => {
     [...this.greetings, { label: '➕ Hinzufügen…', value: 'add-new-greeting', addNew: true }],
     (val) => {
       if (val === 'add-new-greeting') { this.openGreetingModal(true); }
-      else { this.greeting = val; document.getElementById('greetingLabel').textContent = val; this.saveData(); this.calculate(); }
+      else { this.greeting = val; document.getElementById('greetingTriggerLabel').textContent = val; this.saveData(); this.calculate(); }
     },
     this.greeting
   );
@@ -2519,7 +2529,7 @@ getAllUsedNames(optionalExclude = null) {
 renderParticipants() {
 const container = this.elements.participantsContainer;
 container.innerHTML = '';
-document.getElementById('greetingLabel').textContent = this.greeting || this.greetings[0] || '';
+document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
 const nameOptions = Object.keys(this.nameToCoordinates).map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`).join('');
 document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
 const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
@@ -2534,11 +2544,7 @@ if (startPassengersContainer) {
   startPassengersContainer.innerHTML = '';
   (this.startPointPassengers || []).forEach((passengerName, idx) => {
     const usedNames = this.getAllUsedNames(passengerName);
-    const opts = Object.keys(this.nameToCoordinates)
-      .filter(n => n !== this.startPoint && (!usedNames.has(n) || n === passengerName))
-      .sort()
-      .map(n => `<option value="${n}" ${n === passengerName ? 'selected' : ''}>${n}</option>`)
-      .join('');
+
     const subDiv = document.createElement('div');
     subDiv.className = 'sub-participant';
     subDiv.innerHTML = `
@@ -2627,11 +2633,7 @@ subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', personIdx);
 
 const usedInTreff = this.getAllUsedNames(personName);
-const personOptions = Object.keys(this.nameToCoordinates)
-.filter(n => !usedInTreff.has(n) || n === personName)
-.sort()
-.map(n => `<option value="${n}" ${n === personName ? 'selected' : ''}>${n}</option>`)
-.join('');
+
 
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
@@ -5078,6 +5080,7 @@ document.addEventListener('click', e => {
   if (e.target.id === 'copyOutputBtn' || e.target.closest('#copyOutputBtn')) { app.copyResult(); return; }
 
 
+  /* ОБРАБОТЧИК btnShareNative — отключён вместе с кнопкой
   if (e.target.id === 'btnShareNative' || e.target.closest('#btnShareNative')) {
     const clone = app.elements.output.cloneNode(true);
     clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
@@ -5090,6 +5093,7 @@ document.addEventListener('click', e => {
       app._copyToClipboard(text, '📋 Текст скопирован!');
     }
   }
+  */
 });
 // ---------- тема ----------
 const switcher = document.getElementById('themeSwitch');
