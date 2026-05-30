@@ -26,6 +26,7 @@
 <!-- цвет статус-бара (опционально) -->
 <meta name="theme-color" content="#1a1a1a" id="theme-meta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="color-scheme" content="dark light" id="color-scheme-meta">
 <title>Fahrzeit Rechner</title>
 <link rel="stylesheet"
 href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
@@ -1125,6 +1126,7 @@ a[href*="maps.google.com/maps"] { display: none !important; }
 --route-back-color: #6f42c1;
 }
 body.dark {
+color-scheme: dark;
 --bg: #121212;
 --surface: #1e1e1e;
 --text: #e1e1e1;
@@ -1142,6 +1144,7 @@ body.dark {
 --map-header-color: #e1e1e1;
 }
 body:not(.dark) {
+color-scheme: light;
 --map-header-bg: var(--primary-color, #007bff);
 --map-header-color: #fff;
 }
@@ -1234,6 +1237,105 @@ background:none;
 padding:4px;
 cursor:pointer;
 }
+
+/* ── Custom Picker (replaces native <select>) ───────────────────── */
+.cp-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--small-spacing) 8px;
+  border: 1px solid var(--border, #ddd);
+  border-radius: 4px;
+  font-size: 1em;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  box-sizing: border-box;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  gap: 4px;
+}
+.cp-trigger:active { opacity: 0.7; }
+.cp-trigger .cp-arrow { flex-shrink: 0; font-size: 0.7em; opacity: 0.5; }
+.cp-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(5px);
+  z-index: 99999;
+  align-items: flex-end;
+  justify-content: center;
+}
+.cp-overlay.open { display: flex; }
+.cp-sheet {
+  width: 100%;
+  max-width: 480px;
+  max-height: 75vh;
+  border-radius: 20px 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+  background: var(--surface);
+  color: var(--text);
+}
+body.dark .cp-sheet {
+  background: #1e1e1e !important;
+  color: #e1e1e1 !important;
+}
+.cp-handle {
+  width: 40px; height: 4px; border-radius: 2px;
+  background: currentColor; opacity: 0.2;
+  margin: 12px auto 0; flex-shrink: 0;
+}
+.cp-header {
+  padding: 10px 20px 12px; flex-shrink: 0;
+  font-size: 1.05em; font-weight: 700;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+body.dark .cp-header { border-color: rgba(255,255,255,0.1) !important; }
+.cp-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.cp-item {
+  width: 100%; padding: 15px 20px;
+  border: none; border-bottom: 1px solid var(--border, rgba(0,0,0,0.06));
+  background: transparent; color: var(--text);
+  font-size: 1em; text-align: left; cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  box-sizing: border-box; transition: background 0.1s;
+}
+body.dark .cp-item { color: #e1e1e1 !important; border-color: rgba(255,255,255,0.07) !important; }
+.cp-item:last-child { border-bottom: none; }
+.cp-item:active { background: rgba(0,0,0,0.06); }
+body.dark .cp-item:active { background: rgba(255,255,255,0.07) !important; }
+.cp-item.selected { font-weight: 700; }
+.cp-item .cp-check { color: var(--primary-color); font-size: 1.1em; }
+.cp-item.add-new { color: var(--primary-color); font-weight: 500; opacity: 0.85; }
+body.dark .cp-item.add-new { color: #5c9fff !important; }
+.cp-footer { padding: 10px 16px 20px; flex-shrink: 0; }
+.cp-cancel {
+  width: 100%; padding: 13px;
+  border-radius: 12px; border: 1.5px solid var(--border, rgba(0,0,0,0.15));
+  background: transparent; color: var(--text);
+  font-size: 0.95em; font-weight: 600; cursor: pointer; opacity: 0.65;
+}
+body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #e1e1e1 !important; }
+/* greeting-container cp-trigger sizing */
+.greeting-container .cp-trigger { width: 35%; flex-shrink: 0; }
+/* participant cp-trigger sizing */
+.participant .cp-trigger {
+  flex: 1; min-width: 0; max-width: 35%;
+}
+.participant.machine .cp-trigger {
+  flex: 0 0 35%; min-width: 0; max-width: 35%; width: 35%;
+}
+/* farewell cp-trigger */
+#farewellTrigger { flex: 1; min-width: 0; }
+/* sub-participant cp-trigger */
+.sub-participant .cp-trigger { flex: 1; min-width: 0; }
 
 /* ── Universal Bottom Sheet Modal ─────────────────────────────── */
 .bs-overlay {
@@ -1411,14 +1513,13 @@ title="Bearbeitungsmodus">
 </svg>
 </a>
 <div class="greeting-container">
-<select id="startPoint" aria-label="Startpunkt wählen">
-<option value="" disabled>Startpunkt wählen</option>
-</select>
+<div id="startPoint" class="cp-trigger" aria-label="Startpunkt wählen" role="button" tabindex="0">
+  <span id="startPointLabel">Startpunkt wählen</span><span class="cp-arrow">▼</span>
+</div>
 <button class="start-point-coords" title="Startpunkt-Koordinaten bearbeiten"></button>
-<select id="greeting" aria-label="Begrüßung wählen">
-<option value="Moin zusammen" selected>Moin zusammen</option>
-<option value="add-new-greeting">➕</option>
-</select>
+<div id="greeting" class="cp-trigger" aria-label="Begrüßung wählen" role="button" tabindex="0">
+  <span id="greetingLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
+</div>
 <button class="edit-greeting-btn pencil-icon" title="Begrüßung bearbeiten">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
 <path
@@ -1991,9 +2092,7 @@ try {
   this.calculate();
   // Перерендерить greeting dropdown с загруженным списком
   if (this.elements && this.elements.greetingSelect) {
-    this.elements.greetingSelect.innerHTML =
-      this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') +
-      '<option value="add-new-greeting">➕</option>';
+    document.getElementById('greetingLabel').textContent = this.greeting || '';
   }
 } catch (e) {
   console.warn('stations.js nicht geladen:', e.message);
@@ -2222,12 +2321,32 @@ this.resetToDefaults();
 this.syncCoordinates();
 }
 addEventListeners() {
-this.elements.greetingSelect.addEventListener('change', e => {
-if (e.target.value === 'add-new-greeting') { this.openGreetingModal(true); e.target.value = this.greeting; }
-else { this.greeting = e.target.value; this.saveData(); this.calculate(); }
+// Кастомный picker для приветствия
+document.getElementById('greeting').addEventListener('click', () => {
+  this.showPicker(
+    'Begrüßung wählen',
+    [...this.greetings, { label: '➕ Hinzufügen…', value: 'add-new-greeting', addNew: true }],
+    (val) => {
+      if (val === 'add-new-greeting') { this.openGreetingModal(true); }
+      else { this.greeting = val; document.getElementById('greetingLabel').textContent = val; this.saveData(); this.calculate(); }
+    },
+    this.greeting
+  );
 });
 this.elements.editGreetingButton.addEventListener('click', () => this.openGreetingModal(false));
-this.elements.startPointSelect.addEventListener('change', e => this.updateStartPoint(e.target.value));
+// Кастомный picker для водителя
+document.getElementById('startPoint').addEventListener('click', () => {
+  const names = Object.keys(this.nameToCoordinates);
+  const items = [
+    { label: 'Startpunkt wählen', value: '' },
+    ...names.map(n => ({ label: n, value: n })),
+    { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
+  ];
+  this.showPicker('Startpunkt wählen', items, (val) => {
+    if (val === 'add-new') { this.openCoordsModal(null, false, false, true); }
+    else { this.updateStartPoint(val); document.getElementById('startPointLabel').textContent = val || 'Startpunkt wählen'; }
+  }, this.startPoint);
+});
 this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
 const addStartPassengerBtn = document.getElementById('addStartPassengerBtn');
 if (addStartPassengerBtn) {
@@ -2401,13 +2520,9 @@ getAllUsedNames(optionalExclude = null) {
 renderParticipants() {
 const container = this.elements.participantsContainer;
 container.innerHTML = '';
-this.elements.greetingSelect.innerHTML = this.greetings.map(g => `<option value="${g}" ${this.greeting === g ? 'selected' : ''}>${g}</option>`).join('') + '<option value="add-new-greeting">➕</option>';
+document.getElementById('greetingLabel').textContent = this.greeting || this.greetings[0] || '';
 const nameOptions = Object.keys(this.nameToCoordinates).map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`).join('');
-this.elements.startPointSelect.innerHTML = `
-<option value="" ${!this.startPoint ? 'selected' : ''}>Startpunkt wählen</option>
-${nameOptions}
-<option value="add-new">➕ Neuen Namen hinzufügen</option>
-`;
+document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
 const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
 const hasCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
 const coloredMapSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 92.3 132.3" width="28" height="28"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3-21.8-18.3z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>`;
@@ -2429,22 +2544,30 @@ if (startPassengersContainer) {
     subDiv.className = 'sub-participant';
     subDiv.innerHTML = `
       <span class="drag-handle-sub">⋮⋮</span>
-      <select data-sp-index="${idx}" aria-label="Mitfahrer">
-        ${opts}
-        <option value="add-new">➕ Neue Person…</option>
-      </select>
+      <div class="cp-trigger" data-sp-index="${idx}" data-type="sp-name" role="button" tabindex="0">
+        <span class="cp-label">${passengerName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+      </div>
       <button class="remove-sub-btn" data-sp-index="${idx}" aria-label="Löschen"></button>
     `;
-    subDiv.querySelector('select').addEventListener('change', e => {
-      if (e.target.value === 'add-new') {
-        e.target.value = passengerName;
-        this.openCoordsModal(null, false, false, false, false, false, true);
-        this.currentMainParticipantIndex = -1; // признак: добавляем к startPoint
-      } else {
-        this.startPointPassengers[idx] = e.target.value;
-        this.saveData();
-        this.calculate();
-      }
+    subDiv.querySelector('[data-type="sp-name"]').addEventListener('click', () => {
+      const usedNames = this.getAllUsedNames(passengerName);
+      const names = Object.keys(this.nameToCoordinates)
+        .filter(n => n !== this.startPoint && (!usedNames.has(n) || n === passengerName))
+        .sort();
+      const items = [
+        ...names.map(n => ({ label: n, value: n })),
+        { label: '➕ Neue Person…', value: 'add-new', addNew: true }
+      ];
+      this.showPicker('Mitfahrer wählen', items, (val) => {
+        if (val === 'add-new') {
+          this.openCoordsModal(null, false, false, false, false, false, true);
+          this.currentMainParticipantIndex = -1;
+        } else {
+          this.startPointPassengers[idx] = val;
+          this.saveData();
+          this.calculate();
+        }
+      }, passengerName);
     });
     subDiv.querySelector('.remove-sub-btn').addEventListener('click', () => {
       this.startPointPassengers.splice(idx, 1);
@@ -2476,10 +2599,9 @@ if (p.isTreffpunkt) {
 // ===== Рендер Treffpunkt-участника =====
 const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
 div.innerHTML = `
-<select data-index="${i}" data-type="participant-name" aria-label="Treffpunkt">
-<option value="${p.name}" selected>📍 ${p.name}</option>
-${Object.keys(this.treffpunkt).filter(n => n !== p.name).map(n => `<option value="${n}">📍 ${n}</option>`).join('')}
-</select>
+<div class="cp-trigger" data-index="${i}" data-type="participant-name" role="button" tabindex="0">
+  <span class="cp-label">📍 ${p.name}</span><span class="cp-arrow">▼</span>
+</div>
 <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Redaktieren">${coordsSvg}</button>
 <div class="time-display" data-index="${i}" data-type="participant-time-display" title="Tippen zum Ändern">
 ${this.formatMinutes(p.time)}
@@ -2514,9 +2636,9 @@ const personOptions = Object.keys(this.nameToCoordinates)
 
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
-<select data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" aria-label="Person am Treffpunkt">
-${personOptions}
-</select>
+<div class="cp-trigger" data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" role="button" tabindex="0">
+  <span class="cp-label">${personName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+</div>
 <button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Löschen"></button>
 `;
 groupDiv.appendChild(subDiv);
@@ -2532,11 +2654,9 @@ const participantNameOptions = Object.keys(this.nameToCoordinates)
 const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
 const participantCalcIcon = p.routeCalculated ? coloredMapSvg : grayMapSvg;
 div.innerHTML = `
-<select data-index="${i}" data-type="participant-name" aria-label="Teilnehmername">
-<option value="" ${!p.name ? 'selected' : ''}>Name wählen</option>
-${participantNameOptions}
-<option value="add-new">➕ Neuen Namen hinzufügen</option>
-</select>
+<div class="cp-trigger" data-index="${i}" data-type="participant-name" role="button" tabindex="0">
+  <span class="cp-label">${p.name || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+</div>
 <button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten">${coordsSvg}</button>
 <div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}${p.isFallback && !p.timeManuallyEdited ? ' is-fallback' : ''}${p.hasTraffic ? ' has-traffic' : ''}" data-index="${i}" data-type="participant-time-display" title="${p.isFallback && !p.timeManuallyEdited ? 'Fahrzeit nicht bekannt – Schätzwert!' : p.hasTraffic ? `🚦 +${p.trafficDeltaMin || '?'} Min. durch Stau` : 'Tippen zum Ändern'}">
 ${this.formatMinutes(p.time)}${p.isFallback && !p.timeManuallyEdited ? ' ⚠' : ''}
@@ -2567,10 +2687,9 @@ const subNameOptions = Object.keys(this.nameToCoordinates)
 .map(n => `<option value="${n}" ${subName === n ? 'selected' : ''}>${n}</option>`).join('');
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
-<select data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" aria-label="Mitfahrer">
-${subNameOptions}
-<option value="add-new">➕ Neuen Namen hinzufügen</option>
-</select>
+<div class="cp-trigger" data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" role="button" tabindex="0">
+  <span class="cp-label">${subName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+</div>
 <button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Löschen"></button>
 `;
 groupDiv.appendChild(subDiv);
@@ -2580,9 +2699,29 @@ groupDiv.appendChild(subDiv);
 
 container.appendChild(groupDiv);
 // Event listeners для основного участника
-div.querySelector('[data-type="participant-name"]').addEventListener('change', e => {
-if (p.isTreffpunkt) this.updateTreffpunktName(i, e.target.value);
-else this.updateName(i, e.target.value);
+div.querySelector('[data-type="participant-name"]').addEventListener('click', () => {
+  if (p.isTreffpunkt) {
+    const treffNames = Object.keys(this.treffpunkt);
+    const items = treffNames.map(n => ({ label: '📍 ' + n, value: n }));
+    this.showPicker('Treffpunkt wählen', items, (val) => {
+      this.updateTreffpunktName(i, val);
+    }, p.name);
+  } else {
+    const usedForMain = this.getAllUsedNames(p.name);
+    const names = Object.keys(this.nameToCoordinates)
+      .filter(n => n !== this.startPoint && (!usedForMain.has(n) || n === p.name));
+    const items = [
+      { label: 'Name wählen', value: '' },
+      ...names.map(n => ({ label: n, value: n })),
+      { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
+    ];
+    this.showPicker('Teilnehmer wählen', items, (val) => {
+      if (val === 'add-new') {
+        this.currentMainParticipantIndex = i;
+        this.openCoordsModal(null, false, false, false, false, true);
+      } else { this.updateName(i, val); }
+    }, p.name);
+  }
 });
 const timeDisplay = div.querySelector('[data-type="participant-time-display"]');
 if (timeDisplay) {
@@ -2597,25 +2736,42 @@ else this.openSubParticipantModal(i);
 });
 div.querySelector('.remove-btn').addEventListener('click', () => this.removeParticipant(i));
 // Event listeners для субучастников / treffpunkt persons
-groupDiv.querySelectorAll('[data-type="sub-name"]').forEach(select => {
-select.addEventListener('change', (e) => {
-const mainIdx = parseInt(e.target.dataset.mainIndex);
-const subIdx = parseInt(e.target.dataset.subIndex);
-if (e.target.value === 'add-new') {
-this.currentMainParticipantIndex = mainIdx;
-this.currentSubParticipantIndex = subIdx;
-this.isAddingSubName = true;
-this.openCoordsModal(null, false, true);
-} else {
-this.updateSubParticipant(mainIdx, subIdx, e.target.value);
-}
+groupDiv.querySelectorAll('[data-type="sub-name"]').forEach(trigger => {
+trigger.addEventListener('click', () => {
+const mainIdx = parseInt(trigger.dataset.mainIndex);
+const subIdx = parseInt(trigger.dataset.subIndex);
+const currentName = trigger.querySelector('.cp-label').textContent;
+const usedInSub = this.getAllUsedNames(currentName);
+const names = Object.keys(this.nameToCoordinates)
+  .filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === currentName))
+  .sort();
+const items = [
+  ...names.map(n => ({ label: n, value: n })),
+  { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
+];
+this.showPicker('Mitfahrer wählen', items, (val) => {
+  if (val === 'add-new') {
+    this.currentMainParticipantIndex = mainIdx;
+    this.currentSubParticipantIndex = subIdx;
+    this.isAddingSubName = true;
+    this.openCoordsModal(null, false, true);
+  } else { this.updateSubParticipant(mainIdx, subIdx, val); }
+}, currentName);
 });
 });
-groupDiv.querySelectorAll('[data-type="treff-person-name"]').forEach(select => {
-select.addEventListener('change', (e) => {
-const mainIdx = parseInt(e.target.dataset.mainIndex);
-const personIdx = parseInt(e.target.dataset.subIndex);
-this.updateTreffpunktPerson(mainIdx, personIdx, e.target.value);
+groupDiv.querySelectorAll('[data-type="treff-person-name"]').forEach(trigger => {
+trigger.addEventListener('click', () => {
+const mainIdx = parseInt(trigger.dataset.mainIndex);
+const personIdx = parseInt(trigger.dataset.subIndex);
+const currentName = trigger.querySelector('.cp-label').textContent;
+const usedInTreff = this.getAllUsedNames(currentName);
+const names = Object.keys(this.nameToCoordinates)
+  .filter(n => !usedInTreff.has(n) || n === currentName)
+  .sort();
+const items = names.map(n => ({ label: n, value: n }));
+this.showPicker('Person wählen', items, (val) => {
+  this.updateTreffpunktPerson(mainIdx, personIdx, val);
+}, currentName);
 });
 });
 groupDiv.querySelectorAll('.remove-sub-btn').forEach(btn => {
@@ -2641,11 +2797,9 @@ const destOptions = this.machineDestinations.map(d =>
 ).join('');
 const isCustom = !this.machineDestinations.some(d => d.name === this.machineStop.name);
 machineDiv.innerHTML = `
-<select data-type="machine-name" aria-label="Zielort">
-  ${destOptions}
-  ${isCustom ? `<option value="${this.machineStop.name.replace(/"/g, '&quot;')}" selected>${this.machineStop.name}</option>` : ''}
-  <option value="__add_new__">➕ Ziel hinzufügen…</option>
-</select>
+<div class="cp-trigger" data-type="machine-name" role="button" tabindex="0">
+  <span class="cp-label">${this.machineStop.name || 'Ziel wählen'}</span><span class="cp-arrow">▼</span>
+</div>
 <button class="coords-icon" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten">${machineCoordsSvg}</button>
 <div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Tippen zum Ändern">
 ${this.formatMinutes(this.machineStop.time)}
@@ -2663,26 +2817,29 @@ ${this.machineStop.arrivalTime
 container.appendChild(machineDiv);
 const machineNameSel = machineDiv.querySelector('[data-type="machine-name"]');
 
-machineNameSel.addEventListener('change', e => {
-  const val = e.target.value;
-  if (val === '__add_new__') {
-    // Сбрасываем select обратно на текущее значение — модалка сама сохранит
-    machineNameSel.value = this.machineStop.name.replace(/"/g, '&quot;');
-    this.openCoordsModal(null, false, false, false, true); // isAddingNewDestination
-  } else {
-    // Подставляем координаты если есть
-    const dest = this.machineDestinations.find(d => d.name === val);
-    if (dest && dest.lat && dest.lng) {
-      this.machineStop.lat = dest.lat;
-      this.machineStop.lng = dest.lng;
-      this.machineStop.autoCalculated = false;
-    } else if (dest) {
-      this.machineStop.lat = null;
-      this.machineStop.lng = null;
+const machineNameTrigger = machineDiv.querySelector('[data-type="machine-name"]');
+machineNameTrigger.addEventListener('click', () => {
+  const items = [
+    ...this.machineDestinations.map(d => ({ label: d.name, value: d.name })),
+    { label: '➕ Ziel hinzufügen…', value: '__add_new__', addNew: true }
+  ];
+  this.showPicker('Zielort wählen', items, (val) => {
+    if (val === '__add_new__') {
+      this.openCoordsModal(null, false, false, false, true);
+    } else {
+      const dest = this.machineDestinations.find(d => d.name === val);
+      if (dest && dest.lat && dest.lng) {
+        this.machineStop.lat = dest.lat;
+        this.machineStop.lng = dest.lng;
+        this.machineStop.autoCalculated = false;
+      } else if (dest) {
+        this.machineStop.lat = null;
+        this.machineStop.lng = null;
+      }
+      this.updateMachineName(val);
+      this.renderParticipants();
     }
-    this.updateMachineName(val);
-    this.renderParticipants();
-  }
+  }, this.machineStop.name);
 });
 
 const machineTimeDisplay = machineDiv.querySelector('[data-type="machine-time-display"]');
@@ -2699,7 +2856,7 @@ const farewellOptions = this.farewells.map(f =>
   `<option value="${f.replace(/"/g,'&quot;')}" ${this.farewell === f ? 'selected' : ''}>${f}</option>`
 ).join('') + '<option value="__add_new_farewell__">➕ Hinzufügen…</option>';
 farewellDiv.innerHTML = `
-<select id="farewellSelect" style="flex:1;min-width:0;">${farewellOptions}</select>
+<div id="farewellTrigger" class="cp-trigger" role="button" tabindex="0"><span id="farewellLabel">${this.farewell}</span><span class="cp-arrow">▼</span></div>
 <button id="editFarewellBtn" title="Abschied bearbeiten" style="flex-shrink:0;width:24px;height:24px;background:transparent;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transform:translateY(-5px);color:var(--text);">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="18" height="18">
   <path d="M46.193 6.863a7.48 7.48 0 0 0-4.717 2.13L15.434 38.771S15.213 39.215 13.725 46.12c-.28-.074-.44-.204-.74-.267a1 1 0 0 0-.41 1.957c.305.064.452.186.73.262L11.799 55.045a1 1 0 0 0 1.38 1.125L20.553 52.9a1 1 0 0 0 .552-1.21s-.398-1.223-1.601-2.494c-.81-.855-2.192-1.688-3.883-2.404L17.113 39.9c.259-.3 20.274-23.473 25.815-29.52C47.764 5.267 55.893 14.152 52.834 17.424l-.022.023S33.986 38.92 27.871 46.266c-.79-1.355-1.806-2.557-2.826-3.433-.864-.742-1.162-.886-1.641-1.201L45.92 16.09a1 1 0 0 0-1.5-1.323L21.186 41.125a1 1 0 0 0 .24 1.521s1.084.645 2.316 1.703c1.232 1.058 2.549 2.529 3.022 3.945a1 1 0 0 0 1.722.317C33.662 42.3 54.262 18.827 54.295 18.79c3.881-4.151-1.668-11.392-7.387-11.9a7.55 7.55 0 0 0-1.715-.027zM15.203 48.752l1.035-4.795-4.527 1.998 4.492 2.797z"
@@ -2720,17 +2877,17 @@ farewellDiv.innerHTML = `
 </div>
 `;
 container.appendChild(farewellDiv);
-// Обработчик select прощания
-const farewellSelect = farewellDiv.querySelector('#farewellSelect');
-farewellSelect.addEventListener('change', () => {
-  if (farewellSelect.value === '__add_new_farewell__') {
-    farewellSelect.value = this.farewell;
-    this.openFarewellModal(true);
-  } else {
-    this.farewell = farewellSelect.value;
-    this.saveData();
-    this.calculate();
-  }
+// Кастомный picker для прощания
+const farewellTrigger = farewellDiv.querySelector('#farewellTrigger');
+farewellTrigger.addEventListener('click', () => {
+  const items = [
+    ...this.farewells.map(f => ({ label: f, value: f })),
+    { label: '➕ Hinzufügen…', value: '__add_new_farewell__', addNew: true }
+  ];
+  this.showPicker('Abschied wählen', items, (val) => {
+    if (val === '__add_new_farewell__') { this.openFarewellModal(true); }
+    else { this.farewell = val; farewellDiv.querySelector('#farewellLabel').textContent = val; this.saveData(); this.calculate(); }
+  }, this.farewell);
 });
 // Карандаш — открывает модалку редактирования как у приветствия
 const editFarewellBtn = farewellDiv.querySelector('#editFarewellBtn');
@@ -3709,6 +3866,67 @@ updateMachineName(value) {
 this.machineStop.name = value.trim() || 'an der Maschine';
 this.saveData();
 this.calculate();
+}
+
+// ── Universal Custom Picker (replaces native <select>) ──────────────
+showPicker(title, items, onSelect, currentValue) {
+  // Удаляем предыдущий если есть
+  const existing = document.getElementById('cpOverlay');
+  if (existing) existing.remove();
+
+  const isDark = document.body.classList.contains('dark');
+  const overlay = document.createElement('div');
+  overlay.id = 'cpOverlay';
+  overlay.className = 'cp-overlay open';
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+
+  const sheet = document.createElement('div');
+  sheet.className = 'cp-sheet';
+
+  const handle = document.createElement('div');
+  handle.className = 'cp-handle';
+
+  const header = document.createElement('div');
+  header.className = 'cp-header';
+  header.textContent = title;
+
+  const list = document.createElement('div');
+  list.className = 'cp-list';
+
+  items.forEach(item => {
+    const val = typeof item === 'string' ? item : item.value;
+    const label = typeof item === 'string' ? item : item.label;
+    const isAddNew = typeof item === 'object' && item.addNew;
+    const isSelected = val === currentValue;
+
+    const btn = document.createElement('button');
+    btn.className = 'cp-item' + (isAddNew ? ' add-new' : '') + (isSelected ? ' selected' : '');
+    btn.innerHTML = `<span>${label}</span>${isSelected ? '<span class="cp-check">✓</span>' : ''}`;
+    btn.addEventListener('click', () => {
+      overlay.remove();
+      onSelect(val);
+    });
+    list.appendChild(btn);
+  });
+
+  const footer = document.createElement('div');
+  footer.className = 'cp-footer';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'cp-cancel';
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  footer.appendChild(cancelBtn);
+
+  sheet.appendChild(handle);
+  sheet.appendChild(header);
+  sheet.appendChild(list);
+  sheet.appendChild(footer);
+  overlay.appendChild(sheet);
+  document.body.appendChild(overlay);
+
+  // Скроллим к выбранному элементу
+  const selected = list.querySelector('.selected');
+  if (selected) setTimeout(() => selected.scrollIntoView({ block: 'center' }), 50);
 }
 
 // ── Universal Bottom Sheet ────────────────────────────────────────────────
@@ -4882,13 +5100,20 @@ if (!switcher) return;
 const meta = document.getElementById('theme-meta');
 meta.content = (localStorage.theme === 'dark') ? '#121212' : '#f0f0f0';
 // восстанавливаем сохранённую тему
-if (localStorage.theme === 'dark') document.body.classList.add('dark');
+if (localStorage.theme === 'dark') {
+  document.body.classList.add('dark');
+  const csMeta = document.getElementById('color-scheme-meta');
+  if (csMeta) csMeta.content = 'dark light';
+}
 switcher.checked = localStorage.theme === 'dark';
 // переключаем по клику
 switcher.addEventListener('change', e => {
 document.body.classList.toggle('dark', e.target.checked);
 localStorage.theme = e.target.checked ? 'dark' : 'light';
 meta.content = e.target.checked ? '#121212' : '#f0f0f0';
+// Обновляем color-scheme чтобы нативные select/input стали тёмными
+const csMeta = document.getElementById('color-scheme-meta');
+if (csMeta) csMeta.content = e.target.checked ? 'dark light' : 'light dark';
 });
 });
 </script>
