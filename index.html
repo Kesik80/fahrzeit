@@ -2509,7 +2509,6 @@ this.updateParticipantTimes();
 this.saveData();
 this.renderParticipants();
 this.initSortable();
-this._initSwipeToDelete();
 this._initShareButtons();
 this.calculate();
 }
@@ -2595,6 +2594,7 @@ this.participants.forEach((p, i) => {
 const groupDiv = document.createElement('div');
 groupDiv.className = 'participant-group';
 groupDiv.setAttribute('data-index', i);
+
 // Основной участник
 const div = document.createElement('div');
 div.className = 'participant main-participant' + (p.isTreffpunkt ? ' has-treffpunkt' : '');
@@ -2930,6 +2930,7 @@ const timeRemoveBtn = machineDiv.querySelector('.time-remove');
 if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
 this.saveData();
 if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this.updateHints(); }
+this.initSwipeDelete();
 }
 async parseCoordinates(raw) {
 const s = raw.trim();
@@ -3870,7 +3871,6 @@ this.calculate();
 
 // ── Universal Custom Picker (replaces native <select>) ──────────────
 showPicker(title, items, onSelect, currentValue) {
-  // Удаляем предыдущий если есть
   const existing = document.getElementById('cpOverlay');
   if (existing) existing.remove();
 
@@ -4386,44 +4386,6 @@ overlay.querySelector('#tpClear').onclick = () => {
 };
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
-_initSwipeToDelete() {
-const rows = document.querySelectorAll('.participant-group');
-rows.forEach(wrapper => {
-  let startX = 0, startY = 0, dx = 0, isHoriz = false;
-  const idx = parseInt(wrapper.dataset.index);
-  if (isNaN(idx)) return;
-  wrapper.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    startY = e.touches[0].clientY;
-    dx = 0; isHoriz = false;
-  }, { passive: true });
-  wrapper.addEventListener('touchmove', e => {
-    const cx = e.touches[0].clientX;
-    const cy = e.touches[0].clientY;
-    dx = cx - startX;
-    const dy = Math.abs(cy - startY);
-    if (!isHoriz && dy > 10) return; // вертикальный скролл
-    if (Math.abs(dx) > 10) isHoriz = true;
-    if (isHoriz && dx < 0) {
-      wrapper.style.transform = `translateX(${Math.max(dx, -100)}px)`;
-      wrapper.style.transition = 'none';
-      wrapper.style.opacity = String(Math.max(0.2, 1 + dx/100));
-    }
-  }, { passive: true });
-  wrapper.addEventListener('touchend', () => {
-    if (dx < -70) {
-      wrapper.style.transition = 'transform 0.3s, opacity 0.3s';
-      wrapper.style.transform = 'translateX(-110%)';
-      wrapper.style.opacity = '0';
-      setTimeout(() => this.removeParticipant(idx), 300);
-    } else {
-      wrapper.style.transition = 'transform 0.2s, opacity 0.2s';
-      wrapper.style.transform = '';
-      wrapper.style.opacity = '';
-    }
-  });
-});
-}
 initSortable() {
 if (this.sortable) this.sortable.destroy();
 this.sortable = new Sortable(this.elements.participantsContainer, {
@@ -4750,7 +4712,7 @@ try {
 _copyToClipboard(text, successMsg) {
 if (navigator.clipboard && navigator.clipboard.writeText) {
   navigator.clipboard.writeText(text)
-    .then(() => this.showToast(successMsg))
+    .then(() => { this.haptic(); this.showToast(successMsg); })
     .catch(() => this._copyFallback(text, successMsg));
 } else {
   this._copyFallback(text, successMsg);
@@ -5033,6 +4995,123 @@ this.renderParticipants();
 this.initSortable();
 this.calculate();
 }
+
+// ── Haptic feedback ───────────────────────────────────────────────
+haptic() {
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+// ── Swipe-to-delete для participant-group ─────────────────────────
+initSwipeDelete() {
+  const container = this.elements.participantsContainer;
+  if (!container) return;
+
+  // Снимаем старые обработчики — заменяем container clone
+  const old = container._swipeCleanup;
+  if (old) old();
+
+  let startX = 0, startY = 0, dirLocked = false, isHoriz = false;
+  let activeGroup = null, revealedGroup = null;
+  let didVibrate = false; // вибрируем один раз при достижении порога
+  const THRESHOLD = 65;
+
+  const getInner = (g) => g.querySelectorAll('.participant, .sub-participant');
+
+  const snapBack = (g) => {
+    if (!g) return;
+    getInner(g).forEach(el => {
+      el.style.transition = 'transform 0.2s ease';
+      el.style.transform = '';
+    });
+    if (revealedGroup === g) revealedGroup = null;
+  };
+
+  const onStart = (clientX, clientY, target) => {
+    const g = target.closest('.participant-group');
+    if (revealedGroup && revealedGroup !== g) snapBack(revealedGroup);
+    if (!g) return;
+    activeGroup = g;
+    startX = clientX;
+    startY = clientY;
+    dirLocked = false;
+    isHoriz = false;
+    didVibrate = false;
+    getInner(g).forEach(el => el.style.transition = 'none');
+  };
+
+  const onMove = (clientX, clientY) => {
+    if (!activeGroup) return;
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    if (!dirLocked) {
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      isHoriz = Math.abs(dx) > Math.abs(dy);
+      dirLocked = true;
+    }
+    if (!isHoriz) { activeGroup = null; return; }
+    if (dx > 0) return; // только влево
+    const offset = Math.max(dx, -80);
+    getInner(activeGroup).forEach(el => el.style.transform = `translateX(${offset}px)`);
+    revealedGroup = activeGroup;
+    // Вибрация обрабатывается в onTouchStart через setTimeout
+    if (!didVibrate && Math.abs(dx) >= THRESHOLD) {
+      didVibrate = true; // предотвращаем повторный вызов
+    }
+  };
+
+  const onEnd = (clientX) => {
+    if (!activeGroup) return;
+    const dx = clientX - startX;
+    if (isHoriz && dx < -THRESHOLD) {
+      const idx = parseInt(activeGroup.dataset.index);
+      if (!isNaN(idx)) {
+        const g = activeGroup;
+        getInner(g).forEach(el => {
+          el.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+          el.style.transform = 'translateX(-100%)';
+          el.style.opacity = '0';
+        });
+        revealedGroup = null;
+        setTimeout(() => this.removeParticipant(idx), 220);
+      }
+    } else {
+      snapBack(activeGroup);
+    }
+    activeGroup = null;
+  };
+
+  const onTouchStart = e => {
+    if (navigator.vibrate) navigator.vibrate(0); // прогрев API при каждом касании
+    onStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
+    // Планируем вибрацию — отменяем если не будет горизонтального свайпа
+    didVibrate = false;
+    if (e.target.closest('.participant-group')) {
+      setTimeout(() => {
+        if (isHoriz && activeGroup) {
+          if (navigator.vibrate) navigator.vibrate(10);
+          didVibrate = true;
+        }
+      }, 80);
+    }
+  };
+  const onTouchMove  = e => { if (activeGroup && isHoriz) e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
+  const onTouchEnd   = e => onEnd(e.changedTouches[0].clientX);
+  // Тап вне участников — закрыть открытый
+  const onDocTouch   = e => { if (revealedGroup && !revealedGroup.contains(e.target)) snapBack(revealedGroup); };
+
+  container.addEventListener('touchstart', onTouchStart, { passive: true });
+  container.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  container.addEventListener('touchend',   onTouchEnd,   { passive: true });
+  document.addEventListener('touchstart',  onDocTouch,   { passive: true });
+
+  container._swipeCleanup = () => {
+    container.removeEventListener('touchstart', onTouchStart);
+    container.removeEventListener('touchmove',  onTouchMove);
+    container.removeEventListener('touchend',   onTouchEnd);
+    document.removeEventListener('touchstart',  onDocTouch);
+  };
+}
+
 }
 </script>
 <script>
@@ -5043,6 +5122,89 @@ window.app = new FahrzeitRechner();
 window._appInstance = app;
 app.loadStations();
 app._initShareButtons();
+// Инициализируем swipe сразу при запуске (до первого renderParticipants)
+app.initSwipeDelete();
+
+// ── Разблокировка Vibration API при первом касании ───────────────
+// Android требует user gesture перед первым navigator.vibrate()
+// Свайп (touchmove) не считается — делаем прогрев на touchstart
+document.addEventListener('touchstart', function wakeVibrate() {
+  if (navigator.vibrate) navigator.vibrate(0);
+  document.removeEventListener('touchstart', wakeVibrate);
+}, { passive: true });
+
+// ── Глобальное вибро на кнопки, cp-trigger, чекбоксы ────────────
+// touchstart + короткое касание (не долгое нажатие)
+document.addEventListener('touchstart', (e) => {
+  const t = e.target;
+  if (!t.closest('button') && !t.closest('.cp-trigger') && !t.closest('.theme-toggle')) return;
+  const el = t.closest('button') || t.closest('.cp-trigger') || t.closest('.theme-toggle');
+  el._touchStartTime = Date.now();
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const t = e.target;
+  const el = t.closest('button') || t.closest('.cp-trigger') || t.closest('.theme-toggle');
+  if (!el) return;
+  // Вибро только если касание было коротким (< 400ms) — не долгое нажатие
+  if (el._touchStartTime && Date.now() - el._touchStartTime < 400) {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+  el._touchStartTime = null;
+}, { passive: true });
+// Вибро на чекбоксы
+document.addEventListener('change', (e) => {
+  if (e.target.type === 'checkbox') {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+});
+
+// ── Копирование по двойному тапу на output ─────────────────────
+const outputEl = document.getElementById('output');
+if (outputEl) {
+  // dblclick — для мыши/десктопа
+  outputEl.addEventListener('dblclick', (e) => {
+    if (e.target.closest('a')) return;
+    const clone = outputEl.cloneNode(true);
+    clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
+    const text = clone.textContent.trim();
+    if (!text) return;
+    app._copyToClipboard(text, '📋 Текст скопирован!');
+    outputEl.classList.add('copy-flash-all');
+    setTimeout(() => outputEl.classList.remove('copy-flash-all'), 400);
+  });
+  // double-tap — для мобильных
+  // tapCount: сбрасывается через 400ms после последнего тапа
+  let lastTap = 0;
+  let tapLocked = false;
+  outputEl.addEventListener('touchend', (e) => {
+    if (e.target.closest('a')) return;
+    const now = Date.now();
+    const delta = now - lastTap;
+    if (tapLocked) {
+      // заблокировано — сбрасываем блокировку через паузу
+      lastTap = 0;
+      tapLocked = false;
+      return;
+    }
+    if (delta < 350 && delta > 0) {
+      // Второй тап — выполняем копирование и блокируем дальнейшие
+      e.preventDefault();
+      tapLocked = true;
+      lastTap = 0;
+      const clone = outputEl.cloneNode(true);
+      clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
+      const text = clone.textContent.trim();
+      if (!text) return;
+      app._copyToClipboard(text, '📋 Текст скопирован!');
+      outputEl.classList.add('copy-flash-all');
+      setTimeout(() => outputEl.classList.remove('copy-flash-all'), 400);
+      // Снимаем блокировку через паузу
+      setTimeout(() => { tapLocked = false; }, 600);
+    } else {
+      lastTap = now;
+    }
+  });
+}
 // Автопересчёт при открытии если есть сохранённые данные
 if (app.machineStop && app.machineStop.arrivalTime) {
   app.calculate();
