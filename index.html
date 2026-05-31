@@ -5012,7 +5012,6 @@ initSwipeDelete() {
 
   let startX = 0, startY = 0, dirLocked = false, isHoriz = false;
   let activeGroup = null, revealedGroup = null;
-  let didVibrate = false; // вибрируем один раз при достижении порога
   const THRESHOLD = 65;
 
   const getInner = (g) => g.querySelectorAll('.participant, .sub-participant');
@@ -5035,7 +5034,6 @@ initSwipeDelete() {
     startY = clientY;
     dirLocked = false;
     isHoriz = false;
-    didVibrate = false;
     getInner(g).forEach(el => el.style.transition = 'none');
   };
 
@@ -5053,10 +5051,6 @@ initSwipeDelete() {
     const offset = Math.max(dx, -80);
     getInner(activeGroup).forEach(el => el.style.transform = `translateX(${offset}px)`);
     revealedGroup = activeGroup;
-    // Вибрация обрабатывается в onTouchStart через setTimeout
-    if (!didVibrate && Math.abs(dx) >= THRESHOLD) {
-      didVibrate = true; // предотвращаем повторный вызов
-    }
   };
 
   const onEnd = (clientX) => {
@@ -5081,18 +5075,8 @@ initSwipeDelete() {
   };
 
   const onTouchStart = e => {
-    if (navigator.vibrate) navigator.vibrate(0); // прогрев API при каждом касании
+    if (navigator.vibrate) navigator.vibrate(0);
     onStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
-    // Планируем вибрацию — отменяем если не будет горизонтального свайпа
-    didVibrate = false;
-    if (e.target.closest('.participant-group')) {
-      setTimeout(() => {
-        if (isHoriz && activeGroup) {
-          if (navigator.vibrate) navigator.vibrate(10);
-          didVibrate = true;
-        }
-      }, 80);
-    }
   };
   const onTouchMove  = e => { if (activeGroup && isHoriz) e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
   const onTouchEnd   = e => onEnd(e.changedTouches[0].clientX);
