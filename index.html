@@ -422,10 +422,8 @@ user-select: none;
 .add-type-modal {
 display: none;
 position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
+top: 0; left: 0;
+width: 100%; height: 100%;
 background: rgba(0, 0, 0, 0.5);
 backdrop-filter: blur(4px);
 z-index: 10000;
@@ -434,6 +432,10 @@ z-index: 10000;
 display: flex;
 align-items: center;
 justify-content: center;
+animation: overlayIn 0.2s ease forwards;
+}
+.add-type-modal.closing {
+animation: overlayOut 0.2s ease forwards;
 }
 .add-type-modal-content {
 background: var(--surface);
@@ -442,7 +444,10 @@ padding: 24px;
 max-width: 400px;
 width: 90%;
 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-animation: slideUp 0.3s ease;
+animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.add-type-modal.closing .add-type-modal-content {
+animation: modalOut 0.2s ease forwards;
 }
 .add-type-modal-title {
 font-size: 1.2em;
@@ -537,10 +542,8 @@ color: var(--info-color);
 .sub-modal {
 display: none;
 position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
+top: 0; left: 0;
+width: 100%; height: 100%;
 background: rgba(0,0,0,0.55);
 backdrop-filter: blur(4px);
 z-index: 10000;
@@ -549,6 +552,10 @@ justify-content: center;
 }
 .sub-modal.show {
 display: flex;
+animation: overlayIn 0.25s ease forwards;
+}
+.sub-modal.closing {
+animation: overlayOut 0.25s ease forwards;
 }
 .sub-modal-content {
 background: var(--surface);
@@ -561,6 +568,10 @@ display: flex;
 flex-direction: column;
 overflow: hidden;
 box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
+animation: sheetIn 0.16s ease-out forwards;
+}
+.sub-modal.closing .sub-modal-content {
+animation: sheetOut 0.25s ease forwards;
 }
 .sub-modal-handle {
 width: 40px;
@@ -795,19 +806,20 @@ display: block;
 .god-modal {
 display: none;
 position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
+top: 0; left: 0;
+width: 100%; height: 100%;
 background: rgba(0, 0, 0, 0.5);
 backdrop-filter: blur(4px);
 z-index: 10000;
-animation: fadeIn 0.2s ease;
 }
 .god-modal.show {
 display: flex;
 align-items: center;
 justify-content: center;
+animation: overlayIn 0.2s ease forwards;
+}
+.god-modal.closing {
+animation: overlayOut 0.2s ease forwards;
 }
 .god-modal-content {
 background: var(--surface);
@@ -816,7 +828,10 @@ padding: 24px;
 max-width: 320px;
 width: 90%;
 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-animation: slideUp 0.3s ease;
+animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.god-modal.closing .god-modal-content {
+animation: modalOut 0.2s ease forwards;
 }
 .god-modal-title {
 font-size: 1.2em;
@@ -890,15 +905,41 @@ margin-left: 8px;
 from { opacity: 0; }
 to { opacity: 1; }
 }
+@keyframes fadeOut {
+from { opacity: 1; }
+to { opacity: 0; }
+}
 @keyframes slideUp {
-from {
-opacity: 0;
-transform: translateY(20px);
+from { opacity: 0; transform: translateY(20px); }
+to   { opacity: 1; transform: translateY(0); }
 }
-to {
-opacity: 1;
-transform: translateY(0);
+/* Bottom sheet — быстро выезжает снизу без bounce */
+@keyframes sheetIn {
+from { transform: translateY(60%); opacity: 0; }
+to   { transform: translateY(0);   opacity: 1; }
 }
+@keyframes sheetOut {
+0%   { transform: translateY(0); }
+100% { transform: translateY(110%); }
+}
+/* Центральная модалка — появляется с лёгким scale + fade */
+@keyframes modalIn {
+0%   { opacity: 0; transform: scale(0.93) translateY(12px); }
+70%  { opacity: 1; transform: scale(1.02) translateY(-2px); }
+100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes modalOut {
+0%   { opacity: 1; transform: scale(1); }
+100% { opacity: 0; transform: scale(0.93) translateY(10px); }
+}
+/* Оверлей — плавный fade */
+@keyframes overlayIn {
+from { opacity: 0; }
+to   { opacity: 1; }
+}
+@keyframes overlayOut {
+from { opacity: 1; }
+to   { opacity: 0; }
 }
 @keyframes shake {
 0%, 100% { transform: translateX(0); }
@@ -932,14 +973,18 @@ grid-column: span 2
 .modal {
 display: none;
 position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-height: 100%;
+top: 0; left: 0;
+width: 100%; height: 100%;
 background: rgba(0, 0, 0, .5);
 z-index: 1000;
 justify-content: center;
-align-items: center
+align-items: center;
+}
+.modal.active {
+animation: overlayIn 0.2s ease forwards;
+}
+.modal.closing {
+animation: overlayOut 0.2s ease forwards;
 }
 .modal-content {
 background: var(--surface);
@@ -950,7 +995,10 @@ max-width: 300px;
 width: 100%;
 text-align: center;
 border: 1px solid var(--border);
-transition: transform .2s ease
+animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.modal.closing .modal-content {
+animation: modalOut 0.2s ease forwards;
 }
 .modal-content.add-new-name {
 background: linear-gradient(135deg, #f0f8ff 0%, #e6f0fa 100%);
@@ -1238,6 +1286,8 @@ padding:4px;
 cursor:pointer;
 }
 
+/* ── Tap-анимация для кнопок добавления — через JS ───────────── */
+
 /* ── Custom Picker (replaces native <select>) ───────────────────── */
 .cp-trigger {
   display: flex;
@@ -1270,7 +1320,13 @@ cursor:pointer;
   align-items: flex-end;
   justify-content: center;
 }
-.cp-overlay.open { display: flex; }
+.cp-overlay.open {
+  display: flex;
+  animation: overlayIn 0.25s ease forwards;
+}
+.cp-overlay.closing {
+  animation: overlayOut 0.25s ease forwards;
+}
 .cp-sheet {
   width: 100%;
   max-width: 480px;
@@ -1282,6 +1338,10 @@ cursor:pointer;
   box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
   background: var(--surface);
   color: var(--text);
+  animation: sheetIn 0.16s ease-out forwards;
+}
+.cp-overlay.closing .cp-sheet {
+  animation: sheetOut 0.25s ease forwards;
 }
 body.dark .cp-sheet {
   background: #1e1e1e !important;
@@ -1355,6 +1415,7 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
   flex-direction: column;
   overflow: hidden;
   box-shadow: 0 -12px 48px rgba(0,0,0,0.4);
+  animation: sheetIn 0.16s ease-out forwards;
 }
 .bs-handle {
   width: 40px;
@@ -2359,6 +2420,14 @@ document.getElementById('startPoint').addEventListener('click', () => {
 this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
 const addStartPassengerBtn = document.getElementById('addStartPassengerBtn');
 if (addStartPassengerBtn) {
+  addStartPassengerBtn.addEventListener('touchstart', () => {
+    addStartPassengerBtn.style.transition = 'transform 0.1s';
+    addStartPassengerBtn.style.transform = 'translate(5px, -5px) scale(0.82)';
+  }, { passive: true });
+  addStartPassengerBtn.addEventListener('touchend', () => {
+    addStartPassengerBtn.style.transform = 'translate(5px, -5px) scale(1)';
+    setTimeout(() => { addStartPassengerBtn.style.transition = ''; }, 250);
+  }, { passive: true });
   addStartPassengerBtn.addEventListener('click', () => this.openStartPassengerModal());
 }
 this.elements.addButton.addEventListener('click', () => { this.addParticipant(); });
@@ -2392,7 +2461,8 @@ const addTypeModal = document.getElementById('addTypeModal');
 const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
 const addTypeConfirmBtn = document.getElementById('addTypeConfirmBtn');
 const closeAddTypeModal = () => {
-addTypeModal.classList.remove('show');
+addTypeModal.classList.add('closing');
+setTimeout(() => { addTypeModal.classList.remove('show', 'closing'); }, 220);
 const row = document.getElementById('newKollegeRow');
 const inp = document.getElementById('newKollegeName');
 if (row) row.classList.remove('visible');
@@ -2417,7 +2487,8 @@ const subModal = document.getElementById('subModal');
 const subCancelBtn = document.getElementById('subCancelBtn');
 const subAddBtn = null;
 const closeSubModal = () => {
-subModal.classList.remove('show');
+subModal.classList.add('closing');
+setTimeout(() => { subModal.classList.remove('show', 'closing'); }, 220);
 const row = document.getElementById('newSubNameRow');
 const inp = document.getElementById('newSubName');
 if (row) row.classList.remove('visible');
@@ -3045,7 +3116,7 @@ coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machi
 const participant = this.participants[index];
 coordsInput.value = participant.lat && participant.lng ? `${parseFloat(participant.lat.toFixed(6))},${parseFloat(participant.lng.toFixed(6))}` : '';
 }
-modal.style.display = 'flex';
+modal.style.display = 'flex'; modal.classList.add('active');
 // Авто-подсказка: если вставлена сокращённая ссылка — показываем hint
 // При нажатии ✅ parseCoordinates обработает её автоматически
 {
@@ -3086,7 +3157,7 @@ this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = isAddingNewGreeting ? '' : this.greeting;
 this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
 this.elements.greetingBtnsRow.style.display = 'flex';
-modal.style.display = 'flex';
+modal.style.display = 'flex'; modal.classList.add('active');
 this.elements.greetingInput.focus();
 }
 openFarewellModal(isAdding = false) {
@@ -3108,7 +3179,7 @@ this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = isAdding ? '' : this.farewell;
 this.elements.deleteGreetingButton.style.display = (!isAdding && this.farewells.length > 1) ? 'inline-block' : 'none';
 this.elements.greetingBtnsRow.style.display = 'flex';
-modal.style.display = 'flex';
+modal.style.display = 'flex'; modal.classList.add('active');
 this.elements.greetingInput.focus();
 }
 async saveCoordinates() {
@@ -3295,7 +3366,10 @@ if (this.isEditingFarewell) {
 }
 }
 closeModal() {
-this.elements.coordsModal.style.display = 'none';
+const cm = this.elements.coordsModal;
+cm.classList.remove('active');
+cm.classList.add('closing');
+setTimeout(() => { cm.style.display = 'none'; cm.classList.remove('closing'); }, 220);
 this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = this.isAddingNewDestination = this.isAddingNewKollege = this.isAddingNewSubPerson = this.isAddingNewTreffpunkt = this.isEditingFarewell = this.isAddingNewFarewell = false;
 this.isAddingNewKollege = false;
 this.isAddingNewSubPerson = false;
@@ -3321,7 +3395,7 @@ async openMapPicker() {
   const coordsSpan = document.getElementById('mapPickerCoords');
   const confirmBtn = document.getElementById('mapPickerConfirm');
 
-  modal.style.display = 'flex';
+  modal.style.display = 'flex'; modal.classList.add('active');
   modal.style.cssText += 'display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);';
 
   let pickedLat = null, pickedLng = null;
@@ -3878,7 +3952,11 @@ showPicker(title, items, onSelect, currentValue) {
   const overlay = document.createElement('div');
   overlay.id = 'cpOverlay';
   overlay.className = 'cp-overlay open';
-  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  const closeOverlay = () => {
+    overlay.classList.add('closing');
+    setTimeout(() => overlay.remove(), 240);
+  };
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeOverlay(); });
 
   const sheet = document.createElement('div');
   sheet.className = 'cp-sheet';
@@ -3903,8 +3981,8 @@ showPicker(title, items, onSelect, currentValue) {
     btn.className = 'cp-item' + (isAddNew ? ' add-new' : '') + (isSelected ? ' selected' : '');
     btn.innerHTML = `<span>${label}</span>${isSelected ? '<span class="cp-check">✓</span>' : ''}`;
     btn.addEventListener('click', () => {
-      overlay.remove();
-      onSelect(val);
+      overlay.classList.add('closing');
+      setTimeout(() => { overlay.remove(); onSelect(val); }, 180);
     });
     list.appendChild(btn);
   });
@@ -3914,7 +3992,7 @@ showPicker(title, items, onSelect, currentValue) {
   const cancelBtn = document.createElement('button');
   cancelBtn.className = 'cp-cancel';
   cancelBtn.textContent = 'Abbrechen';
-  cancelBtn.addEventListener('click', () => overlay.remove());
+  cancelBtn.addEventListener('click', () => closeOverlay());
   footer.appendChild(cancelBtn);
 
   sheet.appendChild(handle);
@@ -3947,11 +4025,12 @@ bsOpen(config) {
 
   _ov = document.createElement('div');
   _ov.id = 'bsOverlay';
-  _ov.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;box-sizing:border-box;`;
+  _ov.style.cssText = `position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding-bottom:24px;box-sizing:border-box;animation:overlayIn 0.25s ease forwards;`;
   _ov.addEventListener('click', e => { if (e.target === _ov) this.bsClose(); });
 
   const sheet = document.createElement('div');
-  sheet.style.cssText = `background:${surf};color:${txt};width:90%;max-width:440px;height:72vh;border-radius:22px 22px 22px 22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,0.5);margin-bottom:20px;`;
+  sheet.className = 'bs-sheet';
+  sheet.style.cssText = `background:${surf};color:${txt};width:90%;max-width:440px;height:72vh;border-radius:22px 22px 22px 22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 8px 48px rgba(0,0,0,0.5);margin-bottom:20px;animation:sheetIn 0.16s ease-out forwards;`;
 
   // Ручка
   const handle = document.createElement('div');
@@ -4072,7 +4151,12 @@ bsRenderList() {
 
 
 bsClose() {
-  const ov = document.getElementById('bsOverlay'); if(ov) ov.remove();
+  const ov = document.getElementById('bsOverlay');
+  if (!ov) return;
+  ov.style.animation = 'overlayOut 0.22s ease forwards';
+  const sheet = ov.querySelector('.bs-sheet');
+  if (sheet) sheet.style.animation = 'sheetOut 0.22s ease forwards';
+  setTimeout(() => ov.remove(), 220);
 }
 
 updateHints() {
@@ -4182,6 +4266,7 @@ overlay.style.cssText = `
   position:fixed;inset:0;z-index:9999;
   background:rgba(0,0,0,.5);
   display:flex;align-items:center;justify-content:center;
+  animation:overlayIn 0.2s ease forwards;
 `;
 
 // Определяем цвета в зависимости от темы
@@ -4195,7 +4280,7 @@ const accent  = getComputedStyle(document.documentElement).getPropertyValue('--p
 overlay.innerHTML = `
   <div style="background:${bg};border-radius:20px;padding:24px;
     box-shadow:0 8px 40px rgba(0,0,0,.5);width:280px;text-align:center;
-    font-family:inherit;">
+    font-family:inherit;animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards;">
     <div style="font-size:.8em;font-weight:700;color:${isDark?'#aaa':'#888'};letter-spacing:.08em;
       margin-bottom:16px;text-transform:uppercase;">Ankunftszeit</div>
 
@@ -4371,7 +4456,9 @@ makeDrum(overlay.querySelector('#tpMDrum'), 60, curM, v => { m = v; });
 
 overlay.querySelector('#tpSave').onclick = () => {
   this.machineStop.arrivalTime = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
-  overlay.remove();
+  overlay.style.animation = 'overlayOut 0.2s ease forwards';
+  overlay.querySelector('div').style.animation = 'modalOut 0.18s ease forwards';
+  setTimeout(() => overlay.remove(), 200);
   this.saveData();
   this.renderParticipants();
   this.initSortable();
@@ -4379,7 +4466,9 @@ overlay.querySelector('#tpSave').onclick = () => {
 };
 overlay.querySelector('#tpClear').onclick = () => {
   this.machineStop.arrivalTime = '';
-  overlay.remove();
+  overlay.style.animation = 'overlayOut 0.2s ease forwards';
+  overlay.querySelector('div').style.animation = 'modalOut 0.18s ease forwards';
+  setTimeout(() => overlay.remove(), 200);
   this.saveData();
   this.elements.output.innerHTML = '';
   this.renderParticipants();
@@ -5108,6 +5197,26 @@ app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
 app.initSwipeDelete();
+
+// ── Tap-анимация для кнопок добавления ───────────────────────────
+// Через делегирование — работает и для динамически созданных кнопок
+document.addEventListener('touchstart', (e) => {
+  const btn = e.target.closest('.add, .add-sub-btn');
+  if (!btn) return;
+  const isSubBtn = btn.classList.contains('add-sub-btn');
+  const baseTransform = isSubBtn ? 'translateY(-5px)' : '';
+  btn.style.transition = 'transform 0.08s ease';
+  btn.style.transform = baseTransform + ' scale(0.82)';
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  const btn = e.target.closest('.add, .add-sub-btn');
+  if (!btn) return;
+  const isSubBtn = btn.classList.contains('add-sub-btn');
+  const baseTransform = isSubBtn ? 'translateY(-5px)' : '';
+  btn.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
+  btn.style.transform = baseTransform + ' scale(1)';
+  setTimeout(() => { btn.style.transition = ''; btn.style.transform = ''; }, 300);
+}, { passive: true });
 
 // ── Разблокировка Vibration API при первом касании ───────────────
 // Android требует user gesture перед первым navigator.vibrate()
