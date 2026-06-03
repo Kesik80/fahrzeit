@@ -1187,23 +1187,15 @@ body {
 <div id="ghModal" class="modal-overlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">🐙 Загрузить на GitHub</div>
+    <div class="modal-title">⬆️ Загрузить stations.js</div>
 
-    <div class="field-label">GitHub Token (classic)</div>
-    <input id="ghTokenInp" class="modal-input" type="password" placeholder="ghp_xxxxxxxx…" autocomplete="off">
+    <div class="field-label">Пароль</div>
+    <input id="ghPasswordInp" class="modal-input" type="password" placeholder="Введите пароль…" autocomplete="current-password">
     <div class="token-hint" id="tokenHint"></div>
 
-    <div class="gh-section-title" style="margin-top:16px">Загрузить stations.js</div>
-    <button class="mbtn mbtn-confirm" id="ghSendStationsBtn" style="width:100%;height:46px;">⬆️ Отправить stations.js</button>
-
-    <hr class="gh-divider">
-
-    <div class="gh-section-title">Другой файл</div>
-    <input id="ghAnyFile" type="file" style="width:100%;margin-bottom:8px;color:var(--text2);font-size:.8rem;">
-    <input id="ghAnyName" class="modal-input" type="text" placeholder="Имя файла на GitHub (data.json)">
-    <div class="modal-btns">
+    <div class="modal-btns" style="margin-top:20px">
       <button class="mbtn mbtn-cancel" id="ghCancelBtn">Отмена</button>
-      <button class="mbtn mbtn-confirm" id="ghSendAnyBtn">📤 Отправить</button>
+      <button class="mbtn mbtn-confirm" id="ghSendStationsBtn">⬆️ Отправить</button>
     </div>
   </div>
 </div>
@@ -1434,13 +1426,12 @@ async function loadFromGitHub() {
   setStatus('loading', 'Загрузка stations.js с GitHub…', '⏳');
   try {
     let resp = null;
-    // Сначала пробуем GitHub API (актуально, без CDN кэша)
+    // Сначала пробуем GitHub API (без кэша CDN)
     try {
       const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
       const headers = { 'Accept': 'application/vnd.github.raw+json', 'X-GitHub-Api-Version': '2022-11-28' };
-      if (localStorage.ghToken) headers['Authorization'] = 'token ' + localStorage.ghToken;
       resp = await fetch(apiUrl, { cache: 'no-store', headers });
-      if (!resp.ok) resp = null; // fallback если не 200
+      if (!resp.ok) resp = null;
     } catch(e) { resp = null; }
     // Fallback на raw URL
     if (!resp) {
@@ -2695,53 +2686,47 @@ ${defaultMachineDestinations.map(d => `  { name: '${d.name}', lat: ${d.lat}, lng
 //  GITHUB
 // ═══════════════════════════════════════
 document.getElementById('ghUploadBtn').onclick = () => {
-  const saved = localStorage.ghToken;
-  document.getElementById('ghTokenInp').value = saved || '';
-  document.getElementById('tokenHint').textContent = saved ? '🔑 Токен сохранён' : '';
+  // Восстанавливаем пароль из sessionStorage (до закрытия вкладки)
+  const saved = sessionStorage.uploadPassword;
+  document.getElementById('ghPasswordInp').value = saved || '';
+  document.getElementById('tokenHint').textContent = saved
+    ? '🔑 Пароль сохранён в сессии'
+    : '⚠️ Пароль хранится только до закрытия вкладки';
   openModal('ghModal');
-  if (!saved) document.getElementById('ghTokenInp').focus();
 };
+
 document.getElementById('ghCancelBtn').onclick = () => closeModal('ghModal');
 
 document.getElementById('ghSendStationsBtn').onclick = async () => {
-  const token = document.getElementById('ghTokenInp').value.trim();
-  if (!token) { showMsg('Введите токен'); return; }
-  await uploadToGitHub(token, GH_FILE, buildExportText());
-};
-document.getElementById('ghSendAnyBtn').onclick = async () => {
-  const token = document.getElementById('ghTokenInp').value.trim();
-  if (!token) { showMsg('Введите токен'); return; }
-  const fi = document.getElementById('ghAnyFile');
-  const ni = document.getElementById('ghAnyName');
-  if (!fi.files.length) { showMsg('Выберите файл'); return; }
-  const file = fi.files[0];
-  const path = ni.value.trim() || file.name;
-  await uploadToGitHub(token, path, await file.text());
+  const password = document.getElementById('ghPasswordInp').value.trim();
+  if (!password) { showMsg('Введите пароль'); return; }
+  sessionStorage.uploadPassword = password;
+  document.getElementById('tokenHint').textContent = '🔑 Пароль сохранён в сессии';
+  await uploadStationsViaServer(password);
 };
 
-async function uploadToGitHub(token, path, text) {
-  localStorage.ghToken = token;
+async function uploadStationsViaServer(password) {
   showMsg('Загрузка на GitHub…', 5000);
-  const base64 = btoa(unescape(encodeURIComponent(text)));
-  let sha;
   try {
-    const h = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
-      headers: { Authorization: `token ${token}` }
+    const resp = await fetch('/api/stations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password, content: buildExportText() }),
     });
-    if (h.ok) sha = (await h.json()).sha;
-  } catch {}
-  const resp = await fetch(`https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`, {
-    method: 'PUT',
-    headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message: `web-update ${path}`, content: base64, sha })
-  });
-  closeModal('ghModal');
-  if (resp.ok) {
-    setStatus('ok', `✅ ${path} загружен на GitHub`, '✅');
-    showMsg(`${path} загружен ✅`, 2500);
-  } else {
-    const err = await resp.json();
-    showMsg('Ошибка: ' + err.message, 4000);
+    const data = await resp.json();
+    closeModal('ghModal');
+    if (resp.ok && data.ok) {
+      setStatus('ok', '✅ stations.js загружен на GitHub', '✅');
+      showMsg('stations.js загружен ✅', 2500);
+      markClean();
+    } else if (resp.status === 401) {
+      showMsg('❌ Неверный пароль', 3500);
+    } else {
+      showMsg('❌ Ошибка: ' + (data.error || resp.status), 4000);
+    }
+  } catch (e) {
+    closeModal('ghModal');
+    showMsg('❌ Сервер недоступен: ' + e.message, 4000);
   }
 }
 
