@@ -1,15 +1,5 @@
 <!--
-+ 30.09.2025 13:00: при hinzugefügtии нового   участника поле «Координаты» теперь НЕ обязательно;
-+ 30.09.2025 14:00: добавил René, OLGA-Park;
-+ 06.10.2025 22:00 выпадающий список точек станций
-+ 07.10.2025 23:00 переход по паролю на страницу настройки
-+ 08.10.2025 22:30 hinzugefügtа консоль
-+ 09.10.25 7:00 в github hinzugefügt // /api/expand.js для обработок сокращенных ссылок google
-+ 09.10.25 16:00 исправлена проблема старт в Google Maps
-+ 04.02.2026: ИСПРАВЛЕНО — маршрут "туда" и "обратно" с реальным местоположением и кнопкой "В путь"
-+ 04.02.2026: УДАЛЕНЫ кнопки open-map-direct и open-map-return
-+ 13.02.2026: ДОБАВЛЕНО — кнопка "+" открывает модальное окно с выбором "Treffpunkt" или "Kollege";
-              формат вывода: "12:00 René (Olga-Park)" или "12:00 René, Vasyl und Alex (Olga-Park)"
+1.06.26
 -->
 <!DOCTYPE html>
 <html lang="de">
@@ -802,8 +792,8 @@ box-shadow: 0 4px 24px rgba(0,0,0,.2);
 .toast.show {
 display: block;
 }
-/* Модальное окно для пароля God Mode */
-.god-modal {
+/* Модальное окно авторизации Redaktor */
+.redaktor-modal {
 display: none;
 position: fixed;
 top: 0; left: 0;
@@ -812,16 +802,16 @@ background: rgba(0, 0, 0, 0.5);
 backdrop-filter: blur(4px);
 z-index: 10000;
 }
-.god-modal.show {
+.redaktor-modal.show {
 display: flex;
 align-items: center;
 justify-content: center;
 animation: overlayIn 0.2s ease forwards;
 }
-.god-modal.closing {
+.redaktor-modal.closing {
 animation: overlayOut 0.2s ease forwards;
 }
-.god-modal-content {
+.redaktor-modal-content {
 background: var(--surface);
 border-radius: 12px;
 padding: 24px;
@@ -830,17 +820,17 @@ width: 90%;
 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
-.god-modal.closing .god-modal-content {
+.redaktor-modal.closing .redaktor-modal-content {
 animation: modalOut 0.2s ease forwards;
 }
-.god-modal-title {
+.redaktor-modal-title {
 font-size: 1.2em;
 font-weight: 600;
 margin-bottom: 16px;
 color: var(--text);
 text-align: center;
 }
-.god-modal-input {
+.redaktor-modal-input {
 width: 100%;
 padding: 12px;
 border: 2px solid var(--border);
@@ -855,19 +845,19 @@ text-align: center;
 letter-spacing: 2px;
 font-family: monospace;
 }
-.god-modal-input:focus {
+.redaktor-modal-input:focus {
 outline: none;
 border-color: var(--primary-color);
 }
-.god-modal-input.error {
+.redaktor-modal-input.error {
 border-color: var(--danger-color);
 animation: shake 0.4s;
 }
-.god-modal-buttons {
+.redaktor-modal-buttons {
 display: flex;
 gap: 8px;
 }
-.god-modal-btn {
+.redaktor-modal-btn {
 flex: 1;
 padding: 12px;
 border: none;
@@ -876,22 +866,22 @@ font-size: 0.95em;
 cursor: pointer;
 transition: all 0.2s;
 }
-.god-modal-btn.primary {
+.redaktor-modal-btn.primary {
 background: var(--primary-color);
 color: white;
 }
-.god-modal-btn.primary:hover {
+.redaktor-modal-btn.primary:hover {
 background: #0056b3;
 transform: translateY(-1px);
 }
-.god-modal-btn.secondary {
+.redaktor-modal-btn.secondary {
 background: var(--border);
 color: var(--text);
 }
-.god-modal-btn.secondary:hover {
+.redaktor-modal-btn.secondary:hover {
 background: #bbb;
 }
-.god-loader {
+.redaktor-loader {
 display: inline-block;
 width: 14px;
 height: 14px;
@@ -1276,7 +1266,7 @@ width: 18px;
 height: 18px;
 fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
 }
-.god-mode{
+.redaktor-link{
 position:fixed;
 inset:0 auto auto 0;
 margin:4px;
@@ -1543,8 +1533,8 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
 <input type="checkbox" id="themeSwitch">
 <span>🌙</span>
 </label>
-<!-- ⛳ РЕЖИМ БОГА -->
-<a id="godL" href="redaktor.html"
+<!-- ✏️ Redaktor -->
+<a id="redaktorL" href="redaktor.html"
 style="position:fixed; inset:1px auto auto 3px; margin:4px; z-index:9999; background:none; padding:4px; cursor:pointer;color:var(--text);"
 title="Bearbeitungsmodus">
 <svg width="32" height="32" viewBox="0 0 374 383" xmlns="http://www.w3.org/2000/svg">
@@ -1893,20 +1883,20 @@ c168 0 866 -22 1147 -35 171 -8 319 -15 331 -15 19 0 22 -7 27 -81 8 -95 34
 
 <!-- Universal Bottom Sheet — создаётся динамически через bsOpen() -->
 
-<!-- God Mode Password Modal -->
-<div id="godModal" class="god-modal">
-<div class="god-modal-content">
-<div class="god-modal-title">🔐 Bearbeitungsmodus</div>
+<!-- Redaktor Password Modal -->
+<div id="redaktorModal" class="redaktor-modal">
+<div class="redaktor-modal-content">
+<div class="redaktor-modal-title">🔐 Bearbeitungsmodus</div>
 <input 
 type="password" 
-id="godPasswordInput" 
-class="god-modal-input" 
+id="redaktorPasswordInput" 
+class="redaktor-modal-input" 
 placeholder="Passwort eingeben"
 autocomplete="off"
 />
-<div class="god-modal-buttons">
-<button class="god-modal-btn secondary" id="godCancelBtn">Abbrechen</button>
-<button class="god-modal-btn primary" id="godSubmitBtn">Anmelden</button>
+<div class="redaktor-modal-buttons">
+<button class="redaktor-modal-btn secondary" id="redaktorCancelBtn">Abbrechen</button>
+<button class="redaktor-modal-btn primary" id="redaktorSubmitBtn">Anmelden</button>
 </div>
 </div>
 </div>
@@ -4068,7 +4058,7 @@ bsOpen(config) {
   const label = document.createElement('div');
   label.id = 'bsListLabel';
   label.style.cssText = `font-size:0.68em;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.35;padding:10px 20px 4px;flex-shrink:0;`;
-  label.textContent = this._bsActiveTab === 'treff' ? 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ' : 'ВЫБЕРИТЕ УЧАСТНИКА';
+  label.textContent = this._bsActiveTab === 'treff' ? 'TREFFPUNKT WÄHLEN' : 'TEILNEHMER WÄHLEN';
 
   // Список
   const list = document.createElement('div');
@@ -4125,7 +4115,7 @@ bsRenderList() {
   const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
 
   const isKollege = this._bsActiveTab === 'kollege';
-  if (label) label.textContent = isKollege ? 'ВЫБЕРИТЕ УЧАСТНИКА' : 'ВЫБЕРИТЕ МЕСТО ВСТРЕЧИ';
+  if (label) label.textContent = isKollege ? 'TEILNEHMER WÄHLEN' : 'TREFFPUNKT WÄHLEN';
   const items = isKollege ? (cfg.items || []) : (cfg.treffItems || []);
 
   items.forEach((name, i) => {
@@ -4613,7 +4603,7 @@ this.updateHints();
 }
 async checkTrafficForSchedule() {
 if (!this.machineStop.arrivalTime) {
-  this.showToast('⚠ Сначала задайте время прибытия');
+  this.showToast('⚠ Bitte zuerst die Ankunftszeit festlegen');
   return;
 }
 // Вычисляем время отъезда
@@ -5413,118 +5403,92 @@ switcher.parentElement.addEventListener('touchmove', () => {
 });
 });
 </script>
-<!-- подключаем bcrypt -->
-<script src="
-https://cdn.jsdelivr.net/npm/bcryptjs@3.0.2/umd/index.min.js
-"></script>
 <script>
-// хэш пароля '266214' (10 раундов)
-const GOD_HASH = '$2a$12$O3Syhnm4rRn55bdKSmkZ5e9ptITFc23gshbj2NugI2N/khhcZlwOm';
+// Авторизация Redaktor — пароль проверяется на сервере (Vercel)
 document.addEventListener('DOMContentLoaded', () => {
-const link = document.getElementById('godL');
-const modal = document.getElementById('godModal');
-const input = document.getElementById('godPasswordInput');
-const submitBtn = document.getElementById('godSubmitBtn');
-const cancelBtn = document.getElementById('godCancelBtn');
+const link = document.getElementById('redaktorL');
+const modal = document.getElementById('redaktorModal');
+const input = document.getElementById('redaktorPasswordInput');
+const submitBtn = document.getElementById('redaktorSubmitBtn');
+const cancelBtn = document.getElementById('redaktorCancelBtn');
 
-if (!link) { console.error('godL не найден'); return; }
+if (!link) return;
 
 // Если уже авторизован в этой сессии — сразу переходим без модалки
 link.addEventListener('click', (e) => {
-e.preventDefault();
-if (sessionStorage.getItem('godAuth') === '1') {
-  window.location.href = link.href;
-  return;
-}
-modal.classList.add('show');
-input.value = '';
-input.classList.remove('error');
-submitBtn.innerHTML = 'Anmelden';
-submitBtn.disabled = false;
+  e.preventDefault();
+  if (sessionStorage.getItem('redaktorAuth') === '1') {
+    window.location.href = link.href;
+    return;
+  }
+  modal.classList.add('show');
+  input.value = '';
+  input.classList.remove('error');
+  submitBtn.innerHTML = 'Anmelden';
+  submitBtn.disabled = false;
+  setTimeout(() => input.focus(), 150);
 });
 
-// При возврате назад (bfcache) — закрываем модалку если вдруг открыта
+// При возврате назад (bfcache) — закрываем модалку
 window.addEventListener('pageshow', () => {
   modal.classList.remove('show');
 });
 
 // Закрытие модального окна
 const closeModal = () => {
-modal.classList.remove('show');
-input.value = '';
-input.classList.remove('error');
+  modal.classList.remove('show');
+  input.value = '';
+  input.classList.remove('error');
 };
 
-// Abbrechen
 cancelBtn.addEventListener('click', closeModal);
 
-// Закрытие при клике вне модального окна
 modal.addEventListener('click', (e) => {
-if (e.target === modal) closeModal();
+  if (e.target === modal) closeModal();
 });
 
-// Закрытие по Escape
 document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && modal.classList.contains('show')) {
-closeModal();
-}
+  if (e.key === 'Escape' && modal.classList.contains('show')) closeModal();
 });
 
-// Проверка пароля
+// Проверка пароля через Vercel API
 const checkPassword = async () => {
-const pwd = input.value.trim();
-if (!pwd) {
-input.classList.add('error');
-return;
-}
+  const pwd = input.value.trim();
+  if (!pwd) { input.classList.add('error'); return; }
 
-// Показываем loader
-submitBtn.innerHTML = 'Prüfen…<span class="god-loader"></span>';
-submitBtn.disabled = true;
+  submitBtn.innerHTML = 'Prüfen…<span class="redaktor-loader"></span>';
+  submitBtn.disabled = true;
 
-try {
-const ok = await bcrypt.compare(pwd, GOD_HASH);
-if (ok) {
-submitBtn.innerHTML = '✅ Erfolgreich!';
-sessionStorage.setItem('godAuth', '1');
-setTimeout(() => {
-window.location.href = link.href;
-}, 500);
-} else {
-submitBtn.innerHTML = 'Anmelden';
-submitBtn.disabled = false;
-input.classList.add('error');
-input.value = '';
-input.focus();
-// Небольшая вибрация на мобильных
-if (navigator.vibrate) navigator.vibrate(200);
-}
-} catch (error) {
-console.error('Ошибка проверки пароля:', error);
-submitBtn.innerHTML = 'Anmelden';
-submitBtn.disabled = false;
-}
+  try {
+    const resp = await fetch('/api/check-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pwd })
+    });
+    const data = await resp.json();
+    if (data.ok) {
+      submitBtn.innerHTML = '✅ Erfolgreich!';
+      sessionStorage.setItem('redaktorAuth', '1');
+      setTimeout(() => { window.location.href = link.href; }, 500);
+    } else {
+      submitBtn.innerHTML = 'Anmelden';
+      submitBtn.disabled = false;
+      input.classList.add('error');
+      input.value = '';
+      input.focus();
+      if (navigator.vibrate) navigator.vibrate(200);
+    }
+  } catch (err) {
+    submitBtn.innerHTML = 'Anmelden';
+    submitBtn.disabled = false;
+  }
 };
 
-// Кнопка "Anmelden"
 submitBtn.addEventListener('click', checkPassword);
-
-// Enter для отправки
-input.addEventListener('keypress', (e) => {
-if (e.key === 'Enter') {
-checkPassword();
-}
-});
-
-// Убираем ошибку при вводе
-input.addEventListener('input', () => {
-input.classList.remove('error');
-});
+input.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+input.addEventListener('input', () => { input.classList.remove('error'); });
 });
 </script>
 <script src="console.js"></script>
-<script>
-  console.log('test');
-</script>
 </body>
 </html>
