@@ -2145,7 +2145,7 @@ function showDestModal(onConfirm) {
   btns.appendChild(cancel); btns.appendChild(ok);
   box.appendChild(h); box.appendChild(nameInp); box.appendChild(coordInp); box.appendChild(hint); box.appendChild(btns);
   ov.appendChild(box); document.body.appendChild(ov);
-  setTimeout(() => nameInp.focus(), 50);
+
 }
 
 function showInputModal({ title, placeholder = '', onConfirm }) {
@@ -2181,7 +2181,7 @@ function showInputModal({ title, placeholder = '', onConfirm }) {
   btns.appendChild(cancel); btns.appendChild(ok);
   box.appendChild(h); box.appendChild(inp); box.appendChild(btns);
   ov.appendChild(box); document.body.appendChild(ov);
-  setTimeout(() => inp.focus(), 50);
+
 }
 
 // ═══════════════════════════════════════
@@ -2435,7 +2435,7 @@ document.getElementById('addBtn').onclick = () => {
   if ([...modalSel.options].some(o => o.value === currentGroup)) modalSel.value = currentGroup;
   updateAddPlaceholders();
   openModal('addModal');
-  setTimeout(() => document.getElementById('newName').focus(), 100);
+
 };
 
 document.getElementById('modalGroupSel').addEventListener('change', updateAddPlaceholders);
