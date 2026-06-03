@@ -1,5 +1,5 @@
 <!--
-1.06.26
+3.06.26 удален мертвый код
 -->
 <!DOCTYPE html>
 <html lang="de">
@@ -3613,55 +3613,6 @@ this.bsOpen({
 });
 }
 
-addSubParticipant() {
-// Если mainIndex === -1, добавляем как попутчика начальной точки
-const mainIndex = this.currentMainParticipantIndex;
-if (mainIndex === -1) {
-this.addStartPassenger();
-return;
-}
-// Если текущий участник — Treffpunkt, добавляем как treffpunktPerson
-if (mainIndex !== null && this.participants[mainIndex] && this.participants[mainIndex].isTreffpunkt) {
-this.addTreffpunktPerson();
-return;
-}
-const select = document.getElementById('subParticipantSelect');
-const newSubNameInput = document.getElementById('newSubName');
-let selectedName = select.value;
-
-if (!selectedName) {
-this.showToast('⚠️ Person auswählen');
-return;
-}
-
-// Новое имя введено вручную
-if (selectedName === 'add-new') {
-const newName = newSubNameInput.value.trim();
-if (!newName) {
-this.showToast('⚠️ Bitte einen Namen eingeben');
-newSubNameInput.focus();
-return;
-}
-if (this.nameToCoordinates[newName]) {
-this.showToast(`⚠️ "${newName}" existiert bereits`);
-newSubNameInput.focus();
-return;
-}
-this.nameToCoordinates[newName] = { lat: null, lng: null };
-selectedName = newName;
-}
-
-if (!this.participants[mainIndex].subParticipants) {
-this.participants[mainIndex].subParticipants = [];
-}
-this.participants[mainIndex].subParticipants.push(selectedName);
-document.getElementById('subModal').classList.remove('show');
-this.saveData();
-this.renderParticipants();
-this.initSortable();
-this.calculate();
-this.showToast(`✅ ${selectedName} hinzugefügt`);
-}
 removeSubParticipant(mainIndex, subIndex) {
 const removedName = this.participants[mainIndex].subParticipants[subIndex];
 this.participants[mainIndex].subParticipants.splice(subIndex, 1);
@@ -3742,45 +3693,6 @@ this.bsOpen({
 });
 }
 
-addTreffpunktPerson() {
-const select = document.getElementById('subParticipantSelect');
-const newSubNameInput = document.getElementById('newSubName');
-let selectedName = select.value;
-
-if (!selectedName) {
-this.showToast('⚠️ Bitte Person auswählen');
-return;
-}
-
-// Новое имя введено вручную
-if (selectedName === 'add-new') {
-const newName = newSubNameInput.value.trim();
-if (!newName) {
-this.showToast('⚠️ Bitte einen Namen eingeben');
-newSubNameInput.focus();
-return;
-}
-if (this.nameToCoordinates[newName]) {
-this.showToast(`⚠️ "${newName}" existiert bereits`);
-newSubNameInput.focus();
-return;
-}
-this.nameToCoordinates[newName] = { lat: null, lng: null };
-selectedName = newName;
-}
-
-const mainIndex = this.currentMainParticipantIndex;
-if (!this.participants[mainIndex].treffpunktPersons) {
-this.participants[mainIndex].treffpunktPersons = [];
-}
-this.participants[mainIndex].treffpunktPersons.push(selectedName);
-document.getElementById('subModal').classList.remove('show');
-this.saveData();
-this.renderParticipants();
-this.initSortable();
-this.calculate();
-this.showToast(`✅ ${selectedName} → ${this.participants[mainIndex].name}`);
-}
 removeTreffpunktPerson(mainIndex, personIdx) {
 const removedName = this.participants[mainIndex].treffpunktPersons[personIdx];
 this.participants[mainIndex].treffpunktPersons.splice(personIdx, 1);
@@ -4225,13 +4137,6 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter') { input.blur(); }
   if (e.key === 'Escape') { this.renderParticipants(); }
 });
-}
-updateMachineTime(value) {
-const time = this.parseTimeInput(value) || 20;
-this.machineStop.time = Math.max(1, Math.min(720, time));
-this.machineStop.autoCalculated = false;  // Сбрасываем флаг при ручном изменении
-this.saveData();
-this.calculate();
 }
 clearArrivalTime() {
 this.machineStop.arrivalTime = "";
@@ -4857,83 +4762,6 @@ if (reverse) {
   const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
   return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
 }
-}
-_buildMapsUrl(reverse) {
-// Собираем точки маршрута: GPS → участники → машина (туда)
-// или GPS → участники обратно → дом водителя (обратно)
-const enc = (lat, lng) => `${lat},${lng}`;
-const waypoints = [];
-// Стартовая точка — текущее GPS (подставим реальные через геолокацию при клике)
-// Участники
-const parts = this.participants.filter(p => p.name);
-const machine = this.machineStop;
-if (reverse) {
-  // Обратно: machine → участники в обратном порядке → стартовая точка водителя
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-  [...parts].reverse().forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
-  });
-  const sc = this.startPointCoords;
-  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
-} else {
-  // Туда: GPS (текущее) → участники → machine
-  // Первый waypoint — текущее местоположение (используем "My+Location" или startPointCoords)
-  const sc = this.startPointCoords;
-  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
-  parts.forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
-  });
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-}
-if (waypoints.length < 2) return null;
-// Google Maps multi-stop URL
-const [origin, ...rest] = waypoints;
-const destination = rest.pop();
-const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
-return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
-}
-_openMapsWithGps(reverse) {
-if (!navigator.geolocation) {
-  this._openMapsUrl(reverse, null);
-  return;
-}
-navigator.geolocation.getCurrentPosition(
-  pos => this._openMapsUrl(reverse, pos.coords),
-  ()  => this._openMapsUrl(reverse, null),
-  { timeout: 5000, maximumAge: 60000 }
-);
-}
-_openMapsUrl(reverse, gpsCoords) {
-const enc = (lat, lng) => `${lat},${lng}`;
-const waypoints = [];
-const parts = this.participants.filter(p => p.name);
-const machine = this.machineStop;
-if (reverse) {
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-  [...parts].reverse().forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
-  });
-  const sc = this.startPointCoords;
-  if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng));
-  else if (gpsCoords) waypoints.push(enc(gpsCoords.latitude, gpsCoords.longitude));
-} else {
-  if (gpsCoords) waypoints.push(enc(gpsCoords.latitude, gpsCoords.longitude));
-  else { const sc = this.startPointCoords; if (sc && sc.lat && sc.lng) waypoints.push(enc(sc.lat, sc.lng)); }
-  parts.forEach(p => {
-    const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) waypoints.push(enc(c.lat, c.lng));
-  });
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-}
-if (waypoints.length < 2) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
-const [origin, ...rest] = waypoints;
-const destination = rest.pop();
-const wps = rest.length ? '&waypoints=' + rest.join('%7C') : '';
-const url = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${wps}&travelmode=driving`;
-window.open(url, '_blank');
 }
 _initShareButtons() {
 const slBitly = document.getElementById('shortenBitly');
