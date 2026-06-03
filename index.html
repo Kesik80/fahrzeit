@@ -3512,8 +3512,6 @@ async openMapPicker() {
 
     // ── Маркер ────────────────────────────────────────────────────────────
     let marker = null;
-    const coordsSpan = document.getElementById('mapPickerCoords');
-    const confirmBtn = document.getElementById('mapPickerConfirm');
 
     const placeMarker = (latLng) => {
       pickedLat = latLng.lat(); pickedLng = latLng.lng();
@@ -3918,7 +3916,6 @@ this.calculate();
 const timeInfo = this.machineStop.arrivalTime ? ` um ${this.machineStop.arrivalTime} Uhr` : ' jetzt';
 const trafficInfo = data.hasTraffic ? ' (mit Verkehr)' : '';
 this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${timeInfo}${trafficInfo}`);
-console.log(`Время в пути: ${data.duration.minutes} мин, Расстояние: ${data.distance.km} км, Время: ${timeInfo}${trafficInfo}`);
 } else {
 throw new Error('Fehler in der API-Antwort');
 }
@@ -5062,9 +5059,7 @@ return;
 const clone = el.cloneNode(true);
 clone.querySelectorAll('[data-nocopy]').forEach(s => s.remove());
 const text = clone.textContent.trim();
-navigator.clipboard.writeText(text)
-.then(() => this.showToast("📋 Kopiert"))
-.catch(() => this.showToast("⚠️ Kopieren fehlgeschlagen – Zugriff auf Zwischenablage erlauben."));
+this._copyToClipboard(text, "📋 Kopiert");
 }
 removeParticipant(index) {
 this.participants.splice(index, 1);
