@@ -2708,7 +2708,7 @@ document.getElementById('ghSendStationsBtn').onclick = async () => {
 async function uploadStationsViaServer(password) {
   showMsg('Загрузка на GitHub…', 5000);
   try {
-    const resp = await fetch('/api/stations', {
+    const resp = await fetch('https://fahrzeit.vercel.app/api/upload-stations', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password, content: buildExportText() }),
