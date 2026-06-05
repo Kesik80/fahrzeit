@@ -7,7 +7,7 @@ const defaultCoords = {
   'Dima': {lat: 51.551753, lng: 7.102285},
   'René': {lat: 51.476281, lng: 6.861856},
   'Marvin': {lat: 51.556472, lng: 6.731424},
-  'Vasyl': {lat: 51.515355, lng: 6.893655},
+  'Vasyl': {lat: 51.515227, lng: 6.893755},
   'Maikel': {lat: 51.539072, lng: 7.0090119},
   'Aleks': {lat: 51.511334, lng: 6.878848}
 };
