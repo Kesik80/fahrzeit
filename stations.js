@@ -34,7 +34,7 @@ this.stations = {
   'Wanne-Eickel': {lat: 51.536053, lng: 7.184348},
   'Dormund-Obereving': {lat: 51.540944, lng: 7.478333},
   'Gevelsberg-West': {lat: 51.316939, lng: 7.314008},
-  'Wuppertal-Langerfeld': {lat: 51.233474, lng: 7.072435}
+  'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835}
 };
 
 // Время в пути между участниками
