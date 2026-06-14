@@ -32,7 +32,6 @@ this.stations = {
   'Holzwickede': {lat: 51.5050331, lng: 7.6197619},
   'Lage': {lat: 51.991198, lng: 8.800968},
   'Wanne-Eickel': {lat: 51.536053, lng: 7.184348},
-  'Dormund-Obereving': {lat: 51.540944, lng: 7.478333},
   'Gevelsberg-West': {lat: 51.316939, lng: 7.314008},
   'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835}
 };
