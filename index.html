@@ -3390,17 +3390,19 @@ async openMapPicker() {
 
   let pickedLat = null, pickedLng = null;
 
-  // Получаем API ключ
-  let apiKey;
-  try {
-    const r = await fetch('https://fahrzeit.vercel.app/api/maps-key');
-    const d = await r.json();
-    apiKey = d.key;
-  } catch(e) {
-    this.showToast('❌ Karten-API-Schlüssel konnte nicht abgerufen werden');
-    modal.style.display = 'none';
-    return;
+  // Получаем API ключ (кешируем на экземпляре)
+  if (!this._mapsApiKey) {
+    try {
+      const r = await fetch('https://fahrzeit.vercel.app/api/maps-key');
+      const d = await r.json();
+      this._mapsApiKey = d.key;
+    } catch(e) {
+      this.showToast('❌ Karten-API-Schlüssel konnte nicht abgerufen werden');
+      modal.style.display = 'none';
+      return;
+    }
   }
+  const apiKey = this._mapsApiKey;
 
   // Начальная точка — из текущего поля или центр Германии
   let initLat = 51.5, initLng = 7.0, initZoom = 10;
@@ -3410,6 +3412,13 @@ async openMapPicker() {
 
   // Загружаем Google Maps JS API если ещё не загружен
   const initMap = () => {
+    // Уничтожаем старую карту если есть (предотвращаем утечку памяти)
+    if (this._mapPickerInstance) {
+      google.maps.event.clearInstanceListeners(this._mapPickerInstance);
+      this._mapPickerInstance = null;
+    }
+    container.innerHTML = '';
+
     const map = new google.maps.Map(container, {
       center: { lat: initLat, lng: initLng },
       zoom: initZoom,
@@ -3424,6 +3433,7 @@ async openMapPicker() {
       fullscreenControl: false,
       zoomControl: false,
     });
+    this._mapPickerInstance = map;
 
     // ── Полноэкранный режим ───────────────────────────────────────────────
     const sheet = document.getElementById('mapPickerSheet');
@@ -3446,9 +3456,6 @@ async openMapPicker() {
       google.maps.event.trigger(map, 'resize');
     };
 
-    // ── Смена типа карты — через встроенный контрол Google Maps ──────────
-
-    // ── Геолокация ────────────────────────────────────────────────────────
     // ── Геолокация — нативная кнопка Google Maps стиле ──────────────────
     let geoMarker = null;
     const geoBtn = document.createElement('button');
@@ -3532,14 +3539,13 @@ async openMapPicker() {
   };
 
   if (window.google?.maps) {
-    container.innerHTML = '';
     initMap();
   } else {
     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">⏳ Karte wird geladen…</div>';
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__mapPickerInit`;
     script.async = true;
-    window.__mapPickerInit = () => { container.innerHTML = ''; initMap(); };
+    window.__mapPickerInit = () => initMap();
     document.head.appendChild(script);
   }
 
@@ -4740,12 +4746,11 @@ if (reverse) {
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
   if (waypoints.length < 1) return null;
   const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  // via: — строгий порядок без оптимизации Google
+  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
   if (originStr) {
-    // С GPS — Google Maps покажет "В путь"
     return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
   } else {
-    // Без GPS — без origin, Google Maps сам определит
     return `https://www.google.com/maps/dir/?api=1&destination=${destination}${wps}&travelmode=driving`;
   }
 } else {
@@ -4759,7 +4764,8 @@ if (reverse) {
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
   if (!originStr || waypoints.length < 1) return null;
   const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  // via: — строгий порядок без оптимизации Google
+  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
   return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
 }
 }
@@ -4853,7 +4859,8 @@ openGoogleMaps(returnTrip = false) {
       url += `&origin=${encodeURIComponent(origin)}`;
       url += `&destination=${encodeURIComponent(destination)}`;
       if (waypoints.length > 0) {
-        url += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`;
+        // via: — строгий порядок без оптимизации Google
+        url += `&waypoints=${encodeURIComponent(waypoints.map(w => 'via:' + w).join('|'))}`;
       }
       url += '&travelmode=driving';
 
