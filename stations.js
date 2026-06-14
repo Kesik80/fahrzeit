@@ -1,7 +1,7 @@
 // реестр имен
 const defaultCoords = {
   'Sergii': {lat: 51.530133, lng: 6.850858},
-  'Anatolii': {lat: 51.522694, lng: 6.858944},
+  'Anatolii': {lat: 51.522697, lng: 6.859275},
   'Andrii': {lat: 51.534558, lng: 6.861061},
   'Sergio': {lat: 51.52, lng: 6.887619},
   'Dima': {lat: 51.551753, lng: 7.102285},
