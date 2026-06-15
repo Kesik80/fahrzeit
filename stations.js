@@ -94,7 +94,8 @@ this.treffpunkt = {
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
   'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155},
   'Rathaus Osterfeld': {lat: 51.501092, lng: 6.889317},
-  'P&R Herten A2': {lat: 51.572438, lng: 7.133029}
+  'P&R Herten A2': {lat: 51.572438, lng: 7.133029},
+  'Golfplatz': {lat: 51.521686, lng: 6.891145}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -146,7 +147,17 @@ this.trefftravelTimes = {
   'P&R Herten A2-Marvin': 35,
   'P&R Herten A2-Vasyl': 25,
   'P&R Herten A2-Maikel': 20,
-  'P&R Herten A2-Aleks': 25
+  'P&R Herten A2-Aleks': 25,
+  'Golfplatz-Sergii': 10,
+  'Golfplatz-Anatolii': 8,
+  'Golfplatz-Andrii': 8,
+  'Golfplatz-Sergio': 2,
+  'Golfplatz-Dima': 24,
+  'Golfplatz-René': 15,
+  'Golfplatz-Marvin': 20,
+  'Golfplatz-Vasyl': 3,
+  'Golfplatz-Maikel': 19,
+  'Golfplatz-Aleks': 4
 };
 
 // Приоритетные списки остановок и попутчики
