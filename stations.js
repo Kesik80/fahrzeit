@@ -33,7 +33,8 @@ this.stations = {
   'Lage': {lat: 51.991198, lng: 8.800968},
   'Wanne-Eickel': {lat: 51.536053, lng: 7.184348},
   'Gevelsberg-West': {lat: 51.316939, lng: 7.314008},
-  'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835}
+  'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835},
+  'Recklinghausen': {lat: 51.568298, lng: 7.198117}
 };
 
 // Время в пути между участниками
