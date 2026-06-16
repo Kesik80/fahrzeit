@@ -71,9 +71,6 @@ transform: translateY(-1px)
 .calculate {
 background: var(--primary-color)
 }
-.copy {
-background: var(--success-color)
-}
 .add {
 background: var(--info-color)
 }
@@ -408,226 +405,9 @@ color: #999;
 font-size: 16px;
 user-select: none;
 }
-/* Модальное окно выбора типа hinzugefügtия (Treffpunkt / Kollege) */
-.add-type-modal {
-display: none;
-position: fixed;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: rgba(0, 0, 0, 0.5);
-backdrop-filter: blur(4px);
-z-index: 10000;
-}
-.add-type-modal.show {
-display: flex;
-align-items: center;
-justify-content: center;
-animation: overlayIn 0.2s ease forwards;
-}
-.add-type-modal.closing {
-animation: overlayOut 0.2s ease forwards;
-}
-.add-type-modal-content {
-background: var(--surface);
-border-radius: 12px;
-padding: 24px;
-max-width: 400px;
-width: 90%;
-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-animation: modalIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-.add-type-modal.closing .add-type-modal-content {
-animation: modalOut 0.2s ease forwards;
-}
-.add-type-modal-title {
-font-size: 1.2em;
-font-weight: 600;
-margin-bottom: 20px;
-color: var(--text);
-text-align: center;
-}
-.add-type-section {
-margin-bottom: 16px;
-}
-.add-type-section-label {
-font-size: 0.85em;
-font-weight: 600;
-color: var(--info-color);
-text-transform: uppercase;
-letter-spacing: 0.5px;
-margin-bottom: 6px;
-}
-.add-type-select {
-width: 100%;
-padding: 10px;
-border: 2px solid var(--border, #ddd);
-border-radius: 8px;
-font-size: 1em;
-background: var(--surface);
-color: var(--text);
-cursor: pointer;
-transition: border-color 0.2s;
-}
-.add-type-select:focus {
-outline: none;
-border-color: var(--primary-color);
-}
-.add-type-buttons {
-display: flex;
-gap: 8px;
-margin-top: 20px;
-}
-.add-type-btn {
-flex: 1;
-padding: 10px;
-border: none;
-border-radius: 8px;
-font-size: 0.95em;
-cursor: pointer;
-transition: all 0.2s;
-}
-.add-type-btn.primary {
-background: var(--primary-color);
-color: white;
-}
-.add-type-btn.primary:hover { background: #0056b3; }
-.add-type-btn.secondary {
-background: var(--border, #ddd);
-color: var(--text);
-}
-.add-type-btn.secondary:hover { background: #bbb; }
 /* Участник с Treffpunkt — подсветка */
 .participant.has-treffpunkt {
 }
-/* Поле ввода нового имени — inline внутри модалки */
-.new-name-row {
-display: none;
-margin-top: 8px;
-flex-direction: column;
-gap: 4px;
-}
-.new-name-row.visible {
-display: flex;
-}
-.new-name-input {
-width: 100%;
-padding: 10px;
-border: 2px solid var(--primary-color);
-border-radius: 8px;
-font-size: 1em;
-background: var(--surface);
-color: var(--text);
-box-sizing: border-box;
-transition: border-color 0.2s;
-}
-.new-name-input:focus {
-outline: none;
-border-color: #0056b3;
-}
-.new-name-hint {
-font-size: 0.8em;
-color: var(--info-color);
-}
-/* Модальное окно субучастников */
-.sub-modal {
-display: none;
-position: fixed;
-top: 0; left: 0;
-width: 100%; height: 100%;
-background: rgba(0,0,0,0.55);
-backdrop-filter: blur(4px);
-z-index: 10000;
-align-items: flex-end;
-justify-content: center;
-}
-.sub-modal.show {
-display: flex;
-animation: overlayIn 0.25s ease forwards;
-}
-.sub-modal.closing {
-animation: overlayOut 0.25s ease forwards;
-}
-.sub-modal-content {
-background: var(--surface);
-border-radius: 20px 20px 0 0;
-padding: 0;
-width: 100%;
-max-width: 480px;
-max-height: 75vh;
-display: flex;
-flex-direction: column;
-overflow: hidden;
-box-shadow: 0 -4px 24px rgba(0,0,0,0.25);
-animation: sheetIn 0.16s ease-out forwards;
-}
-.sub-modal.closing .sub-modal-content {
-animation: sheetOut 0.25s ease forwards;
-}
-.sub-modal-handle {
-width: 40px;
-height: 4px;
-background: var(--text);
-border-radius: 2px;
-opacity: 0.2;
-margin: 12px auto 8px;
-flex-shrink: 0;
-}
-.sub-modal-title {
-font-size: 1.05em;
-font-weight: 700;
-color: var(--text);
-padding: 4px 20px 12px;
-flex-shrink: 0;
-border-bottom: 1px solid var(--border);
-}
-.sub-modal-item {
-width: 100%;
-padding: 15px 20px;
-border: none;
-border-bottom: 1px solid var(--border);
-border-radius: 0;
-font-size: 1em;
-cursor: pointer;
-text-align: left;
-background: transparent;
-color: var(--text);
-display: block;
-transition: background 0.12s;
-box-sizing: border-box;
-}
-.sub-modal-item:last-child { border-bottom: none; }
-.sub-modal-item:active { background: var(--border); }
-.sub-modal-item.add-new {
-color: var(--primary-color);
-font-weight: 500;
-}
-.sub-modal-buttons {
-display: flex;
-gap: 10px;
-padding: 12px 16px 20px;
-flex-shrink: 0;
-border-top: 1px solid var(--border);
-}
-.sub-modal-btn {
-flex: 1;
-padding: 12px;
-border: none;
-border-radius: 12px;
-font-size: 0.95em;
-font-weight: 600;
-cursor: pointer;
-transition: all 0.2s;
-}
-.sub-modal-btn.primary {
-background: var(--primary-color);
-color: white;
-}
-.sub-modal-btn.primary:hover { background: #0056b3; }
-.sub-modal-btn.secondary {
-background: var(--border);
-color: var(--text);
-}
-.sub-modal-btn.secondary:hover { opacity: 0.8; }
 
 /* крестик времени прибытия */
 .time-remove {
@@ -1219,7 +999,6 @@ color: var(--text);
 }
 /* кнопки сохраняют цвет, но текст перекрашиваем/* обязательно покрасить сами кнопки */
 button.calculate { background: var(--primary-color) !important; }
-button.copy       { background: var(--success-color) !important; }
 button.add        { background: var(--info-color) !important; }
 button.clear      { background: var(--danger-color) !important; }
 button.route-back { background: var(--route-back-color) !important; }
@@ -1844,43 +1623,6 @@ c168 0 866 -22 1147 -35 171 -8 319 -15 331 -15 19 0 22 -7 27 -81 8 -95 34
 </div>
 <div id="toast" class="toast"></div>
 
-<!-- Add Type Modal: Treffpunkt oder Kollege -->
-<div id="addTypeModal" class="add-type-modal">
-<div class="add-type-modal-content">
-<div class="add-type-modal-title">➕ Teilnehmer hinzufügen</div>
-<div class="add-type-section" id="treffSection">
-<div class="add-type-section-label">📍 Treffpunkt</div>
-<select id="treffpunktSelect" class="add-type-select">
-<option value="">– Treffpunkt wählen –</option>
-</select>
-</div>
-<div class="add-type-section" id="kollegeSection">
-<div class="add-type-section-label">👤 Kollege</div>
-<select id="kollegeSelect" class="add-type-select">
-<option value="">– Kollege wählen –</option>
-</select>
-<div class="new-name-row" id="newKollegeRow">
-<input type="text" id="newKollegeName" class="new-name-input" placeholder="Neuer Name eingeben…" autocomplete="off" />
-<span class="new-name-hint">Name wird gespeichert und zur Liste hinzugefügt</span>
-</div>
-</div>
-<div class="add-type-buttons">
-<button class="add-type-btn secondary" id="addTypeCancelBtn">Abbrechen</button>
-</div>
-</div>
-</div>
-
-<!-- Sub-Participant Modal -->
-<div id="subModal" class="sub-modal">
-<div class="sub-modal-content">
-<div class="sub-modal-handle"></div>
-<div id="subModalTitle" class="sub-modal-title"></div>
-<div id="subModalList" style="overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch;"></div>
-<div class="sub-modal-buttons"><button class="sub-modal-btn secondary" id="subCancelBtn">Abbrechen</button></div>
-</div>
-</div>
-
-
 <!-- Universal Bottom Sheet — создаётся динамически через bsOpen() -->
 
 <!-- Redaktor Password Modal -->
@@ -2015,7 +1757,6 @@ participantsContainer: document.getElementById('participants'),
 addButton: document.querySelector('.add'),
 calculateButton: document.querySelector('.calculate'),
 routeBackButton: document.querySelector('.route-back'),
-copyButton: document.querySelector('.copy') || null,
 clearButton: document.querySelector('.clear'),
 output: document.getElementById('output'),
 toast: document.getElementById('toast'),
@@ -2446,56 +2187,6 @@ this.elements.saveGreetingButton.addEventListener('click', () => this.saveCoordi
 this.elements.cancelGreetingButton.addEventListener('click', () => this.closeModal());
 this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
 this.elements.openMapPickerButton.addEventListener('click', () => this.openMapPicker());
-// Add-type modal handlers
-const addTypeModal = document.getElementById('addTypeModal');
-const addTypeCancelBtn = document.getElementById('addTypeCancelBtn');
-const addTypeConfirmBtn = document.getElementById('addTypeConfirmBtn');
-const closeAddTypeModal = () => {
-addTypeModal.classList.add('closing');
-setTimeout(() => { addTypeModal.classList.remove('show', 'closing'); }, 220);
-const row = document.getElementById('newKollegeRow');
-const inp = document.getElementById('newKollegeName');
-if (row) row.classList.remove('visible');
-if (inp) inp.value = '';
-// Восстановить обе секции и заголовок
-document.getElementById('treffSection').style.display = '';
-document.getElementById('kollegeSection').style.display = '';
-const title = addTypeModal.querySelector('.add-type-modal-title');
-if (title) title.textContent = '➕ Teilnehmer hinzufügen';
-};
-if (addTypeModal && addTypeCancelBtn) {
-addTypeCancelBtn.addEventListener('click', closeAddTypeModal);
-addTypeModal.addEventListener('click', (e) => {
-if (e.target === addTypeModal) closeAddTypeModal();
-});
-document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && addTypeModal.classList.contains('show')) closeAddTypeModal();
-});
-}
-// Sub-participant modal handlers
-const subModal = document.getElementById('subModal');
-const subCancelBtn = document.getElementById('subCancelBtn');
-const subAddBtn = null;
-const closeSubModal = () => {
-subModal.classList.add('closing');
-setTimeout(() => { subModal.classList.remove('show', 'closing'); }, 220);
-const row = document.getElementById('newSubNameRow');
-const inp = document.getElementById('newSubName');
-if (row) row.classList.remove('visible');
-if (inp) inp.value = '';
-const sel = document.getElementById('subParticipantSelect');
-if (sel) sel.value = '';
-};
-if (subModal && subCancelBtn) {
-subCancelBtn.addEventListener('click', closeSubModal);
-subModal.addEventListener('click', (e) => {
-if (e.target === subModal) closeSubModal();
-});
-document.addEventListener('keydown', (e) => {
-if (e.key === 'Escape' && subModal.classList.contains('show')) closeSubModal();
-});
-}
-// --- УДАЛЕНЫ ОБРАБОТЧИКИ ДЛЯ open-map-direct и open-map-return ---
 }
 updateStartPoint(value) {
 // Загружаем попутчиков стартовой точки из stations.js
@@ -3219,7 +2910,6 @@ if (this.nameToCoordinates[name]) { this.showToast(`⚠️ "${name}" existiert b
 this.nameToCoordinates[name] = coords ? { lat: coords.lat, lng: coords.lng } : { lat: null, lng: null };
 if (this.isAddingNewKollege) {
   this.participants.push({ name, time: 5, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, timeManuallyEdited: false, isTreffpunkt: false, subParticipants: [], treffpunktPersons: [] });
-  document.getElementById('addTypeModal').classList.remove('show');
 } else {
   // isAddingNewSubPerson — добавляем как субучастника, treffpunktPerson или попутчика старта
   const mainIndex = this.currentMainParticipantIndex;
@@ -3237,7 +2927,6 @@ if (this.isAddingNewKollege) {
       mainP.subParticipants.push(name);
     }
   }
-  document.getElementById('subModal').classList.remove('show');
 }
 this.closeModal(); this.updateParticipantTimes(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
 return;
@@ -3568,24 +3257,12 @@ this.bsOpen({
     if (!this.startPointPassengers) this.startPointPassengers = [];
     this.startPointPassengers.push(name);
     this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
+  },
+  onAddNew: () => {
+    this.currentMainParticipantIndex = -1;
+    this.openCoordsModal(null, false, false, false, false, false, true);
   }
 });
-}
-
-addStartPassenger() {
-const select = document.getElementById('subParticipantSelect');
-const selectedName = select.value;
-if (!selectedName || selectedName === 'add-new') {
-  this.showToast('⚠️ Person auswählen');
-  return;
-}
-if (!this.startPointPassengers) this.startPointPassengers = [];
-this.startPointPassengers.push(selectedName);
-document.getElementById('subModal').classList.remove('show');
-this.saveData();
-this.renderParticipants();
-this.initSortable();
-this.calculate();
 }
 addParticipant() {
 const usedNames = this.getAllUsedNames();
@@ -3671,6 +3348,10 @@ this.bsOpen({
     this.participants[mainIndex].subParticipants.push(name);
     this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
     this.showToast('✅ ' + name + ' hinzugefügt');
+  },
+  onAddNew: () => {
+    this.currentMainParticipantIndex = mainIndex;
+    this.openCoordsModal(null, false, false, false, false, false, true);
   }
 });
 }
@@ -3689,6 +3370,10 @@ this.bsOpen({
     this.participants[mainIndex].treffpunktPersons.push(name);
     this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
     this.showToast('✅ ' + name + ' hinzugefügt');
+  },
+  onAddNew: () => {
+    this.currentMainParticipantIndex = mainIndex;
+    this.openCoordsModal(null, false, false, false, false, false, true);
   }
 });
 }
@@ -4042,8 +3727,13 @@ bsRenderList() {
   addBtn.textContent = isKollege ? '＋ Neue Person…' : '＋ Neuer Treffpunkt…';
   addBtn.onclick = () => {
     this.bsClose();
-    if (isKollege) this.openCoordsModal(null,false,false,false,false,true);
-    else { this.isAddingNewTreffpunkt=true; this.openCoordsModal(null,false,true); }
+    if (cfg.onAddNew) {
+      cfg.onAddNew(this._bsActiveTab);
+    } else if (isKollege) {
+      this.openCoordsModal(null,false,false,false,false,true);
+    } else {
+      this.isAddingNewTreffpunkt=true; this.openCoordsModal(null,false,true);
+    }
   };
   list.appendChild(addBtn);
 }
