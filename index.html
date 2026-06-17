@@ -2316,11 +2316,13 @@ if (startPassengersContainer) {
       ];
       this.showPicker('Mitfahrer wählen', items, (val) => {
         if (val === 'add-new') {
-          this.openCoordsModal(null, false, false, false, false, false, true);
           this.currentMainParticipantIndex = -1;
+          this.openCoordsModal(null, false, false, false, false, false, true);
         } else {
           this.startPointPassengers[idx] = val;
           this.saveData();
+          this.renderParticipants();
+          this.initSortable();
           this.calculate();
         }
       }, passengerName);
@@ -2588,8 +2590,25 @@ machineNameTrigger.addEventListener('click', () => {
         this.machineStop.lat = null;
         this.machineStop.lng = null;
       }
+      // stationName: сбрасываем для не-Maschine пунктов, восстанавливаем для Maschine
+      const machineName = (this.machineDestinations[0] || {}).name || 'an der Maschine';
+      if (val !== machineName) {
+        this.machineStop.stationName = '';
+      } else {
+        // Восстановить stationName по текущим координатам из списка станций
+        if (this.machineStop.lat && this.machineStop.lng) {
+          const coordKey = `${this.machineStop.lat},${this.machineStop.lng}`;
+          const foundStation = Object.entries(this.stations || {}).find(([, c]) => `${c.lat},${c.lng}` === coordKey);
+          this.machineStop.stationName = foundStation ? foundStation[0] : (this.machineStop.stationName || '');
+        }
+      }
       this.updateMachineName(val);
       this.renderParticipants();
+      this.calculate();
+      // Автоматически пересчитываем время в пути при смене пункта назначения
+      if (this.machineStop.lat && this.machineStop.lng) {
+        this.calculateTravelTimeToMachine();
+      }
     }
   }, this.machineStop.name);
 });
@@ -2701,7 +2720,7 @@ if (/^https?:\/\//i.test(s)) {
 // 3. Сокращённые ссылки — через Vercel API
 try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
-const resp = await fetch('https://fahrzeit.vercel.app/api/parse-coords?input=' + encodeURIComponent(s));
+const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
 if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
 const d = await resp.json();
 if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
@@ -2770,6 +2789,9 @@ Object.entries(this.stations)
 /* ➜ подсветить ранее сохранённую станцию */
 const saved = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
 stSel.value = saved && [...stSel.options].some(o => o.value === saved) ? saved : '';
+/* ➜ синхронизировать stationName с уже выбранной опцией при открытии модала */
+const currentSelOpt = stSel.options[stSel.selectedIndex];
+this.machineStop.stationName = (currentSelOpt && currentSelOpt.value && currentSelOpt.value !== '__add_new_station__') ? currentSelOpt.textContent.trim() : '';
 stSel.onchange = () => {
 if (stSel.value === '__add_new_station__') {
   stSel.value = '';
@@ -2802,7 +2824,7 @@ modal.style.display = 'flex'; modal.classList.add('active');
 // При нажатии ✅ parseCoordinates обработает её автоматически
 {
   const inp = this.elements.coordsInput;
-  const hint = document.getElementById('coordsShortHint');
+  const hint = document.getElementById('coordsHelp');
   const updateHint = () => {
     if (!hint) return;
     const v = inp.value.trim();
@@ -3082,7 +3104,7 @@ async openMapPicker() {
   // Получаем API ключ
   let apiKey;
   try {
-    const r = await fetch('https://fahrzeit.vercel.app/api/maps-key');
+    const r = await fetch('/api/maps-key');
     const d = await r.json();
     apiKey = d.key;
   } catch(e) {
@@ -3319,11 +3341,25 @@ return;
 }
 this.participants[mainIndex].subParticipants[subIndex] = newName;
 this.saveData();
+this.renderParticipants();
+this.initSortable();
 this.calculate();
 }
 // ===== Методы для Treffpunkt =====
 updateTreffpunktName(index, newName) {
 const coords = this.treffpunkt[newName] || { lat: null, lng: null };
+this.participants[index].name = newName;
+this.participants[index].lat = coords.lat;
+this.participants[index].lng = coords.lng;
+this.participants[index].timeManuallyEdited = false;
+this.updateParticipantTimes();
+this.saveData();
+this.renderParticipants();
+this.initSortable();
+this.calculate();
+}
+updateName(index, newName) {
+const coords = this.nameToCoordinates[newName] || { lat: null, lng: null };
 this.participants[index].name = newName;
 this.participants[index].lat = coords.lat;
 this.participants[index].lng = coords.lng;
@@ -3390,6 +3426,8 @@ this.showToast(`🗑️ ${removedName} entfernt`);
 updateTreffpunktPerson(mainIndex, personIdx, newName) {
 this.participants[mainIndex].treffpunktPersons[personIdx] = newName;
 this.saveData();
+this.renderParticipants();
+this.initSortable();
 this.calculate();
 }
 async calculateTravelTimeForParticipant(index) {
@@ -3419,7 +3457,7 @@ if (index === 0) {
 }
 try {
   this.showToast('🔄 Fahrtzeit wird berechnet…');
-  const response = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+  const response = await fetch('/api/calculate-time', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -3481,7 +3519,7 @@ try {
 this.showToast('🔄 Fahrtzeit wird berechnet…');
 
 // Вызываем Vercel serverless function
-const response = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+const response = await fetch('/api/calculate-time', {
 method: 'POST',
 headers: {
 'Content-Type': 'application/json',
@@ -3833,6 +3871,7 @@ this.machineStop.arrivalTime = "";
 this.saveData();
 this.elements.output.innerHTML = '';
 this.renderParticipants();
+this.updateHints();
 }
 startTimeEdit() {
 const existing = document.getElementById('customTimePicker');
@@ -4054,6 +4093,7 @@ overlay.querySelector('#tpClear').onclick = () => {
   this.saveData();
   this.elements.output.innerHTML = '';
   this.renderParticipants();
+  this.updateHints();
 };
 overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
 }
@@ -4207,7 +4247,7 @@ startDate.setHours(h, m, 0, 0);
 if (startDate <= new Date()) startDate.setDate(startDate.getDate() + 1);
 startDate.setMinutes(startDate.getMinutes() - totalMin);
 
-this.showToast('🔄 Проверяем пробки…');
+this.showToast('🔄 Verkehr wird geprüft…');
 let success = 0, fail = 0, withTraffic = 0;
 let cumMin = 0;
 
@@ -4225,7 +4265,7 @@ for (let i = 0; i < this.participants.length; i++) {
     prevLat = prev.lat; prevLng = prev.lng;
   }
   try {
-    const r = await fetch('https://fahrzeit.vercel.app/api/calculate-time', {
+    const r = await fetch('/api/calculate-time', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ originLat: prevLat, originLng: prevLng, destLat: p.lat, destLng: p.lng, departureTime: depTs })
@@ -4354,7 +4394,7 @@ if (reverse) {
 async _shortenAndCopy(url, msg) {
 if (!this.shortenLinks || !this.shortenMode) { this._copyToClipboard(url, msg); return; }
 
-this.showToast('⏳ Сокращаем ссылку…');
+this.showToast('⏳ Link wird gekürzt…');
 try {
   let r, data;
   if (this.shortenMode === 'bitly') {
@@ -4399,7 +4439,7 @@ ta.select();
 let ok = false;
 try { ok = document.execCommand('copy'); } catch(e) {}
 document.body.removeChild(ta);
-this.showToast(ok ? successMsg : '⚠ Не удалось скопировать');
+this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 }
 _buildRouteUrl(reverse, gpsCoords) {
 const enc = (lat, lng) => `${lat},${lng}`;
@@ -4562,6 +4602,9 @@ openGoogleMaps(returnTrip = false) {
 _destLabel() {
 const stationName = this.machineStop.stationName || '';
 if (!stationName) return '';
+// Скобки показываем только если выбрано "an der Maschine" (первый пункт в machineDestinations)
+const machineName = (this.machineDestinations[0] || {}).name || 'an der Maschine';
+if (this.machineStop.name !== machineName) return '';
 if (this.showDestName) {
 return ` <span class="dest-label">(${stationName})</span>`;
 } else {
