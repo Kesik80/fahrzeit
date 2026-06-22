@@ -17,7 +17,6 @@ this.stations = {
   'Gelsenkirchen-Bismarck': {lat: 51.538627, lng: 7.108037},
   'Hagen': {lat: 51.373517, lng: 7.461144},
   'Essen West': {lat: 51.4539273, lng: 6.9794622},
-  'Gelsenkirchen Horst': {lat: 51.5415351, lng: 7.0202811},
   'Gelsenkirchen Horst 2': {lat: 51.539072, lng: 7.0090119},
   'Dortmund-Lütgendortmund': {lat: 51.497711, lng: 7.3665302},
   'Köln Kalk Nord': {lat: 50.9400354, lng: 7.0158018},
@@ -34,7 +33,8 @@ this.stations = {
   'Wanne-Eickel': {lat: 51.536053, lng: 7.184348},
   'Gevelsberg-West': {lat: 51.316939, lng: 7.314008},
   'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835},
-  'Recklinghausen': {lat: 51.568298, lng: 7.198117}
+  'Recklinghausen': {lat: 51.568298, lng: 7.198117},
+  'Gelsenkirchen Horst Nord': {lat: 51.5415351, lng: 7.0202811}
 };
 
 // Время в пути между участниками
