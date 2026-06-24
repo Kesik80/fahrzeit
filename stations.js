@@ -92,10 +92,10 @@ this.travelTimes = {
 this.treffpunkt = {
   'OLGA-Park': {lat: 51.5004335, lng: 6.8686337},
   'Lirich P&R Parkplatz': {lat: 51.475975, lng: 6.81221},
-  'P&R Parkplatz A42': {lat: 51.535695, lng: 7.096155},
   'Rathaus Osterfeld': {lat: 51.501092, lng: 6.889317},
   'P&R Herten A2': {lat: 51.572438, lng: 7.133029},
-  'Golf Parkplatz': {lat: 51.522611, lng: 6.893011}
+  'Golf Parkplatz': {lat: 51.522611, lng: 6.893011},
+  'P&R A42': {lat: 51.535695, lng: 7.096155}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -119,15 +119,6 @@ this.trefftravelTimes = {
   'Lirich P&R Parkplatz-Vasyl': 15,
   'Lirich P&R Parkplatz-Maikel': 25,
   'Lirich P&R Parkplatz-Aleks': 15,
-  'P&R Parkplatz A42-Sergii': 25,
-  'P&R Parkplatz A42-Andrii': 25,
-  'P&R Parkplatz A42-Anatolii': 20,
-  'P&R Parkplatz A42-Sergio': 20,
-  'P&R Parkplatz A42-Dima': 10,
-  'P&R Parkplatz A42-Marvin': 25,
-  'P&R Parkplatz A42-Maikel': 15,
-  'P&R Parkplatz A42-René': 20,
-  'P&R Parkplatz A42-Vasyl': 25,
   'Rathaus Osterfeld-Sergii': 15,
   'Rathaus Osterfeld-Anatolii': 15,
   'Rathaus Osterfeld-Andrii': 15,
@@ -157,7 +148,16 @@ this.trefftravelTimes = {
   'Golf Parkplatz-Marvin': 20,
   'Golf Parkplatz-Vasyl': 3,
   'Golf Parkplatz-Maikel': 19,
-  'Golf Parkplatz-Aleks': 4
+  'Golf Parkplatz-Aleks': 4,
+  'P&R A42-Sergii': 25,
+  'P&R A42-Andrii': 25,
+  'P&R A42-Anatolii': 20,
+  'P&R A42-Sergio': 20,
+  'P&R A42-Dima': 10,
+  'P&R A42-Marvin': 25,
+  'P&R A42-Maikel': 15,
+  'P&R A42-René': 20,
+  'P&R A42-Vasyl': 25
 };
 
 // Приоритетные списки остановок и попутчики
