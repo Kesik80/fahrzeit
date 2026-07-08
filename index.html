@@ -4354,7 +4354,7 @@ if (reverse) {
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
   if (waypoints.length < 1) return null;
   const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
   if (originStr) {
     // С GPS — Google Maps покажет "В путь"
     return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
@@ -4373,7 +4373,7 @@ if (reverse) {
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
   if (!originStr || waypoints.length < 1) return null;
   const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.join('%7C') : '';
+  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
   return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
 }
 }
@@ -4467,7 +4467,7 @@ openGoogleMaps(returnTrip = false) {
       url += `&origin=${encodeURIComponent(origin)}`;
       url += `&destination=${encodeURIComponent(destination)}`;
       if (waypoints.length > 0) {
-        url += `&waypoints=${encodeURIComponent(waypoints.join('|'))}`;
+        url += `&waypoints=${encodeURIComponent(waypoints.map(w => 'via:' + w).join('|'))}`;
       }
       url += '&travelmode=driving';
 
