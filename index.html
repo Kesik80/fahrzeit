@@ -4325,6 +4325,18 @@ try { ok = document.execCommand('copy'); } catch(e) {}
 document.body.removeChild(ta);
 this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 }
+// Строит ссылку в "плоском" формате dir/точка1/точка2/.../точкаN,
+// как это делает сама Google Maps при шеринге текущего маршрута.
+// Это надёжнее формата api=1&waypoints=via:..., который на некоторых
+// телефонах ломает маршрут при ручном удалении пройденной точки во время навигации.
+_buildDirUrl(points) {
+// Координаты содержат только цифры, точку, минус и запятую — они безопасны
+// в пути URL и не требуют percent-encoding (запятую специально не кодируем,
+// чтобы ссылка выглядела так же, как та, что генерирует сама Google Maps).
+const path = points.join('/');
+// data=!4m2!4m1!3e0 — принудительно включает режим "Автомобиль" (driving)
+return `https://www.google.com/maps/dir/${path}/data=!4m2!4m1!3e0`;
+}
 _buildRouteUrl(reverse, gpsCoords) {
 const enc = (lat, lng) => `${lat},${lng}`;
 const waypoints = [];
@@ -4353,15 +4365,9 @@ if (reverse) {
   });
   if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
   if (waypoints.length < 1) return null;
-  const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
-  if (originStr) {
-    // С GPS — Google Maps покажет "В путь"
-    return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
-  } else {
-    // Без GPS — без origin, Google Maps сам определит
-    return `https://www.google.com/maps/dir/?api=1&destination=${destination}${wps}&travelmode=driving`;
-  }
+  const points = originStr ? [originStr, ...waypoints] : [...waypoints];
+  if (points.length < 2) return null;
+  return this._buildDirUrl(points);
 } else {
   // Туда: GPS телефона (или дом водителя) → участники → машина
   const originStr = gpsCoords
@@ -4372,9 +4378,7 @@ if (reverse) {
   });
   if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
   if (!originStr || waypoints.length < 1) return null;
-  const destination = waypoints.pop();
-  const wps = waypoints.length ? '&waypoints=' + waypoints.map(w => 'via:' + w).join('%7C') : '';
-  return `https://www.google.com/maps/dir/?api=1&origin=${originStr}&destination=${destination}${wps}&travelmode=driving`;
+  return this._buildDirUrl([originStr, ...waypoints]);
 }
 }
 _initShareButtons() {
@@ -4463,13 +4467,10 @@ openGoogleMaps(returnTrip = false) {
         destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
       }
 
-      let url = 'https://www.google.com/maps/dir/?api=1';
-      url += `&origin=${encodeURIComponent(origin)}`;
-      url += `&destination=${encodeURIComponent(destination)}`;
-      if (waypoints.length > 0) {
-        url += `&waypoints=${encodeURIComponent(waypoints.map(w => 'via:' + w).join('|'))}`;
-      }
-      url += '&travelmode=driving';
+      // Плоский формат dir/точка1/.../точкаN — надёжнее при ручном удалении
+      // пройденной точки прямо в Google Maps во время навигации.
+      const points = [origin, ...waypoints, destination];
+      const url = this._buildDirUrl(points);
 
       window.open(url, '_blank');
     },
