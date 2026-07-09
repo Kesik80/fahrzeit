@@ -4270,6 +4270,7 @@ if (reverse) {
     );
   });
   const gps = await getGps();
+  if (!gps) { this.showToast('⚠ Standort konnte nicht ermittelt werden.'); return; }
   const url = this._buildRouteUrl(false, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
@@ -4329,10 +4330,9 @@ this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 // как это делает сама Google Maps при шеринге текущего маршрута.
 // Это надёжнее формата api=1&waypoints=via:..., который на некоторых
 // телефонах ломает маршрут при ручном удалении пройденной точки во время навигации.
+// Координаты содержат только цифры/точку/минус/запятую — они безопасны в пути URL,
+// запятую специально не кодируем, чтобы ссылка выглядела как "родная" ссылка Google Maps.
 _buildDirUrl(points) {
-// Координаты содержат только цифры, точку, минус и запятую — они безопасны
-// в пути URL и не требуют percent-encoding (запятую специально не кодируем,
-// чтобы ссылка выглядела так же, как та, что генерирует сама Google Maps).
 const path = points.join('/');
 // data=!4m2!4m1!3e0 — принудительно включает режим "Автомобиль" (driving)
 return `https://www.google.com/maps/dir/${path}/data=!4m2!4m1!3e0`;
@@ -4369,10 +4369,10 @@ if (reverse) {
   if (points.length < 2) return null;
   return this._buildDirUrl(points);
 } else {
-  // Туда: GPS телефона (или дом водителя) → участники → машина
-  const originStr = gpsCoords
-    ? enc(gpsCoords.lat, gpsCoords.lng)
-    : (startC && startC.lat && startC.lng ? enc(startC.lat, startC.lng) : null);
+  // Туда: только реальная GPS-позиция телефона → участники → машина.
+  // Координаты дома водителя здесь НЕ используются как старт —
+  // если GPS недоступен, маршрут не строим (проверяется до вызова этой функции).
+  const originStr = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
   parts.forEach(p => {
     getCoordsForParticipant(p).forEach(c => waypoints.push(c));
   });
@@ -4467,10 +4467,7 @@ openGoogleMaps(returnTrip = false) {
         destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
       }
 
-      // Плоский формат dir/точка1/.../точкаN — надёжнее при ручном удалении
-      // пройденной точки прямо в Google Maps во время навигации.
-      const points = [origin, ...waypoints, destination];
-      const url = this._buildDirUrl(points);
+      let url = this._buildDirUrl([origin, ...waypoints, destination]);
 
       window.open(url, '_blank');
     },
