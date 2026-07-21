@@ -25,7 +25,6 @@ this.stations = {
   'Dortmund Obereving': {lat: 51.5406353, lng: 7.478439},
   'Schwerte': {lat: 51.440231, lng: 7.558396},
   'Köln Kalk Süden': {lat: 50.94759, lng: 7.012243},
-  'Wuppertal': {lat: 51.24571, lng: 7.130845},
   'Wuppertal-Vohwinkel': {lat: 51.233474, lng: 7.072435},
   'Holzwickede': {lat: 51.5050331, lng: 7.6197619},
   'Lage': {lat: 51.991198, lng: 8.800968},
@@ -35,7 +34,8 @@ this.stations = {
   'Recklinghausen': {lat: 51.568298, lng: 7.198117},
   'Gelsenkirchen Horst Nord': {lat: 51.5415351, lng: 7.0202811},
   'Gelsenkirchen Horst Nord 2': {lat: 51.539072, lng: 7.0090119},
-  'Düsseldorf Raht': {lat: 51.270511, lng: 6.825857}
+  'Düsseldorf Raht': {lat: 51.270511, lng: 6.825857},
+  'Wuppertal-Steinbeck': {lat: 51.24571, lng: 7.130845}
 };
 
 // Время в пути между участниками
