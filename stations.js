@@ -34,7 +34,8 @@ this.stations = {
   'Wuppertal-Langerfeld': {lat: 51.278872, lng: 7.244835},
   'Recklinghausen': {lat: 51.568298, lng: 7.198117},
   'Gelsenkirchen Horst Nord': {lat: 51.5415351, lng: 7.0202811},
-  'Gelsenkirchen Horst Nord 2': {lat: 51.539072, lng: 7.0090119}
+  'Gelsenkirchen Horst Nord 2': {lat: 51.539072, lng: 7.0090119},
+  'Düsseldorf Raht': {lat: 51.270511, lng: 6.825857}
 };
 
 // Время в пути между участниками
