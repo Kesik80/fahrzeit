@@ -35,7 +35,8 @@ this.stations = {
   'Gelsenkirchen Horst Nord': {lat: 51.5415351, lng: 7.0202811},
   'Gelsenkirchen Horst Nord 2': {lat: 51.539072, lng: 7.0090119},
   'Düsseldorf Raht': {lat: 51.270511, lng: 6.825857},
-  'Wuppertal-Steinbeck': {lat: 51.24571, lng: 7.130845}
+  'Wuppertal-Steinbeck': {lat: 51.24571, lng: 7.130845},
+  'Hagen Hbf': {lat: 51.362268, lng: 7.461884}
 };
 
 // Время в пути между участниками
