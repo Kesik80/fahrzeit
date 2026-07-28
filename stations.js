@@ -3,7 +3,7 @@ const defaultCoords = {
   'Sergii': {lat: 51.530133, lng: 6.850858},
   'Anatolii': {lat: 51.522697, lng: 6.859275},
   'Andrii': {lat: 51.534558, lng: 6.861061},
-  'Sergio': {lat: 51.52, lng: 6.887619},
+  'Sergio': {lat: 51.519965, lng: 6.88764},
   'Dima': {lat: 51.551753, lng: 7.102285},
   'René': {lat: 51.476281, lng: 6.861856},
   'Marvin': {lat: 51.556472, lng: 6.731424},
