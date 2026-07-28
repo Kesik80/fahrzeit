@@ -4332,54 +4332,56 @@ this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 // телефонах ломает маршрут при ручном удалении пройденной точки во время навигации.
 // Координаты содержат только цифры/точку/минус/запятую — они безопасны в пути URL,
 // запятую специально не кодируем, чтобы ссылка выглядела как "родная" ссылка Google Maps.
-_buildDirUrl(points) {
-const path = points.join('/');
-// data=!4m2!4m1!3e0 — принудительно включает режим "Автомобиль" (driving)
-return `https://www.google.com/maps/dir/${path}/data=!4m2!4m1!3e0`;
-}
 _buildRouteUrl(reverse, gpsCoords) {
-const enc = (lat, lng) => `${lat},${lng}`;
-const waypoints = [];
-const parts = this.participants.filter(p => p.name);
-const machine = this.machineStop;
-const startC = this.startPointCoords;
+  const enc = (lat, lng) => `${lat},${lng}`;
+  const parts = this.participants.filter(p => p.name);
+  const machine = this.machineStop;
+  const startC = this.startPointCoords;
 
-const getCoordsForParticipant = (p) => {
-  if (p.isTreffpunkt) {
-    if (p.lat && p.lng) return [enc(p.lat, p.lng)];
+  const getCoordsForParticipant = (p) => {
+    if (p.isTreffpunkt) {
+      if (p.lat && p.lng) return [enc(p.lat, p.lng)];
+      return [];
+    }
+    const c = this.nameToCoordinates[p.name];
+    if (c && c.lat && c.lng) return [enc(c.lat, c.lng)];
     return [];
-  }
-  const c = this.nameToCoordinates[p.name];
-  if (c && c.lat && c.lng) return [enc(c.lat, c.lng)];
-  return [];
-};
+  };
 
-if (reverse) {
-  // Обратно: GPS телефона → участники в обратном порядке → дом водителя
-  // Машина НЕ включается — она уже уехала
-  const originStr = gpsCoords
-    ? enc(gpsCoords.lat, gpsCoords.lng)
-    : null;
-  [...parts].reverse().forEach(p => {
-    getCoordsForParticipant(p).reverse().forEach(c => waypoints.push(c));
-  });
-  if (startC && startC.lat && startC.lng) waypoints.push(enc(startC.lat, startC.lng));
-  if (waypoints.length < 1) return null;
-  const points = originStr ? [originStr, ...waypoints] : [...waypoints];
-  if (points.length < 2) return null;
-  return this._buildDirUrl(points);
-} else {
-  // Туда: только реальная GPS-позиция телефона → участники → машина.
-  // Координаты дома водителя здесь НЕ используются как старт —
-  // если GPS недоступен, маршрут не строим (проверяется до вызова этой функции).
-  const originStr = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
-  parts.forEach(p => {
-    getCoordsForParticipant(p).forEach(c => waypoints.push(c));
-  });
-  if (machine.lat && machine.lng) waypoints.push(enc(machine.lat, machine.lng));
-  if (!originStr || waypoints.length < 1) return null;
-  return this._buildDirUrl([originStr, ...waypoints]);
-}
+  let origin, destination, waypoints = [];
+
+  if (reverse) {
+    origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
+    if (!origin) return null;
+    [...parts].reverse().forEach(p => {
+      getCoordsForParticipant(p).forEach(c => waypoints.push(c));
+    });
+    if (startC && startC.lat && startC.lng) {
+      destination = enc(startC.lat, startC.lng);
+    } else {
+      return null;
+    }
+  } else {
+    origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
+    if (!origin) return null;
+    parts.forEach(p => {
+      getCoordsForParticipant(p).forEach(c => waypoints.push(c));
+    });
+    if (machine.lat && machine.lng) {
+      destination = enc(machine.lat, machine.lng);
+    } else if (waypoints.length > 0) {
+      destination = waypoints.pop();
+    } else {
+      return null;
+    }
+  }
+
+  if (waypoints.length === 0) {
+    return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+  }
+
+  const wp = waypoints.join('%7C');
+  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${wp}&travelmode=driving`;
 }
 _initShareButtons() {
 const slBitly = document.getElementById('shortenBitly');
@@ -4417,11 +4419,9 @@ lines.forEach(el => {
 });
 }
 
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ — С УЧЁТОМ ТВОЕГО УТОЧНЕНИЯ
 openGoogleMaps(returnTrip = false) {
   const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
 
-  // Маршрут туда требует хотя бы конечную точку (машину) или участника
   if (!returnTrip) {
     const hasDest = this.machineStop.lat && this.machineStop.lng;
     if (validParticipants.length === 0 && !hasDest) {
@@ -4437,38 +4437,12 @@ openGoogleMaps(returnTrip = false) {
 
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      const currentLat = position.coords.latitude;
-      const currentLng = position.coords.longitude;
-      const origin = `${currentLat},${currentLng}`;
-
-      let waypoints = [];
-      let destination;
-
-      if (!returnTrip) {
-        // ➤ Маршрут ТУДА: текущее положение → участники → машина
-        waypoints = validParticipants.map(p => `${p.lat},${p.lng}`);
-        if (this.machineStop.lat && this.machineStop.lng) {
-          destination = `${this.machineStop.lat},${this.machineStop.lng}`;
-        } else {
-          // Нет координат машины — конец маршрута = последний участник
-          destination = waypoints.pop();
-        }
-      } else {
-        // ◀ Маршрут ОБРАТНО: текущее положение → участники (обратный порядок) → дом водителя
-        if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
-          this.showToast("Bitte Startpunkt für die Rückroute angeben.");
-          return;
-        }
-        if (validParticipants.length === 0) {
-          this.showToast("Mindestens ein Teilnehmer mit Koordinaten für die Rückroute erforderlich.");
-          return;
-        }
-        waypoints = [...validParticipants].reverse().map(p => `${p.lat},${p.lng}`);
-        destination = `${this.startPointCoords.lat},${this.startPointCoords.lng}`;
+      const gps = { lat: position.coords.latitude, lng: position.coords.longitude };
+      const url = this._buildRouteUrl(returnTrip, gps);
+      if (!url) {
+        this.showToast("Nicht genug Koordinaten für die Route.");
+        return;
       }
-
-      let url = this._buildDirUrl([origin, ...waypoints, destination]);
-
       window.open(url, '_blank');
     },
     (error) => {
@@ -4478,9 +4452,6 @@ openGoogleMaps(returnTrip = false) {
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
 }
-
-// ❌ УДАЛЕНА ФУНКЦИЯ openGoogleMapsInNewTab
-
 _destLabel() {
 const stationName = this.machineStop.stationName || '';
 if (!stationName) return '';
