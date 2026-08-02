@@ -37,7 +37,8 @@ this.stations = {
   'Düsseldorf Raht': {lat: 51.270511, lng: 6.825857},
   'Wuppertal-Steinbeck': {lat: 51.24571, lng: 7.130845},
   'Hagen Hbf': {lat: 51.362268, lng: 7.461884},
-  'Köln-Deutzerfeld': {lat: 50.939972, lng: 6.987889}
+  'Köln-Deutzerfeld': {lat: 50.939972, lng: 6.987889},
+  'Engelskirchen': {lat: 50.985726, lng: 7.408556}
 };
 
 // Время в пути между участниками
