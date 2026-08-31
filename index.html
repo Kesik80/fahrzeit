@@ -1,5 +1,7 @@
 <!--
-3.06.26 удален мертвый код
+31.08.26 — аудит: flat-формат ссылки Google Maps (фикс сбоя маршрута при удалении точки),
+синхронизация координат участника с реестром имён, инвалидация Google-времени при удалении
+точки, null-guard'ы в saveCoordinates, чистка мёртвого кода/CSS, фикс утечки слушателей.
 -->
 <!DOCTYPE html>
 <html lang="de">
@@ -115,18 +117,6 @@ border-radius: 3px;
 cursor: pointer;
 transition: background .15s;
 user-select: none;
-}
-.participant-row {
-position: relative;
-overflow: hidden;
-}
-.participant-row.swiping {
-transition: transform 0.1s;
-}
-.participant-row.swipe-delete {
-transform: translateX(-100%);
-transition: transform 0.3s ease;
-opacity: 0;
 }
 #outputWrapper {
 position: relative;
@@ -279,9 +269,6 @@ border-color: #1a73e8;
 }
 .time-display.route-calculated:hover {
 border-color: #1558b0;
-}
-.time-display.editing {
-display: none;
 }
 .participant .right-section {
 margin-left: auto;
@@ -828,9 +815,6 @@ background: var(--success-color)
 .modal-content .cancel-button {
 background: var(--info-color)
 }
-.modal-content .delete-greeting-btn {
-background: var(--danger-color)
-}
 .modal-content .trash-btn {
 background: #6d4c41 !important;
 color: #fff !important;
@@ -875,12 +859,6 @@ white-space: pre-wrap
 #result sup {
 font-size: .7em;
 vertical-align: super
-}
-.checkbox-container {
-display: flex;
-gap: var(--small-spacing);
-margin-top: var(--spacing-unit);
-justify-content: flex-end;
 }
 /* Шапка карты — цвет темы */
 .map-picker-header {
@@ -1031,7 +1009,6 @@ overflow-x: auto;
 .modal-btn.cancel-button         { background: var(--danger-color)  !important; }
 #cancelGreeting                   { background: var(--danger-color)   !important; }
 .modal-btn.map-button            { background: var(--primary-color) !important; }
-.modal-btn.delete-greeting-btn   { background: var(--danger-color)  !important; }
 .modal-btn.trash-btn              { background: #6d4c41 !important; }
 /* фон модалки – переключается вместе с темой */
 .modal-content                   { background: #aaaaaa !important; color: #000 !important; }
@@ -1044,15 +1021,6 @@ border: 1px solid #666 !important;
 width: 18px;
 height: 18px;
 fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
-}
-.redaktor-link{
-position:fixed;
-inset:0 auto auto 0;
-margin:4px;
-z-index:9999;
-background:none;
-padding:4px;
-cursor:pointer;
 }
 
 /* ── Tap-анимация для кнопок добавления — через JS ───────────── */
@@ -1340,7 +1308,7 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
   <div id="tripSummary" style="font-size:0.95em;color:#888;"></div>
   <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
   <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
-  <label data-nocopy="1" title="Ссылки сокращать" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#888;margin-left:2px;">
+  <label data-nocopy="1" title="Links kürzen" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#888;margin-left:2px;">
     <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85em;">
       <input type="checkbox" id="shortenBitly" style="width:16px;height:16px;cursor:pointer;accent-color:#4285f4;"> bit.ly
     </label>
@@ -1351,7 +1319,7 @@ transform=" matrix(1 0 0 1 0 0) " stroke-linecap="round" />
 </div>
 </div>
 <div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
-  <button id="btnMapsTo" class="share-btn maps-btn" title="Скопировать маршрут туда">
+  <button id="btnMapsTo" class="share-btn maps-btn" title="Route kopieren">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
 fill="#fff" stroke="none">
 <path d="M2316 4969 c-510 -66 -975 -332 -1276 -730 -194 -258 -313 -534 -371
@@ -1382,7 +1350,7 @@ fill="#fff" stroke="none">
 -5z"/>
 </g></svg>
   </button>
-  <button id="btnMapsBack" class="share-btn maps-back-btn" title="Скопировать маршрут обратно">
+  <button id="btnMapsBack" class="share-btn maps-back-btn" title="Rückweg kopieren">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
 fill="#fff" stroke="none">
 <path d="M2437 4810 c-112 -29 -120 -35 -1654 -1397 -470 -417 -481 -429 -497
@@ -1418,7 +1386,7 @@ l6 -55 -226 -144 -226 -144 -27 17 c-14 9 -54 31 -88 47 -153 75 -345 38 -464
 380 60 31 145 24 202 -16z"/></g>
 </g></svg>
   </button>
-  <button id="btnTraffic" class="share-btn traffic-btn" title="Пробки по расписанию">
+  <button id="btnTraffic" class="share-btn traffic-btn" title="Verkehr nach Zeitplan prüfen">
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500.000000 500.000000" width="28" height="28"><g transform="translate(0.000000,500.000000) scale(0.100000,-0.100000)"
 fill="#fff" stroke="none">
 <path d="M2275 4784 c-121 -9 -250 -12 -356 -8 -191 7 -247 -2 -369 -63 -101
@@ -2101,7 +2069,7 @@ const prev = idx === 0 ? this.startPoint : flatNames[idx - 1];
 if (item?.treffpunkt) {
   const treffName = item.treffpunkt;
   const coords = this.treffpunkt[treffName] || { lat: null, lng: null };
-  const treffTime = this.trefftravelTimes?.[`${treffName}-${value}`] ?? this.getTravelTime(prev, treffName);
+  const treffTime = this.trefftravelTimes?.[`${treffName}-${value}`] ?? this.getTravelTime(prev, treffName).val;
   return {
     name: treffName,
     time: treffTime,
@@ -2119,7 +2087,7 @@ const subs = item?.subParticipants || [];
 const coords = this.nameToCoordinates[name] || { lat: null, lng: null };
 return {
 name,
-time: this.getTravelTime(prev, name),
+time: this.getTravelTime(prev, name).val,
 lat: coords.lat,
 lng: coords.lng,
 timeManuallyEdited: false,
@@ -2152,7 +2120,6 @@ renderParticipants() {
 const container = this.elements.participantsContainer;
 container.innerHTML = '';
 document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
-const nameOptions = Object.keys(this.nameToCoordinates).map(name => `<option value="${name}" ${this.startPoint === name ? 'selected' : ''}>${name}</option>`).join('');
 document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
 const noCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(209,43,47)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
 const hasCoordsSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
@@ -2165,8 +2132,6 @@ const startPassengersContainer = document.getElementById('startPassengersContain
 if (startPassengersContainer) {
   startPassengersContainer.innerHTML = '';
   (this.startPointPassengers || []).forEach((passengerName, idx) => {
-    const usedNames = this.getAllUsedNames(passengerName);
-
     const subDiv = document.createElement('div');
     subDiv.className = 'sub-participant';
     subDiv.innerHTML = `
@@ -2257,9 +2222,6 @@ subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', personIdx);
 
-const usedInTreff = this.getAllUsedNames(personName);
-
-
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
 <div class="cp-trigger" data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" role="button" tabindex="0">
@@ -2273,10 +2235,6 @@ groupDiv.appendChild(subDiv);
 
 } else {
 // ===== Рендер обычного участника (оригинальный код) =====
-const usedForMain = this.getAllUsedNames(p.name);
-const participantNameOptions = Object.keys(this.nameToCoordinates)
-.filter(n => n !== this.startPoint && (!usedForMain.has(n) || n === p.name))
-.map(n => `<option value="${n}" ${p.name === n ? 'selected' : ''}>${n}</option>`).join('');
 const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
 const participantCalcIcon = p.routeCalculated ? coloredMapSvg : grayMapSvg;
 div.innerHTML = `
@@ -2306,11 +2264,6 @@ const subDiv = document.createElement('div');
 subDiv.className = 'sub-participant';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', subIdx);
-const usedInSub = this.getAllUsedNames(subName);
-const subNameOptions = Object.keys(this.nameToCoordinates)
-.filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === subName))
-.sort()
-.map(n => `<option value="${n}" ${subName === n ? 'selected' : ''}>${n}</option>`).join('');
 subDiv.innerHTML = `
 <span class="drag-handle-sub">⋮⋮</span>
 <div class="cp-trigger" data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" role="button" tabindex="0">
@@ -2416,11 +2369,6 @@ machineDiv.className = 'participant machine';
 const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
 // SVG иконки для расчета времени в пути
 const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
-// Строим опции для select пункта назначения
-const destOptions = this.machineDestinations.map(d =>
-  `<option value="${d.name.replace(/"/g, '&quot;')}" ${this.machineStop.name === d.name ? 'selected' : ''}>${d.name}</option>`
-).join('');
-const isCustom = !this.machineDestinations.some(d => d.name === this.machineStop.name);
 machineDiv.innerHTML = `
 <div class="cp-trigger" data-type="machine-name" role="button" tabindex="0">
   <span class="cp-label">${this.machineStop.name || 'Ziel wählen'}</span><span class="cp-arrow">▼</span>
@@ -2493,9 +2441,6 @@ machineDiv.querySelector('[data-type="calc-route"]').addEventListener('click', (
 const farewellDiv = document.createElement('div');
 farewellDiv.className = 'participant machine';
 farewellDiv.style.cssText = 'display:flex;align-items:center;gap:var(--spacing-unit, 10px);flex-wrap:nowrap;';
-const farewellOptions = this.farewells.map(f =>
-  `<option value="${f.replace(/"/g,'&quot;')}" ${this.farewell === f ? 'selected' : ''}>${f}</option>`
-).join('') + '<option value="__add_new_farewell__">➕ Hinzufügen…</option>';
 farewellDiv.innerHTML = `
 <div id="farewellTrigger" class="cp-trigger" role="button" tabindex="0"><span id="farewellLabel">${this.farewell}</span><span class="cp-arrow">▼</span></div>
 <button id="editFarewellBtn" title="Abschied bearbeiten" style="flex-shrink:0;width:24px;height:24px;background:transparent;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transform:translateY(-5px);color:var(--text);">
@@ -2552,13 +2497,6 @@ showDestNameCb.addEventListener('change', () => {
   this.saveData();
   this.calculate();
 });
-const shortenLinksCb = farewellDiv.querySelector('#shortenLinks');
-if (shortenLinksCb) {
-  shortenLinksCb.addEventListener('change', () => {
-    this.shortenLinks = shortenLinksCb.checked;
-    this.saveData();
-  });
-}
 const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
 timeControl.addEventListener('keydown', (e) => {
@@ -2897,6 +2835,7 @@ if (!p) {
 this.updateParticipantTimes();
 }
 else if (this.isEditingMachine) {
+if (!coords) { this.showToast('⚠️ Bitte Koordinaten eingeben'); return; }
 this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
 // BUGFIX: синхронизируем координаты и в machineDestinations
 const destEntry = this.machineDestinations.find(d => d.name === this.machineStop.name);
@@ -2907,12 +2846,24 @@ this.showToast('✅ Koordinaten gespeichert');
 setTimeout(() => this.calculateTravelTimeToMachine(), 500);
 return; // Выходим, чтобы не дублировать вызовы ниже
 } else if (this.isEditingStartPoint) {
+if (!coords) { this.showToast('⚠️ Bitte Koordinaten eingeben'); return; }
 this.startPointCoords = { lat: coords.lat, lng: coords.lng };
+// Реестр имён — источник правды для syncCoordinates(), обновляем и его
+if (this.startPoint) this.nameToCoordinates[this.startPoint] = { lat: coords.lat, lng: coords.lng };
 this.updateParticipantTimes();
 } else {
-this.participants[this.currentEditIndex].lat = coords.lat;
-this.participants[this.currentEditIndex].lng = coords.lng;
-this.participants[this.currentEditIndex].timeManuallyEdited = false;
+const pEdit = this.participants[this.currentEditIndex];
+if (!pEdit) { this.showToast('⚠️ Teilnehmer nicht gefunden'); return; }
+if (!coords) { this.showToast('⚠️ Bitte Koordinaten eingeben'); return; }
+pEdit.lat = coords.lat;
+pEdit.lng = coords.lng;
+pEdit.timeManuallyEdited = false;
+pEdit.routeCalculated = false;
+// Синхронизируем реестр — иначе syncCoordinates() перезапишет правку при перезагрузке
+if (pEdit.name) {
+if (pEdit.isTreffpunkt) this.treffpunkt[pEdit.name] = { lat: coords.lat, lng: coords.lng };
+else this.nameToCoordinates[pEdit.name] = { lat: coords.lat, lng: coords.lng };
+}
 this.updateParticipantTimes();
 }
 this.closeModal(); this.saveData(); this.renderParticipants(); this.initSortable(); this.calculate();
@@ -3440,7 +3391,6 @@ showPicker(title, items, onSelect, currentValue) {
   const existing = document.getElementById('cpOverlay');
   if (existing) existing.remove();
 
-  const isDark = document.body.classList.contains('dark');
   const overlay = document.createElement('div');
   overlay.id = 'cpOverlay';
   overlay.className = 'cp-overlay open';
@@ -3816,6 +3766,8 @@ document.body.appendChild(overlay);
 
 const ITEM_H = 46; // высота одного элемента барабана
 let h = curH, m = curM;
+const drumCleanups = [];
+const closePicker = () => { drumCleanups.forEach(fn => fn()); overlay.remove(); };
 
 function makeDrum(el, count, current, onChange) {
   // Создаём элементы — тройной цикл для бесконечного скролла
@@ -3919,16 +3871,23 @@ function makeDrum(el, count, current, onChange) {
     startOffset = offset;
     el.style.cursor = 'grabbing';
   });
-  window.addEventListener('mousemove', e => {
+  const onWinMove = e => {
     if (!mouseDown) return;
     offset = startOffset + (e.clientY - startY);
     el.style.transform = `translateY(${offset}px)`;
-  });
-  window.addEventListener('mouseup', () => {
+  };
+  const onWinUp = () => {
     if (!mouseDown) return;
     mouseDown = false;
     el.style.cursor = 'grab';
     snapToNearest(true);
+  };
+  window.addEventListener('mousemove', onWinMove);
+  window.addEventListener('mouseup', onWinUp);
+  // Снимаем window-слушатели при закрытии пикера — иначе они копятся при каждом открытии
+  drumCleanups.push(() => {
+    window.removeEventListener('mousemove', onWinMove);
+    window.removeEventListener('mouseup', onWinUp);
   });
 
   // Колесо мыши
@@ -3949,7 +3908,7 @@ overlay.querySelector('#tpSave').onclick = () => {
   this.machineStop.arrivalTime = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
   overlay.style.animation = 'overlayOut 0.2s ease forwards';
   overlay.querySelector('div').style.animation = 'modalOut 0.18s ease forwards';
-  setTimeout(() => overlay.remove(), 200);
+  setTimeout(closePicker, 200);
   this.saveData();
   this.renderParticipants();
   this.initSortable();
@@ -3959,13 +3918,13 @@ overlay.querySelector('#tpClear').onclick = () => {
   this.machineStop.arrivalTime = '';
   overlay.style.animation = 'overlayOut 0.2s ease forwards';
   overlay.querySelector('div').style.animation = 'modalOut 0.18s ease forwards';
-  setTimeout(() => overlay.remove(), 200);
+  setTimeout(closePicker, 200);
   this.saveData();
   this.elements.output.innerHTML = '';
   this.renderParticipants();
   this.updateHints();
 };
-overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
 }
 initSortable() {
 if (this.sortable) this.sortable.destroy();
@@ -4185,9 +4144,6 @@ this.machineStop.arrivalTime = `${String(nh).padStart(2,'0')}:${String(nm).padSt
 this.saveData();
 this.renderParticipants();
 this.calculate();
-// Обновляем отображение времени прибытия
-const timeDisplay = document.querySelector('[data-type="arrival-time-display"]');
-if (timeDisplay) timeDisplay.textContent = this.machineStop.arrivalTime;
 }
 _deactivateGoogleAll() {
 const btn = document.getElementById('btnGoogleAll');
@@ -4242,7 +4198,7 @@ const tsr = document.getElementById('tripSummaryRow');
 if (tsr) tsr.style.display = visible ? 'flex' : 'none';
 }
 async _copyRouteLink(reverse) {
-const msg = reverse ? '📋 Обратный маршрут скопирован!' : '📋 Маршрут туда скопирован!';
+const msg = reverse ? '📋 Rückweg-Route kopiert!' : '📋 Route kopiert!';
 if (reverse) {
   // Для обратного маршрута берём текущий GPS как точку старта
   this.showToast('📍 GPS wird ermittelt...');
@@ -4326,71 +4282,72 @@ try { ok = document.execCommand('copy'); } catch(e) {}
 document.body.removeChild(ta);
 this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 }
-// Строит ссылку в "плоском" формате dir/точка1/точка2/.../точкаN,
-// как это делает сама Google Maps при шеринге текущего маршрута.
-// Это надёжнее формата api=1&waypoints=via:..., который на некоторых
-// телефонах ломает маршрут при ручном удалении пройденной точки во время навигации.
-// Координаты содержат только цифры/точку/минус/запятую — они безопасны в пути URL,
-// запятую специально не кодируем, чтобы ссылка выглядела как "родная" ссылка Google Maps.
-_buildRouteUrl(reverse, gpsCoords) {
-  const enc = (lat, lng) => `${lat},${lng}`;
-  const parts = this.participants.filter(p => p.name);
+// Строит ссылку в "плоском" формате /maps/dir/точка1/точка2/.../точкаN/data=!4m2!4m1!3e0 —
+// именно так Google Maps формирует ссылку, когда шеришь текущий маршрут.
+// В отличие от api=1&waypoints=... здесь каждая точка — настоящая остановка,
+// поэтому при ручном удалении пройденной точки во время навигации приложение
+// пересчитывает маршрут по оставшимся остановкам, а не строит его заново "не туда".
+// mode: 'flat' (по умолчанию) | 'api' — для driver.html, который парсит query-параметры.
+_buildRouteUrl(reverse, gpsCoords, mode = 'flat') {
+  const r6  = (v) => Number(Number(v).toFixed(6));
+  const enc = (lat, lng) => `${r6(lat)},${r6(lng)}`;
+  const parts   = this.participants.filter(p => p.name);
   const machine = this.machineStop;
-  const startC = this.startPointCoords;
+  const startC  = this.startPointCoords;
 
+  // Координаты берём с самого участника — они могли быть отредактированы вручную,
+  // и только если их нет, обращаемся к общему реестру имён / Treffpunkt.
   const getCoordsForParticipant = (p) => {
+    if (p.lat && p.lng) return [enc(p.lat, p.lng)];
     if (p.isTreffpunkt) {
-      if (p.lat && p.lng) return [enc(p.lat, p.lng)];
-      return [];
+      const t = this.treffpunkt[p.name];
+      return (t && t.lat && t.lng) ? [enc(t.lat, t.lng)] : [];
     }
     const c = this.nameToCoordinates[p.name];
-    if (c && c.lat && c.lng) return [enc(c.lat, c.lng)];
-    return [];
+    return (c && c.lat && c.lng) ? [enc(c.lat, c.lng)] : [];
   };
 
-  let origin, destination, waypoints = [];
+  const origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
+  if (!origin) return null;
+
+  const waypoints = [];
+  let destination = null;
 
   if (reverse) {
-    origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
-    if (!origin) return null;
-    [...parts].reverse().forEach(p => {
-      getCoordsForParticipant(p).forEach(c => waypoints.push(c));
-    });
-    if (startC && startC.lat && startC.lng) {
-      destination = enc(startC.lat, startC.lng);
-    } else {
-      return null;
-    }
+    [...parts].reverse().forEach(p => getCoordsForParticipant(p).forEach(c => waypoints.push(c)));
+    if (startC && startC.lat && startC.lng) destination = enc(startC.lat, startC.lng);
+    else if (waypoints.length > 0) destination = waypoints.pop();
+    else return null;
   } else {
-    origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
-    if (!origin) return null;
-    parts.forEach(p => {
-      getCoordsForParticipant(p).forEach(c => waypoints.push(c));
-    });
-    if (machine.lat && machine.lng) {
-      destination = enc(machine.lat, machine.lng);
-    } else if (waypoints.length > 0) {
-      destination = waypoints.pop();
-    } else {
-      return null;
-    }
+    parts.forEach(p => getCoordsForParticipant(p).forEach(c => waypoints.push(c)));
+    if (machine.lat && machine.lng) destination = enc(machine.lat, machine.lng);
+    else if (waypoints.length > 0) destination = waypoints.pop();
+    else return null;
   }
 
-  if (waypoints.length === 0) {
-    return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`;
+  // Убираем подряд идущие дубликаты (GPS-старт может совпасть с первой точкой) —
+  // повторяющаяся остановка ломает пересчёт маршрута в Google Maps.
+  const all = [origin, ...waypoints, destination].filter(Boolean);
+  const points = all.filter((c, i) => i === 0 || c !== all[i - 1]);
+  if (points.length < 2) return null;
+
+  if (mode === 'api') {
+    const o = points[0], d = points[points.length - 1];
+    const wp = points.slice(1, -1);
+    let u = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}`;
+    if (wp.length) u += `&waypoints=${wp.join('%7C')}`;
+    return u + '&travelmode=driving';
   }
 
-  const wp = waypoints.join('%7C');
-  return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&waypoints=${wp}&travelmode=driving`;
+  // Координаты состоят только из цифр, точки, минуса и запятой — они безопасны
+  // в пути URL; запятую специально не кодируем, чтобы ссылка выглядела как "родная".
+  return 'https://www.google.com/maps/dir/' + points.join('/') + '/data=!4m2!4m1!3e0';
 }
 _initShareButtons() {
 const slBitly = document.getElementById('shortenBitly');
 const slFhr = document.getElementById('shortenFhr');
 if (slBitly) slBitly.checked = this.shortenLinks && this.shortenMode === 'bitly';
 if (slFhr) slFhr.checked = this.shortenLinks && this.shortenMode === 'fhr';
-const btnTo   = document.getElementById('btnMapsTo');
-const btnBack = document.getElementById('btnMapsBack');
-// handlers via delegated listener below
 const btnTraffic = document.getElementById('btnTraffic');
 if (btnTraffic) btnTraffic.onclick = () => this.checkTrafficForSchedule();
 }
@@ -4476,7 +4433,14 @@ const text = clone.textContent.trim();
 this._copyToClipboard(text, "📋 Kopiert");
 }
 removeParticipant(index) {
+const wasLast = index === this.participants.length - 1;
 this.participants.splice(index, 1);
+// Участник, вставший на место удалённого, теперь едет от другого соседа —
+// ранее рассчитанное Google время и признак пробок для него недействительны.
+const next = this.participants[index];
+if (next) { next.routeCalculated = false; next.hasTraffic = false; next.trafficDeltaMin = 0; }
+// Время до машины считалось от прежнего последнего участника
+if (wasLast) this.machineStop.autoCalculated = false;
 this.updateParticipantTimes();
 this.saveData();
 this.renderParticipants();
@@ -4660,7 +4624,7 @@ if (outputEl) {
     clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
     const text = clone.textContent.trim();
     if (!text) return;
-    app._copyToClipboard(text, '📋 Текст скопирован!');
+    app._copyToClipboard(text, '📋 Text kopiert!');
     outputEl.classList.add('copy-flash-all');
     setTimeout(() => outputEl.classList.remove('copy-flash-all'), 400);
   });
@@ -4687,7 +4651,7 @@ if (outputEl) {
       clone.querySelectorAll('[data-nocopy]').forEach(n => n.remove());
       const text = clone.textContent.trim();
       if (!text) return;
-      app._copyToClipboard(text, '📋 Текст скопирован!');
+      app._copyToClipboard(text, '📋 Text kopiert!');
       outputEl.classList.add('copy-flash-all');
       setTimeout(() => outputEl.classList.remove('copy-flash-all'), 400);
       // Снимаем блокировку через паузу
@@ -4704,11 +4668,18 @@ if (app.machineStop && app.machineStop.arrivalTime) {
 // Кнопки шаринга — делегирование, работает всегда
 window._openDriver = function() {
   const app = window.app;
-  if (!app) return;
-  const url = app._buildRouteUrl ? app._buildRouteUrl(false) : null;
-  let driverUrl = '/driver.html';
-  if (url) driverUrl += '?route=' + encodeURIComponent(url);
-  window.location.href = driverUrl;
+  if (!app || !app._buildRouteUrl) return;
+  const go = (gps) => {
+    // driver.html разбирает ссылку через searchParams — ему нужен формат api=1
+    const url = gps ? app._buildRouteUrl(false, gps, 'api') : null;
+    window.location.href = '/driver.html' + (url ? '?route=' + encodeURIComponent(url) : '');
+  };
+  if (!navigator.geolocation) { go(null); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => go({ lat: p.coords.latitude, lng: p.coords.longitude }),
+    () => go(null),
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+  );
 };
 document.addEventListener('click', e => {
   const app = window.app;
@@ -4741,10 +4712,10 @@ document.addEventListener('click', e => {
     const text = clone.textContent.trim();
     if (navigator.share) {
       navigator.share({ title: 'Fahrzeit', text }).catch(err => {
-        if (err.name !== 'AbortError') app._copyToClipboard(text, '📋 Текст скопирован!');
+        if (err.name !== 'AbortError') app._copyToClipboard(text, '📋 Text kopiert!');
       });
     } else {
-      app._copyToClipboard(text, '📋 Текст скопирован!');
+      app._copyToClipboard(text, '📋 Text kopiert!');
     }
   }
   */
