@@ -75,6 +75,9 @@
     '}',
     'body.dark .fz-install{background:rgba(30,30,30,.94);color:#e1e1e1;border-color:rgba(255,255,255,.12);}',
     '.fz-install.show{display:flex;transform:translateY(0);}',
+    /* Пока баннер висит, приподнимаем содержимое, чтобы он не закрывал подсказки и кнопки */
+    'body.fz-install-open{padding-bottom:var(--fz-install-space,120px)!important;',
+    '  transition:padding-bottom .42s cubic-bezier(.32,1,.23,1);}',
     '.fz-ic{flex:none;width:34px;height:34px;display:grid;place-items:center;}',
     '.fz-tx{flex:1;min-width:0;}',
     '.fz-t{font-size:14.5px;font-weight:600;line-height:1.25;}',
@@ -117,8 +120,21 @@
   document.body.appendChild(bar);
 
   var $ = function (id) { return document.getElementById(id); };
-  var show = function () { requestAnimationFrame(function () { bar.classList.add('show'); }); };
-  var hide = function () { bar.classList.remove('show'); };
+  var show = function () {
+    requestAnimationFrame(function () {
+      bar.classList.add('show');
+      // Высоту меряем по факту: при длинном тексте баннер переносится на две строки
+      requestAnimationFrame(function () {
+        var h = bar.offsetHeight || 62;
+        document.body.style.setProperty('--fz-install-space', (h + 30) + 'px');
+        document.body.classList.add('fz-install-open');
+      });
+    });
+  };
+  var hide = function () {
+    bar.classList.remove('show');
+    document.body.classList.remove('fz-install-open');
+  };
 
   $('fz-x').onclick = function () {
     hide();
