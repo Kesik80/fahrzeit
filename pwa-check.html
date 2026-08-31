@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="/icons/manifest.json">
+<title>Fahrzeit — PWA-Check</title>
+<script>
+/* Перехватываем событие как можно раньше — Chrome его не буферизует */
+window.__fzInstallEvent = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  window.__fzInstallEvent = e;
+  if (typeof window.__onBip === 'function') window.__onBip(e);
+});
+</script>
+<style>
+:root { color-scheme: dark; }
+body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #121212; color: #e1e1e1;
+  margin: 0; padding: 14px; max-width: 560px; margin: auto;
+  font-size: 14px; line-height: 1.45;
+}
+h1 { font-size: 17px; margin: 4px 0 14px; font-family: sans-serif; }
+.row {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px 12px; margin-bottom: 8px;
+  background: #1e1e1e; border: 1px solid #333; border-radius: 10px;
+}
+.ic { flex: none; font-size: 16px; line-height: 1.3; }
+.tx { flex: 1; min-width: 0; word-break: break-word; }
+.name { font-weight: 700; }
+.hint { color: #999; font-size: 12.5px; margin-top: 3px; }
+.ok .ic { color: #28a745; }
+.bad .ic { color: #dc3545; }
+.warn .ic { color: #ff9800; }
+button {
+  width: 100%; padding: 13px; margin-top: 10px; border: 0; border-radius: 12px;
+  background: #007bff; color: #fff; font-size: 15px; font-weight: 600;
+  font-family: sans-serif; cursor: pointer;
+}
+button[disabled] { background: #444; color: #888; }
+a { color: #4da3ff; }
+pre { background:#181818; border:1px solid #333; border-radius:8px; padding:10px; overflow-x:auto; font-size:12px; }
+</style>
+</head>
+<body>
+
+<h1>🔍 Fahrzeit — PWA-Check</h1>
+<div id="out"></div>
+<button id="installBtn" disabled>Installieren</button>
+<p class="hint" id="note"></p>
+
+<script>
+const out = document.getElementById('out');
+
+function row(state, name, hint) {
+  const ic = state === 'ok' ? '✓' : state === 'bad' ? '✕' : '!';
+  const d = document.createElement('div');
+  d.className = 'row ' + state;
+  d.innerHTML = '<div class="ic">' + ic + '</div><div class="tx"><div class="name"></div>' +
+                (hint ? '<div class="hint"></div>' : '') + '</div>';
+  d.querySelector('.name').textContent = name;
+  if (hint) d.querySelector('.hint').innerHTML = hint;
+  out.appendChild(d);
+  return d;
+}
+
+(async function () {
+
+  // 1. HTTPS
+  const secure = location.protocol === 'https:' || location.hostname === 'localhost';
+  row(secure ? 'ok' : 'bad', 'HTTPS: ' + location.protocol,
+      secure ? '' : 'Без HTTPS установка невозможна в принципе.');
+
+  // 2. Уже установлено / запущено как приложение
+  const standalone = matchMedia('(display-mode: standalone)').matches
+    || matchMedia('(display-mode: fullscreen)').matches
+    || navigator.standalone === true;
+  row(standalone ? 'warn' : 'ok', 'Режим: ' + (standalone ? 'приложение (standalone)' : 'вкладка браузера'),
+      standalone ? 'Ты открыл эту страницу из иконки на экране — значит приложение <b>уже установлено</b>. Chrome в этом случае предложение установки не присылает. Это и есть самая частая причина, почему баннера нет.' : '');
+
+  // 3. Манифест
+  const linkEl = document.querySelector('link[rel="manifest"]');
+  if (!linkEl) {
+    row('bad', 'Манифест не подключён', 'Нет &lt;link rel="manifest"&gt; в &lt;head&gt;.');
+  } else {
+    row('ok', 'Манифест подключён: ' + linkEl.getAttribute('href'));
+    try {
+      const r = await fetch(linkEl.href, { cache: 'no-cache' });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const m = await r.json();
+      row('ok', 'Манифест загружается и это валидный JSON');
+
+      const scope = m.scope || new URL('.', linkEl.href).pathname;
+      const startUrl = new URL(m.start_url || '/', location.origin).pathname;
+      const inScope = startUrl.indexOf(scope) === 0;
+      row(inScope ? 'ok' : 'bad', 'scope: ' + scope + '  ·  start_url: ' + startUrl,
+          inScope ? '' : 'start_url вне scope — Chrome считает такой манифест непригодным для установки. Добавь "scope": "/".');
+
+      const disp = m.display_override && m.display_override.length ? m.display_override[0] : m.display;
+      const dispOk = ['standalone', 'fullscreen', 'minimal-ui'].indexOf(disp) !== -1;
+      row(dispOk ? 'ok' : 'bad', 'display: ' + disp,
+          dispOk ? '' : 'Нужен standalone, fullscreen или minimal-ui.');
+
+      row(m.name || m.short_name ? 'ok' : 'bad', 'name: ' + (m.name || '—') + '  ·  short_name: ' + (m.short_name || '—'));
+
+      const sizes = (m.icons || []).map(i => i.sizes).join(', ');
+      const has192 = (m.icons || []).some(i => /(^|\s)192x192(\s|$)/.test(i.sizes || ''));
+      const has512 = (m.icons || []).some(i => /(^|\s)512x512(\s|$)/.test(i.sizes || ''));
+      row(has192 && has512 ? 'ok' : 'bad', 'Иконки: ' + (sizes || '—'),
+          has192 && has512 ? '' : 'Нужны обе: 192x192 и 512x512.');
+
+      // Реально ли иконки отдаются
+      for (const i of (m.icons || [])) {
+        try {
+          const ir = await fetch(new URL(i.src, location.origin).href, { method: 'GET', cache: 'no-cache' });
+          row(ir.ok ? 'ok' : 'bad', 'Иконка ' + i.src + ' → HTTP ' + ir.status);
+        } catch (e) {
+          row('bad', 'Иконка ' + i.src + ' не загружается', e.message);
+        }
+      }
+    } catch (e) {
+      row('bad', 'Манифест не читается', e.message);
+    }
+  }
+
+  // 4. Service worker
+  if (!('serviceWorker' in navigator)) {
+    row('bad', 'Service Worker не поддерживается браузером');
+  } else {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      row('ok', 'Service Worker зарегистрирован', 'scope: ' + reg.scope);
+      const regs = await navigator.serviceWorker.getRegistrations();
+      row(regs.length ? 'ok' : 'bad', 'Активных регистраций: ' + regs.length);
+    } catch (e) {
+      row('bad', 'Service Worker не встал', e.message + ' — проверь, что /sw.js лежит в корне и отдаётся с MIME-типом javascript.');
+    }
+  }
+
+  // 5. install.js на месте
+  try {
+    const r = await fetch('/install.js', { method: 'GET', cache: 'no-cache' });
+    row(r.ok ? 'ok' : 'bad', '/install.js → HTTP ' + r.status,
+        r.ok ? '' : 'Файл не залился в корень репозитория.');
+  } catch (e) {
+    row('bad', '/install.js не найден', e.message);
+  }
+
+  // 6. Флаг «закрыл баннер»
+  let d = null;
+  try { d = localStorage.getItem('fahrzeit.installDismissed'); } catch (e) {}
+  if (d) {
+    const days = Math.ceil((7 * 86400000 - (Date.now() - parseInt(d, 10))) / 86400000);
+    row('warn', 'Баннер скрыт вручную, осталось дней: ' + days,
+        'Сброс: <code>localStorage.removeItem("fahrzeit.installDismissed")</code>');
+  } else {
+    row('ok', 'Баннер не скрывался');
+  }
+
+  // 7. Само событие
+  const bipRow = row('warn', 'beforeinstallprompt: ждём…',
+    'Если через 10 секунд так и не придёт — либо приложение уже установлено, либо не выполнено одно из условий выше, либо браузер это событие не поддерживает (Firefox, Safari).');
+
+  function gotBip(e) {
+    bipRow.className = 'row ok';
+    bipRow.querySelector('.ic').textContent = '✓';
+    bipRow.querySelector('.name').textContent = 'beforeinstallprompt: получено — установка доступна';
+    bipRow.querySelector('.hint').textContent = 'Жми кнопку ниже.';
+    const btn = document.getElementById('installBtn');
+    btn.disabled = false;
+    btn.onclick = async () => {
+      e.prompt();
+      const r = await e.userChoice;
+      document.getElementById('note').textContent = 'Результат: ' + r.outcome;
+      btn.disabled = true;
+    };
+  }
+  window.__onBip = gotBip;
+  if (window.__fzInstallEvent) gotBip(window.__fzInstallEvent);
+
+  setTimeout(() => {
+    if (window.__fzInstallEvent) return;
+    bipRow.className = 'row bad';
+    bipRow.querySelector('.ic').textContent = '✕';
+    bipRow.querySelector('.name').textContent = 'beforeinstallprompt: не пришло за 10 секунд';
+  }, 10000);
+
+  // 8. Браузер
+  row('ok', 'UA', navigator.userAgent);
+
+})();
+</script>
+
+<script src="console.js"></script>
+</body>
+</html>

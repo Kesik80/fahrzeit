@@ -15,6 +15,21 @@
 <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png">
 <!-- манифест -->
 <link rel="manifest" href="/icons/manifest.json">
+<!-- Ловим beforeinstallprompt как можно раньше: Chrome не буферизует это событие,
+     и если оно прилетит до загрузки install.js — предложение установки будет потеряно. -->
+<script>
+window.__fzInstallEvent = null;
+window.__fzInstalled = false;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  window.__fzInstallEvent = e;
+  if (typeof window.__fzOnInstallPrompt === 'function') window.__fzOnInstallPrompt(e);
+});
+window.addEventListener('appinstalled', function () {
+  window.__fzInstalled = true;
+  if (typeof window.__fzOnInstalled === 'function') window.__fzOnInstalled();
+});
+</script>
 <!-- цвет статус-бара (опционально) -->
 <meta name="theme-color" content="#1a1a1a" id="theme-meta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1142,7 +1157,7 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
 }
 </style>
 </head>
-<body>
+<body data-install="banner">
 <main>
 <h2>Fahrzeit Rechner</h2>
 <!-- переключатель темы (уже есть) -->
@@ -4869,6 +4884,7 @@ input.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword
 input.addEventListener('input', () => { input.classList.remove('error'); });
 });
 </script>
+<script src="install.js"></script>
 <script src="console.js"></script>
 </body>
 </html>
