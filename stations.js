@@ -97,7 +97,7 @@ this.travelTimes = {
 this.treffpunkt = {
   "OLGA-Park": {lat: 51.500434, lng: 6.868634},
   "Lirich P&R Parkplatz": {lat: 51.475975, lng: 6.812210},
-  "Rathaus Osterfeld": {lat: 51.501444, lng: 6.889543},
+  "Rathaus Osterfeld": {lat: 51.501270, lng: 6.889513},
   "P&R Herten A2": {lat: 51.572438, lng: 7.133029},
   "Golf Parkplatz": {lat: 51.522611, lng: 6.893011},
   "P&R A42": {lat: 51.535695, lng: 7.096155}
@@ -212,7 +212,7 @@ const defaultEntryMetaData = {
   "treffpunkt": {
     "Rathaus Osterfeld": {
       "c": "2026-09-03T22:04:43.685Z",
-      "u": "2026-09-03T22:04:43.685Z"
+      "u": "2026-09-03T22:08:01.456Z"
     }
   }
 };
