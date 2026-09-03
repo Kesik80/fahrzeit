@@ -2,14 +2,14 @@
 const defaultCoords = {
   "Sergii": {lat: 51.530133, lng: 6.850858},
   "Anatolii": {lat: 51.522697, lng: 6.859275},
-  "Andrii": {lat: 51.534558, lng: 6.861061},
+  "Aleks": {lat: 51.511287, lng: 6.878713},
   "Sergio": {lat: 51.519965, lng: 6.887640},
-  "Dima": {lat: 51.551753, lng: 7.102285},
-  "René": {lat: 51.476281, lng: 6.861856},
-  "Marvin": {lat: 51.556472, lng: 6.731424},
   "Vasyl": {lat: 51.515227, lng: 6.893755},
-  "Maikel": {lat: 51.539072, lng: 7.009012},
-  "Aleks": {lat: 51.511287, lng: 6.878713}
+  "René": {lat: 51.476281, lng: 6.861856},
+  "Dima": {lat: 51.551753, lng: 7.102285},
+  "Andrii": {lat: 51.534558, lng: 6.861061},
+  "Marvin": {lat: 51.556472, lng: 6.731424},
+  "Maikel": {lat: 51.539072, lng: 7.009012}
 };
 
 // реестр станций
