@@ -16,6 +16,7 @@ const defaultCoords = {
 this.stations = {
   "Dortmund Obereving": {lat: 51.540635, lng: 7.478439},
   "Dortmund-Lütgendortmund": {lat: 51.497711, lng: 7.366530},
+  "Duisburg Hochfeld": {lat: 51.409617, lng: 6.764010},
   "Düsseldorf Raht": {lat: 51.270511, lng: 6.825857},
   "Engelskirchen": {lat: 50.985726, lng: 7.408556},
   "Essen West": {lat: 51.453927, lng: 6.979462},
@@ -208,7 +209,12 @@ const defaultMachineDestinationsData = [
 // Главная страница его не читает — нужен только для сортировки «по дате».
 const defaultEntryMetaData = {
   "defaultCoords": {},
-  "stations": {},
+  "stations": {
+    "Duisburg Hochfeld": {
+      "c": "2026-09-03T22:51:42.865Z",
+      "u": "2026-09-03T22:51:42.865Z"
+    }
+  },
   "treffpunkt": {
     "Rathaus Osterfeld": {
       "c": "2026-09-03T22:04:43.685Z",
