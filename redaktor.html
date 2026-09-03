@@ -279,13 +279,15 @@ body {
   opacity: .4;           /* почти прозрачный в покое */
   transition: opacity .2s; /* плавное появление */
   user-select: none;     /* нельзя выделить текстом */
-  padding: 6px 20px 6px 30px; /* увеличенная зона захвата */
+  padding: 10px 9px 10px 5px; /* зона захвата по вертикали, а не вширь —
+                                 раньше было 50px по бокам и имя не помещалось */
 }
 .card:hover .drag-handle { opacity: .7; } /* становится видимее при hover на карточку */
 
 /* Название записи в карточке (кликабельно для переименования) */
 .card-name {
-  flex: 1;               /* занимает всё свободное место */
+  flex: 1 1 auto;        /* занимает всё свободное место */
+  min-width: 90px;       /* имя всегда получает разумный минимум */
   font-size: 1rem;       /* базовый размер */
   font-weight: 600;      /* полужирный */
   color: var(--text);    /* основной цвет текста */
@@ -316,17 +318,23 @@ body {
   outline: none;                        /* убираем стандартный синий outline браузера */
 }
 
-/* Обёртка поля координат */
+/* Обёртка поля координат.
+   В покое показываем короткую запись (4 знака) — она нужна только
+   чтобы глазом отличить одну точку от другой. Полные 6 знаков
+   появляются при тапе, когда поле разворачивается. */
 .card-coord {
-  flex: 0 0 auto; /* не растягивается и не сжимается */
-  width: 130px;   /* фиксированная ширина для поля "lat, lng" */
+  flex: 0 0 auto;          /* в покое — фиксированная узкая колонка */
+  width: 96px;             /* хватает на «51.5301, 6.8509» */
+  transition: width .18s;  /* плавное разворачивание при тапе */
+  min-width: 0;            /* разрешаем сжиматься */
 }
 
 /* Поле координат и поле времени (общие стили) */
 .card-coord input, .card-time-input {
   width: 100%;                          /* на всю ширину обёртки */
   font-family: var(--font);             /* основной шрифт */
-  font-size: .72rem;                    /* мелкий — координаты не главное */
+  font-size: .68rem;                    /* мелкий — координаты не главное */
+  text-align: center;                   /* короткая запись по центру колонки */
   color: var(--text2);                  /* приглушённый цвет в покое */
   background: var(--surface2);          /* слегка выделяется на фоне карточки */
   border: 1px solid var(--border);      /* рамка */
@@ -1225,6 +1233,47 @@ body {
 }
 .hc-fix:hover  { background: var(--accent); color: #fff; }
 .hc-fix:active { transform: scale(.97); }
+
+/* ══════════════════════════════════════
+   РЕЖИМЫ РЕДАКТИРОВАНИЯ КАРТОЧКИ
+   Экран телефона узкий, поэтому имя и координаты
+   не конкурируют за место: пока правишь одно —
+   второе временно уходит и поле занимает всю строку.
+══════════════════════════════════════ */
+
+/* Тапнули по координатам → поле подрастает ВЛЕВО от своего правого края
+   ровно настолько, сколько нужно цифрам (ширину считает JS).
+   Имя никуда не девается — просто ужимается с многоточием. */
+.card.coord-editing .card-name {
+  flex: 1 1 0;         /* отдаёт место полю координат */
+  min-width: 0;        /* разрешаем сжатие до многоточия */
+}
+.card.coord-editing .coord-open-btn { display: none; } /* 🗺 освобождает место */
+.card.coord-editing .card-coord {
+  margin-left: auto;   /* остаётся прижатым вправо — там, где и было */
+}
+.card.coord-editing .card-coord input {
+  font-size: .78rem;   /* чуть крупнее, цифры надо разглядеть */
+  text-align: left;    /* при вводе привычнее слева */
+  padding: 8px 10px;   /* удобнее попадать пальцем */
+}
+
+/* Тапнули по имени → поле подрастает ВПРАВО от своего левого края.
+   Координаты остаются справа и ужимаются. */
+.card.name-editing .card-coord {
+  flex: 1 1 0;         /* отдаёт место полю имени */
+  width: auto;         /* снимаем фиксированные 96px */
+  min-width: 0;        /* разрешаем сжатие */
+}
+.card.name-editing .coord-open-btn,
+.card.name-editing .add-sub-btn { display: none; } /* освобождают место */
+.card.name-editing .card-name-input {
+  font-size: 1rem;     /* полный размер */
+}
+
+/* Короткая запись координат в покое — приглушённая, это лишь подсказка */
+.card-coord input.short { opacity: .75; letter-spacing: -.2px; }
+.card-coord input.short:hover { opacity: 1; }
 
 /* Скрытый input[type=file] — не должен занимать место на странице */
 #fileInput { display: none; }
@@ -2836,6 +2885,35 @@ function updateRaw() {
 // ═══════════════════════════════════════
 //  DOM HELPERS
 // ═══════════════════════════════════════
+// Ширина текста в пикселях — чтобы поле подросло ровно на недостающее,
+// а не разворачивалось на всю карточку.
+function measureText(text, el) {
+  try {
+    const cs = getComputedStyle(el);
+    const cv = measureText._c || (measureText._c = document.createElement('canvas'));
+    const ctx = cv.getContext('2d');
+    ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    const w = ctx.measureText(text || '').width;
+    if (w > 0) return w;
+  } catch {}
+  // Запасная оценка, если canvas недоступен
+  const size = parseFloat(getComputedStyle(el).fontSize) || 16;
+  return String(text || '').length * size * 0.58;
+}
+
+// Подгоняем ширину поля под содержимое.
+// reserve — сколько пикселей карточки обязательно оставить соседу,
+// чтобы он не схлопнулся в ноль.
+function fitFieldWidth(el, text, reserve = 92) {
+  const card = el.closest('.card');
+  if (!card) return;
+  const avail = card.clientWidth - reserve;
+  if (avail <= 0) return;
+  const need = Math.ceil(measureText(text, el)) + 34;   // + padding и курсор
+  el.style.flex = `0 0 ${Math.max(70, Math.min(need, avail))}px`;
+}
+function resetFieldWidth(el) { el.style.flex = ''; }
+
 function mkCard(isGroup, idx) {
   const d = document.createElement('div');
   d.className = 'card' + (isGroup ? ' group-card' : '');
@@ -2860,50 +2938,106 @@ function mkAddSubBtn() {
 function mkNameEl(name, onRename) {
   const span = document.createElement('span'); span.className = 'card-name'; span.textContent = name;
   span.onclick = () => {
+    const card = span.closest('.card');
     const input = document.createElement('input'); input.className = 'card-name-input'; input.value = name;
-    span.replaceWith(input); input.focus(); input.select();
+    span.replaceWith(input);
+    // Имя остаётся на своём месте слева и подрастает вправо ровно
+    // настолько, сколько нужно тексту; координаты справа ужимаются
+    card?.classList.add('name-editing');
+    const fit = () => fitFieldWidth(input, input.value, 96);
+    fit();
+    input.addEventListener('input', fit);   // растёт по мере набора
+    input.focus(); input.select();
     let done = false;
+    const restore = () => { input.replaceWith(span); card?.classList.remove('name-editing'); };
     const finish = () => {
       if (done) return; done = true;
       const newName = input.value.trim();
+      card?.classList.remove('name-editing');
       if (!newName || newName === name) { input.replaceWith(span); return; }
       if (!onRename(newName)) input.replaceWith(span);
     };
     input.addEventListener('blur', finish);
     input.addEventListener('keydown', e => {
       if (e.key === 'Enter') input.blur();
-      if (e.key === 'Escape') { done = true; input.replaceWith(span); }
+      if (e.key === 'Escape') { done = true; restore(); }
     });
   };
   return span;
 }
-// Поле координат: понимает и цифры, и ссылки. Всегда показывает 6 знаков.
+// Поле координат.
+// В покое — короткая запись (4 знака), чтобы имя не обрезалось.
+// При тапе поле разворачивается на всю карточку и показывает все 6 знаков.
+// Понимает и цифры, и ссылки Google Maps.
 function mkCoordInput(coord, onChange, opts = {}) {
   const wrap = document.createElement('div'); wrap.className = 'card-coord';
   wrap.style.marginLeft = 'auto';
   const inp = document.createElement('input'); inp.type = 'text';
-  inp.value = coordText(coord);
-  inp.placeholder = opts.allowEmpty ? 'нет координат' : '51.530133, 6.850858';
-  inp.title = 'Координаты (6 знаков) или ссылка Google Maps';
+  inp.inputMode = 'text';
+  let cur = coord;                       // последнее сохранённое значение
+
+  // Короткая запись: 4 знака ≈ 11 м — достаточно, чтобы различить точки
+  const shortText = c => (!c || c.lat == null || c.lng == null)
+    ? '' : `${Number(c.lat).toFixed(4)}, ${Number(c.lng).toFixed(4)}`;
+
+  const card = () => wrap.closest('.card');
+  function showShort() {
+    inp.value = shortText(cur);
+    inp.classList.add('short');
+    inp.placeholder = opts.allowEmpty ? 'нет коорд.' : '51.5301, 6.8509';
+  }
+  function showFull() {
+    inp.value = coordText(cur);
+    inp.classList.remove('short');
+    inp.placeholder = opts.allowEmpty ? 'нет координат' : '51.530133, 6.850858 или ссылка';
+  }
+  function refresh() {
+    // если поле всё ещё в фокусе — оставляем полный вид
+    (document.activeElement === inp) ? showFull() : showShort();
+    inp.classList.toggle('bad', !opts.allowEmpty && !coordValid(cur));
+  }
+
+  showShort();
+  inp.title = 'Координаты (6 знаков) или ссылка Google Maps\nНажмите, чтобы увидеть и изменить полностью';
   if (!opts.allowEmpty && !coordValid(coord)) inp.classList.add('bad');
+
+  const fit = () => fitFieldWidth(wrap, inp.value || '51.530133, 6.850858', 104);
+  inp.addEventListener('focus', () => {
+    card()?.classList.add('coord-editing');
+    showFull();
+    fit();                                  // подрастает влево на недостающее
+    // выделяем всё — проще вставить ссылку поверх
+    setTimeout(() => inp.select(), 0);
+  });
+  inp.addEventListener('input', fit);       // вставили длинную ссылку — поле тянется
+  inp.addEventListener('blur', () => {
+    card()?.classList.remove('coord-editing');
+    resetFieldWidth(wrap);                  // возвращаем узкую колонку
+    showShort();
+  });
+  // Enter на телефоне закрывает клавиатуру и сворачивает поле
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
 
   inp.addEventListener('change', async () => {
     const raw = inp.value.trim();
-    if (!raw && opts.allowEmpty) { onChange({ lat: null, lng: null }); inp.classList.remove('bad', 'approx'); return; }
+    if (!raw && opts.allowEmpty) {
+      cur = { lat: null, lng: null };
+      onChange(cur); refresh(); inp.classList.remove('approx');
+      return;
+    }
     const res = await parseAnyCoords(raw);
     if (res) {
-      const c = normCoord(res);
-      inp.value = coordText(c);
-      inp.classList.toggle('bad', !coordValid(c));
+      cur = normCoord(res);
       inp.classList.toggle('approx', res.approx === true);
-      onChange(c);
+      onChange(cur);
       showMsg(res.approx ? '⚠️ Взят центр карты — проверьте точку' : `Сохранено ✓ (${res.source || 'ручной ввод'})`, res.approx ? 3200 : 1800);
-    } else {
-      inp.value = coordText(coord);   // возвращаем прежнее значение
     }
+    refresh();   // не распозналось — вернётся прежнее значение
   });
+
   wrap.appendChild(inp); return wrap;
 }
+
 // Кнопка «открыть точку в Google Maps» — быстрая визуальная проверка
 function mkOpenMapBtn(getCoord) {
   const b = document.createElement('button');
