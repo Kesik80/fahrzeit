@@ -2459,7 +2459,9 @@ function renderOrders(box) {
   row.className = 'driver-row';
   const driverSel = document.createElement('select');
   driverSel.id = 'driverSel';
-  [...drivers].sort(collator.compare).forEach(d => {
+  // Порядок — как в файле (как ты расставил участников на вкладке «Участники»),
+  // а не по алфавиту. Нужен алфавит — отсортируй участников кнопкой ↕ Сорт.
+  drivers.forEach(d => {
     const opt = document.createElement('option');
     opt.value = opt.textContent = d;
     if (d === (participantOrders._lastDriver || drivers[0])) opt.selected = true;
@@ -3293,7 +3295,8 @@ function getUsedByDriver(driver) {
   return used;
 }
 function getAllNames() {
-  return Object.keys(data.defaultCoords || {}).sort(collator.compare);
+  // Тот же принцип: порядок файла, а не алфавит — он задаётся на вкладке «Участники»
+  return Object.keys(data.defaultCoords || {});
 }
 
 function triggerAddOrder(driver) {
