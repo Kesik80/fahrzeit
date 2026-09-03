@@ -17,9 +17,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { originLat, originLng, destLat, destLng, departureTime } = req.body;
+    const { originLat, originLng, destLat, destLng, departureTime } = req.body || {};
 
-    if (!originLat || !originLng || !destLat || !destLng) {
+    // Проверяем именно «есть ли число», а не «истинно ли оно»:
+    // при !originLat координата 0 (экватор / нулевой меридиан) считалась
+    // отсутствующей и запрос отбивался с ошибкой.
+    const bad = v => v === undefined || v === null || v === '' || !isFinite(Number(v));
+    if (bad(originLat) || bad(originLng) || bad(destLat) || bad(destLng)) {
       return res.status(400).json({
         error: 'Missing coordinates',
         message: 'Требуются все координаты: originLat, originLng, destLat, destLng'
