@@ -318,23 +318,28 @@ body {
   outline: none;                        /* убираем стандартный синий outline браузера */
 }
 
-/* Обёртка поля координат.
-   В покое показываем короткую запись (4 знака) — она нужна только
-   чтобы глазом отличить одну точку от другой. Полные 6 знаков
-   появляются при тапе, когда поле разворачивается. */
-.card-coord {
-  flex: 0 0 auto;          /* в покое — фиксированная узкая колонка */
-  width: 96px;             /* хватает на «51.5301, 6.8509» */
-  transition: width .18s;  /* плавное разворачивание при тапе */
-  min-width: 0;            /* разрешаем сжиматься */
+/* Иконка-булавка вместо поля координат.
+   Синяя — координаты заданы, серая — нет. Тап открывает модалку.
+   Так вся ширина карточки достаётся имени. */
+.coords-icon {
+  flex: 0 0 auto;          /* не растягивается и не сжимается */
+  width: 26px; height: 26px; /* компактная зона тапа */
+  border: none;            /* без рамки */
+  background: transparent; /* прозрачный фон */
+  padding: 0;              /* без отступов */
+  cursor: pointer;         /* курсор-рука */
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .15s, opacity .15s;
 }
+.coords-icon svg { width: 22px; height: 22px; } /* размер самой булавки */
+.coords-icon:hover  { transform: scale(1.12); } /* лёгкое увеличение */
+.coords-icon:active { transform: scale(.9); }   /* отклик на нажатие */
 
 /* Поле координат и поле времени (общие стили) */
-.card-coord input, .card-time-input {
+.card-time-input {
   width: 100%;                          /* на всю ширину обёртки */
   font-family: var(--font);             /* основной шрифт */
-  font-size: .68rem;                    /* мелкий — координаты не главное */
-  text-align: center;                   /* короткая запись по центру колонки */
+  font-size: .72rem;                    /* мелкий — цифры не главное */
   color: var(--text2);                  /* приглушённый цвет в покое */
   background: var(--surface2);          /* слегка выделяется на фоне карточки */
   border: 1px solid var(--border);      /* рамка */
@@ -343,7 +348,7 @@ body {
   outline: none;                        /* убираем outline браузера */
   transition: border-color .15s, background .15s; /* анимация фокуса */
 }
-.card-coord input:focus, .card-time-input:focus {
+.card-time-input:focus {
   border-color: var(--accent);   /* синяя рамка при фокусе */
   background: var(--accent-lt);  /* светло-синий фон при фокусе */
   color: var(--text);            /* полный цвет текста при фокусе */
@@ -1154,18 +1159,6 @@ body {
 .coord-open-btn:hover  { opacity: 1; transform: scale(1.12); }
 .coord-open-btn:active { transform: scale(.92); }
 
-/* Поле координат с ошибкой (нули или вне допустимого диапазона) */
-.card-coord input.bad {
-  border-color: var(--red);   /* красная рамка */
-  color: var(--red);          /* красный текст */
-  background: var(--red-lt);  /* красноватый фон */
-}
-/* Поле координат, полученное из центра карты (@) — требует проверки */
-.card-coord input.approx {
-  border-color: #ff9800;               /* оранжевая рамка */
-  background: rgba(255,152,0,.10);     /* оранжеватый фон */
-}
-
 /* ══════════════════════════════════════
    СЧЁТЧИК ЗАПИСЕЙ НА ТАБЕ
 ══════════════════════════════════════ */
@@ -1241,39 +1234,181 @@ body {
    второе временно уходит и поле занимает всю строку.
 ══════════════════════════════════════ */
 
-/* Тапнули по координатам → поле подрастает ВЛЕВО от своего правого края
-   ровно настолько, сколько нужно цифрам (ширину считает JS).
-   Имя никуда не девается — просто ужимается с многоточием. */
-.card.coord-editing .card-name {
-  flex: 1 1 0;         /* отдаёт место полю координат */
-  min-width: 0;        /* разрешаем сжатие до многоточия */
-}
-.card.coord-editing .coord-open-btn { display: none; } /* 🗺 освобождает место */
-.card.coord-editing .card-coord {
-  margin-left: auto;   /* остаётся прижатым вправо — там, где и было */
-}
-.card.coord-editing .card-coord input {
-  font-size: .78rem;   /* чуть крупнее, цифры надо разглядеть */
-  text-align: left;    /* при вводе привычнее слева */
-  padding: 8px 10px;   /* удобнее попадать пальцем */
-}
-
-/* Тапнули по имени → поле подрастает ВПРАВО от своего левого края.
-   Координаты остаются справа и ужимаются. */
-.card.name-editing .card-coord {
-  flex: 1 1 0;         /* отдаёт место полю имени */
-  width: auto;         /* снимаем фиксированные 96px */
-  min-width: 0;        /* разрешаем сжатие */
-}
-.card.name-editing .coord-open-btn,
+/* Тапнули по имени → поле подрастает вправо ровно настолько,
+   сколько нужно тексту (ширину считает JS). */
+.card.name-editing .coords-icon,
 .card.name-editing .add-sub-btn { display: none; } /* освобождают место */
 .card.name-editing .card-name-input {
   font-size: 1rem;     /* полный размер */
 }
 
-/* Короткая запись координат в покое — приглушённая, это лишь подсказка */
-.card-coord input.short { opacity: .75; letter-spacing: -.2px; }
-.card-coord input.short:hover { opacity: 1; }
+/* ══════════════════════════════════════
+   ОКНО ПРАВКИ КООРДИНАТ
+   Повторяет модалку с главной страницы:
+   окно по центру + ряд цветных кнопок-иконок.
+══════════════════════════════════════ */
+.cmodal {
+  display: none;                    /* показывается через .show */
+  position: fixed; inset: 0;        /* на весь экран */
+  background: rgba(0,0,0,.55);      /* затемнение фона */
+  backdrop-filter: blur(3px);       /* лёгкое размытие */
+  z-index: 1000;                    /* поверх всего */
+  justify-content: center;          /* по центру по горизонтали */
+  align-items: center;              /* по центру по вертикали */
+  padding: 16px;                    /* поля, чтобы окно не липло к краям */
+  box-sizing: border-box;
+}
+.cmodal.show { display: flex; }     /* открытое состояние */
+
+.cmodal-content {
+  background: var(--surface);           /* фон окна */
+  color: var(--text);                   /* цвет текста */
+  padding: 22px 20px 18px;              /* внутренние отступы */
+  border-radius: var(--r-md);           /* скруглённые углы */
+  border: 1px solid var(--border);      /* рамка */
+  box-shadow: 0 8px 40px rgba(0,0,0,.45); /* тень */
+  max-width: 340px; width: 100%;        /* компактное окно как на главной */
+  text-align: center;                   /* заголовок и кнопки по центру */
+  animation: modalPop .25s cubic-bezier(.34,1.56,.64,1); /* пружинка при открытии */
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(.92); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.cmodal-content h3 {
+  font-size: 1.15rem;   /* заголовок «Koordinaten bearbeiten» */
+  font-weight: 700;     /* жирный */
+  margin-bottom: 14px;  /* отступ до пояснения */
+}
+.cmodal-content label {
+  display: block;        /* на всю ширину */
+  font-size: .92rem;     /* чуть меньше основного */
+  color: var(--text2);   /* приглушённый */
+  line-height: 1.4;      /* межстрочный интервал */
+  margin-bottom: 10px;   /* отступ до поля */
+}
+.cmodal-content input[type=text] {
+  width: 100%;                        /* на всю ширину окна */
+  padding: 11px 13px;                 /* удобно попадать пальцем */
+  border-radius: var(--r-sm);         /* скруглённые углы */
+  border: 1.5px solid var(--border);  /* рамка */
+  background: var(--surface2);        /* фон поля */
+  color: var(--text);                 /* цвет текста */
+  font-family: var(--font);           /* основной шрифт */
+  font-size: .95rem;                  /* читаемый размер */
+  box-sizing: border-box;             /* padding внутри ширины */
+  outline: none;                      /* свой фокус ниже */
+}
+.cmodal-content input[type=text]:focus {
+  border-color: var(--accent);                    /* синяя рамка */
+  box-shadow: 0 0 0 3px var(--accent-lt);         /* мягкое свечение */
+}
+
+/* Ряд кнопок-иконок — всегда одной строкой.
+   Пять кнопок фиксированной ширины не влезали в окно и последняя
+   переносилась, поэтому кнопки резиновые: делят доступную ширину
+   поровну и сжимаются на узком экране. */
+.cmodal-btns {
+  display: flex;            /* в строку */
+  gap: 6px;                 /* расстояние между кнопками */
+  justify-content: center;  /* по центру */
+  margin-top: 16px;         /* отступ от подсказки */
+  flex-wrap: nowrap;        /* никаких переносов */
+}
+.cmodal-btn {
+  flex: 1 1 0%;                /* делят ширину поровну */
+  min-width: 0;                /* разрешаем сжиматься */
+  max-width: 56px;             /* на широком экране — как на главной */
+  height: 42px;                /* высота как на главной */
+  border: none;                /* без рамки */
+  border-radius: var(--r-sm);  /* скруглённые углы */
+  color: #fff;                 /* белые иконки */
+  font-size: 20px;             /* размер ✔ и ✕ */
+  cursor: pointer;             /* курсор-рука */
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s ease, opacity .2s ease;
+}
+.cmodal-btn svg { flex-shrink: 0; }  /* иконка не деформируется при сжатии */
+
+/* Кнопки с текстом (Abbrechen / OK в окне карты) — по содержимому */
+.cmodal-btn.wide {
+  flex: 0 0 auto;    /* не растягиваются и не сжимаются */
+  max-width: none;   /* снимаем ограничение иконочных кнопок */
+  width: auto;       /* ширина по тексту */
+  padding: 0 18px;   /* поля вокруг надписи */
+  font-size: .92rem; /* текстовый размер вместо значка */
+  font-weight: 700;  /* жирный */
+  font-family: var(--font); /* основной шрифт */
+}
+.cmodal-btn:hover:not(:disabled)  { transform: translateY(-1px); }
+.cmodal-btn:active:not(:disabled) { transform: scale(.95); }
+.cmodal-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-map    { background: #607d8b; }  /* серо-синий — открыть карту */
+.btn-picker { background: #2f6fed; }  /* синий — выбрать точку на карте */
+.btn-copy   { background: #7e57c2; }  /* фиолетовый — копировать */
+.btn-save   { background: #2e9e4f; }  /* зелёный — сохранить */
+.btn-cancel { background: #d64545; }  /* красный — отмена */
+
+/* Подсказка под полем */
+.coords-hint {
+  font-size: .78rem;    /* мелкий текст */
+  color: var(--text2);  /* приглушённый */
+  margin-top: 10px;     /* отступ от поля */
+  line-height: 1.45;    /* межстрочный интервал */
+  min-height: 1.1em;    /* окно не прыгает, когда подсказки нет */
+}
+.coords-hint.warn { color: #ff9800; }  /* нет координат / взят центр карты */
+.coords-hint.err  { color: var(--red); } /* не удалось распознать */
+
+/* ══════════════════════════════════════
+   ВЫБОР ТОЧКИ НА КАРТЕ
+══════════════════════════════════════ */
+.map-picker-sheet {
+  max-width: 600px;   /* шире обычного окна — внутри карта */
+  padding: 0;         /* содержимое само задаёт отступы */
+  overflow: hidden;   /* карта не вылезает за скругления */
+  text-align: left;   /* внутри обычное выравнивание */
+}
+.map-picker-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 14px;          /* внутренние отступы шапки */
+  background: var(--accent);   /* синяя шапка */
+  color: #fff;                 /* белый текст */
+  font-weight: 700;            /* жирный заголовок */
+  font-size: .95rem;           /* размер заголовка */
+}
+.map-picker-header button {
+  background: rgba(255,255,255,.18); /* полупрозрачные кнопки на синем */
+  border: none; color: #fff;         /* белые значки */
+  border-radius: 6px;                /* скруглённые углы */
+  padding: 4px 9px;                  /* зона тапа */
+  cursor: pointer;                   /* курсор-рука */
+  font-size: 15px;                   /* размер значка */
+  line-height: 1;
+}
+#mapPickerContainer {
+  width: 100%; height: 55vh; min-height: 300px; /* карта занимает основную площадь */
+  background: var(--surface2);                   /* фон, пока карта грузится */
+}
+.map-picker-foot {
+  padding: 8px 14px;                    /* отступы строки координат */
+  border-top: 1px solid var(--border);  /* отделяем от карты */
+  background: var(--surface);           /* фон */
+}
+#mapPickerCoords {
+  display: block;              /* на всю ширину строки */
+  font-family: monospace;      /* моноширинный — цифры не прыгают */
+  font-size: .82rem;           /* мелкий */
+  color: var(--text2);         /* приглушённый */
+  text-align: right;           /* прижаты вправо */
+}
+.map-picker-btns {
+  display: flex; gap: 8px; justify-content: flex-end;
+  padding: 10px 14px;                   /* отступы строки кнопок */
+  border-top: 1px solid var(--border);  /* отделяем от координат */
+  background: var(--surface);           /* фон */
+}
 
 /* Скрытый input[type=file] — не должен занимать место на странице */
 #fileInput { display: none; }
@@ -1385,6 +1520,65 @@ body {
     <div class="modal-btns">
       <button class="mbtn mbtn-cancel" id="addCancel">Отмена</button>
       <button class="mbtn mbtn-confirm" id="addConfirm">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: Координаты (как на главной странице) ════════ -->
+<div id="coordsModal" class="cmodal">
+  <div class="cmodal-content">
+    <h3 id="coordsModalTitle">Koordinaten bearbeiten</h3>
+    <label id="coordsModalLabel">Koordinaten eingeben<br>(Breite,Länge oder Google Maps URL):</label>
+    <input type="text" id="coordsModalInput" autocomplete="off"
+           placeholder="51.452013,7.021455 oder https://maps.app.goo.gl/..." />
+    <p class="coords-hint" id="coordsModalHint"></p>
+
+    <div class="cmodal-btns">
+      <!-- Открыть точку в Google Maps -->
+      <button class="cmodal-btn btn-map" id="coordsBtnOpenMap" title="Karte öffnen">
+        <svg width="26" height="26" viewBox="0 0 90 90" fill="currentColor">
+          <path d="M89 79.382H1c-.355 0-.683-.188-.863-.494-.179-.306-.183-.685-.01-.994L15.174 49.373c.177-.315.511-.512.873-.512h22.326c.552 0 1 .447 1 1s-.448 1-1 1H17.534L2.705 77.382h84.59L72.466 50.86H50.728c-.553 0-1-.447-1-1s.447-1 1-1h22.325c.362 0 .696.196.873.512l15.947 28.521c.173.31.169.688-.011.994s-.778.484-1.132.484z"/>
+          <path d="M45 60.554L30.514 43.493C27.603 40.063 26 35.701 26 31.213c0-10.477 8.523-19 19-19s19 8.523 19 19c0 4.489-1.603 8.851-4.514 12.28L45 60.554zM45 15.713c-8.28 0-15.016 6.736-15.016 15.016 0 3.778 1.35 7.45 3.801 10.339L45 45.875l12.199-14.367C59.65 38.619 61 34.948 61 31.169c0-8.822-7.177-16-16-16z"/>
+          <path d="M45.024 35.998c-4.769 0-8.649-3.88-8.649-8.649s3.88-8.649 8.649-8.649 8.649 3.88 8.649 8.649-3.88 8.649-8.649 8.649zm0-15.298c-3.666 0-6.649 2.983-6.649 6.649s2.983 6.649 6.649 6.649 6.649-2.983 6.649-6.649-2.983-6.649-6.649-6.649z"/>
+          <path d="M1 79.382c-.441 0-.845-.294-.965-.74-.143-.533.173-1.082.706-1.226l76.501-20.565c.531-.145 1.082.172 1.226.706.144.533-.173 1.082-.706 1.226L1.26 79.348c-.087.023-.175.034-.26.034z"/>
+          <path d="M63.521 73.279c-.286 0-.569-.121-.767-.357l-7.332-8.733c-.355-.423-.301-1.054.123-1.408.423-.355 1.056-.301 1.408.123l7.332 8.733c.355.423.301 1.054-.123 1.408-.247.202-.476.279-.703.279z"/>
+          <path d="M34.419 70.398c-.285 0-.568-.121-.766-.357L23.606 58.075c-.355-.423-.3-1.054.123-1.408.424-.354 1.054-.301 1.409.123l10.047 11.966c.355.423.3 1.054-.123 1.408-.247.202-.476.279-.703.279z"/>
+        </svg>
+      </button>
+
+      <!-- Выбрать точку на карте -->
+      <button class="cmodal-btn btn-picker" id="coordsBtnPicker" title="Punkt auf Karte wählen">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 469 512.42" width="24" height="24" fill="currentColor"><path fill-rule="nonzero" d="M191.82 93.36c27.85 0 53.07 11.31 71.31 29.54 18.23 18.23 29.53 43.46 29.53 71.3 0 27.85-11.3 53.07-29.53 71.31-18.24 18.23-43.46 29.53-71.31 29.53-27.84 0-53.07-11.3-71.3-29.53-18.23-18.24-29.54-43.46-29.54-71.31 0-27.84 11.31-53.07 29.54-71.3 18.23-18.23 43.46-29.54 71.3-29.54zm210.56 289.21v17.66c0 4.16-3.48 7.63-7.62 7.63h-30.32v30.32c0 4.15-3.47 7.62-7.62 7.62h-17.67c-4.13 0-7.62-3.43-7.62-7.62v-30.32h-30.34c-4.14 0-7.6-3.43-7.6-7.63v-17.66c0-4.19 3.42-7.62 7.6-7.62h30.34v-30.32c0-4.2 3.43-7.62 7.62-7.62h17.67c4.19 0 7.62 3.48 7.62 7.62v30.32h30.32c4.2 0 7.62 3.53 7.62 7.62zM348 270.39c33.39 0 63.66 13.55 85.55 35.44l.61.65c21.53 21.84 34.84 51.85 34.84 84.91 0 33.4-13.55 63.68-35.45 85.58l-.65.61c-21.83 21.52-51.84 34.84-84.9 34.84-33.4 0-63.65-13.57-85.54-35.45-21.94-21.9-35.49-52.18-35.49-85.58 0-33.37 13.57-63.62 35.45-85.52 21.89-21.93 52.18-35.48 85.58-35.48zm69.05 51.95c-17.66-17.67-42.1-28.6-69.05-28.6-26.96 0-51.42 10.93-69.08 28.6-17.65 17.64-28.59 42.1-28.59 69.05 0 26.96 10.92 51.42 28.59 69.08 17.64 17.64 42.1 28.59 69.08 28.59 26.7 0 50.94-10.73 68.56-28.06l.49-.53c17.67-17.66 28.6-42.12 28.6-69.08 0-26.7-10.74-50.94-28.07-68.56l-.53-.49zM197.53 485.87c7.56-4.8 14.91-9.92 22.02-15.28a149.47 149.47 0 0 0 13.51 18.57c-9.26 6.93-18.87 13.49-28.85 19.57-3.7 2.74-8.88 3.08-13 .48-44.87-28.52-82.58-62.92-112.28-100.19C38.05 357.7 12.26 300.79 3.44 246.01c-8.96-55.55-.56-109.03 27.07-152.51C41.4 76.35 55.34 60.72 72.37 47.15 111.36 16.08 156-.37 200.29.01c42.69.35 84.97 16.28 121.48 49.6 12.8 11.7 23.59 24.97 32.37 39.46 26.56 43.85 34.52 98.6 26.54 154.99-7.4-1.63-14.96-2.72-22.72-3.23 7.27-51.33.26-100.76-23.43-139.87-7.6-12.52-17-24.08-28.24-34.34-32.14-29.32-69.08-43.36-106.2-43.65-38.97-.32-78.53 14.37-113.42 42.18C71.78 77 59.56 90.73 49.97 105.83c-24.52 38.59-31.92 86.5-23.85 136.6 8.19 50.88 32.39 104.07 70.81 152.29 26.78 33.59 60.51 64.79 100.6 91.15zm49.33-346.7c-14.06-14.06-33.55-22.81-55.04-22.81-21.48 0-40.97 8.75-55.03 22.81-14.06 14.06-22.81 33.55-22.81 55.03 0 21.49 8.75 40.98 22.81 55.04 14.06 14.06 33.55 22.8 55.03 22.8 21.49 0 40.98-8.74 55.04-22.8 14.06-14.06 22.8-33.55 22.8-55.04 0-21.48-8.74-40.97-22.8-55.03z"/></svg>
+      </button>
+
+      <!-- Скопировать координаты в буфер -->
+      <button class="cmodal-btn btn-copy" id="coordsBtnCopy" title="Koordinaten kopieren">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="23" height="23" fill="currentColor"><path d="M 149.01,0 c 85.99,0 171.97,0 257.96,0 c 0.12,0.28 0.34,0.46 0.63,0.56 c 30.35,4.22 53.7,27.34 58.58,57.55 c 0.58,3.44 0.86,6.9 0.84,10.39 c -0.02,100.67 -0.02,201.33 0,302 c -0.02,2.15 -0.16,4.3 -0.41,6.44 c -2.62,26.93 -19.91,48.62 -45.09,58.08 c -4.91,1.56 -9.87,2.91 -14.87,4.07 c -1.23,3.24 -0.08,8.7 -0.84,12.39 c -3.46,23.88 -15.79,41.59 -36.97,53.13 c -0.28,0.14 -0.56,0.28 -0.83,0.43 c -6.77,3.37 -13.9,5.52 -21.4,6.44 c -0.29,0.08 -0.51,0.25 -0.65,0.52 c -81.31,0 -162.63,0 -243.95,0 c 0.06,-0.43 -0.13,-0.72 -0.56,-0.89 c -30.32,-5.94 -52.34,-29.4 -56.06,-60.12 c -0.29,-2.49 -0.43,-4.99 -0.41,-7.49 c 0.02,-100.67 0.02,-201.33 0,-302 c -0.02,-3.49 0.26,-6.95 0.85,-10.39 c 5.31,-32.98 32.22,-56.98 65.67,-58.13 c 56.67,0.01 113.33,0.02 170,0.03 c 13.48,1.37 25.09,6.75 34.84,16.15 c 25.01,25 50,50.01 74.98,75.03 c 8.67,9.27 14.46,22.62 14.85,35.31 c -0.02,67.61 0,135.23 0.08,202.84 c 0.57,0.69 1.31,0.88 2.2,0.56 c 15.45,-5.67 23.49,-16.97 24.05,-33.4 c -0.01,-100 -0.01,-200 0,-300 c -0.06,-18.6 -13.36,-33.5 -32,-34.96 c -80,-0.03 -160,-0.04 -240,-0.04 c -12.27,0.16 -20.21,5.75 -28.05,14.45 c -11.99,0.23 -23.99,0.29 -36,0.2 c -0.84,-0.03 -1.26,-0.44 -1.27,-1.24 c 8.6,-25.03 27.42,-41.66 53.32,-47.05 c 0.38,-0.18 0.55,-0.47 0.51,-0.86 Z M 79.5,143 c 0.01,99.83 0.01,199.67 0,299.5 c -0.08,19.23 14.66,34.74 34,35 c 75.33,-0.01 150.67,-0.01 226,-0.03 c 18.31,-1.14 31.68,-15.82 32.32,-33.97 c 0.01,-80.33 0.01,-160.67 0.02,-241 c 0,-2.14 -0.2,-4.7 -1.48,-6.48 c -0.9,-0.41 -1.86,-0.59 -2.86,-0.53 c -24.23,-1.23 -52.12,5.65 -71.3,-13.43 c -21.74,-19.31 -14.5,-46.98 -15.72,-72.66 c -0.14,-1.11 -0.77,-1.74 -1.88,-1.88 c -55.03,-0.01 -110.07,-0.01 -165.1,-0.02 c -19.58,0.25 -34.24,16.05 -34,35.5 Z M 114.47,219.01 c 0.5,-10.55 7.73,-18.1 18.08,-19.69 c 35.65,-0.15 71.3,-0.21 106.95,-0.17 c 25.65,0.9 28.17,36.52 1.97,40.6 c -35.32,0.09 -70.65,0.12 -105.97,0.1 c -12.1,-0.35 -20.89,-8.56 -21.03,-20.84 Z M 114.47,307 c 0.29,-11.72 9.25,-20.47 21.03,-20.18 c 61.34,-0.03 122.67,0.01 184.01,0.13 c 24.8,4.3 22.19,39.99 -4.01,40.23 c -61,0.03 -122.01,-0.01 -183.01,-0.12 c -10.2,-1.26 -17.89,-9.72 -18.02,-20.06 Z M 114.47,394.99 c 0.12,-13.22 10.14,-21.47 23.03,-21 c 60.33,-0.06 120.67,0.01 181,0.2 c 26.58,4.03 23,41.22 -4,40.66 c -60,0.01 -120,-0.01 -179.99,-0.08 c -11,-0.77 -19.53,-8.56 -20.04,-19.78 Z"/></svg>
+      </button>
+
+      <button class="cmodal-btn btn-save"   id="coordsBtnSave"   title="Speichern">✔</button>
+      <button class="cmodal-btn btn-cancel" id="coordsBtnCancel" title="Abbrechen">✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ MODAL: Выбор точки на карте ════════ -->
+<div id="mapPickerModal" class="cmodal">
+  <div id="mapPickerSheet" class="cmodal-content map-picker-sheet">
+    <div class="map-picker-header">
+      <span>📍 Ort auf Karte wählen</span>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button id="mapFullscreenBtn" title="Vollbild">⛶</button>
+        <button id="mapPickerClose" title="Schließen">✕</button>
+      </div>
+    </div>
+    <div id="mapPickerContainer"></div>
+    <div class="map-picker-foot">
+      <span id="mapPickerCoords">—</span>
+    </div>
+    <div class="map-picker-btns">
+      <button id="mapPickerCancel"  class="cmodal-btn btn-cancel wide">Abbrechen</button>
+      <button id="mapPickerConfirm" class="cmodal-btn btn-save wide" disabled>OK</button>
     </div>
   </div>
 </div>
@@ -2203,13 +2397,14 @@ function renderCoordGroup(box, grp) {
     nm.title = metaHint(grp, name) + '\nНажмите для переименования';
     card.appendChild(nm);
 
-    card.appendChild(mkCoordInput(coord, c => {
-      groupObj(grp)[name] = c;
-      touchMeta(grp, name);
-      markDirty();
-    }));
+    // Координаты хранятся в data-атрибуте — чтобы поиск по ним работал
+    card.dataset.coords = coordText(coord);
 
-    card.appendChild(mkOpenMapBtn(() => groupObj(grp)[name]));
+    card.appendChild(mkCoordPin(
+      () => groupObj(grp)[name],
+      c => { groupObj(grp)[name] = c; touchMeta(grp, name); },
+      { title: name }
+    ));
 
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление ' + name);
@@ -2418,13 +2613,18 @@ function renderDestinations(box) {
     });
     card.appendChild(nameInp);
 
-    card.appendChild(mkCoordInput(dest, c => {
-      defaultMachineDestinations[idx].lat = c.lat;
-      defaultMachineDestinations[idx].lng = c.lng;
-      markDirty(); updateRaw();
-    }, { allowEmpty: true }));   // «an der Maschine» живёт без координат
+    card.dataset.coords = coordText(dest);
 
-    card.appendChild(mkOpenMapBtn(() => defaultMachineDestinations[idx]));
+    // «an der Maschine» живёт без координат — поэтому allowEmpty
+    card.appendChild(mkCoordPin(
+      () => defaultMachineDestinations[idx],
+      c => {
+        defaultMachineDestinations[idx].lat = c.lat;
+        defaultMachineDestinations[idx].lng = c.lng;
+        updateRaw();
+      },
+      { title: dest.name || 'Конечная точка', allowEmpty: true }
+    ));
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление');
       defaultMachineDestinations.splice(idx, 1); render(); showMsg('Удалено');
@@ -2946,7 +3146,7 @@ function mkNameEl(name, onRename) {
     // Имя остаётся на своём месте слева и подрастает вправо ровно
     // настолько, сколько нужно тексту; координаты справа ужимаются
     card?.classList.add('name-editing');
-    const fit = () => fitFieldWidth(input, input.value, 96);
+    const fit = () => fitFieldWidth(input, input.value, 56);  // соседей осталось мало — имени доступно больше
     fit();
     input.addEventListener('input', fit);   // растёт по мере набора
     input.focus(); input.select();
@@ -2967,93 +3167,304 @@ function mkNameEl(name, onRename) {
   };
   return span;
 }
-// Поле координат.
-// В покое — короткая запись (4 знака), чтобы имя не обрезалось.
-// При тапе поле разворачивается на всю карточку и показывает все 6 знаков.
-// Понимает и цифры, и ссылки Google Maps.
-function mkCoordInput(coord, onChange, opts = {}) {
-  const wrap = document.createElement('div'); wrap.className = 'card-coord';
-  wrap.style.marginLeft = 'auto';
-  const inp = document.createElement('input'); inp.type = 'text';
-  inp.inputMode = 'text';
-  let cur = coord;                       // последнее сохранённое значение
+// Булавка вместо поля координат — как на главной странице.
+// Синяя = координаты заданы, серая = нет.
+const PIN_HAS  = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgb(68,178,229)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
+const PIN_NONE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="rgb(140,140,140)"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`;
 
-  // Короткая запись: 4 знака ≈ 11 м — достаточно, чтобы различить точки
-  const shortText = c => (!c || c.lat == null || c.lng == null)
-    ? '' : `${Number(c.lat).toFixed(4)}, ${Number(c.lng).toFixed(4)}`;
-
-  const card = () => wrap.closest('.card');
-  function showShort() {
-    inp.value = shortText(cur);
-    inp.classList.add('short');
-    inp.placeholder = opts.allowEmpty ? 'нет коорд.' : '51.5301, 6.8509';
-  }
-  function showFull() {
-    inp.value = coordText(cur);
-    inp.classList.remove('short');
-    inp.placeholder = opts.allowEmpty ? 'нет координат' : '51.530133, 6.850858 или ссылка';
-  }
-  function refresh() {
-    // если поле всё ещё в фокусе — оставляем полный вид
-    (document.activeElement === inp) ? showFull() : showShort();
-    inp.classList.toggle('bad', !opts.allowEmpty && !coordValid(cur));
-  }
-
-  showShort();
-  inp.title = 'Координаты (6 знаков) или ссылка Google Maps\nНажмите, чтобы увидеть и изменить полностью';
-  if (!opts.allowEmpty && !coordValid(coord)) inp.classList.add('bad');
-
-  const fit = () => fitFieldWidth(wrap, inp.value || '51.530133, 6.850858', 104);
-  inp.addEventListener('focus', () => {
-    card()?.classList.add('coord-editing');
-    showFull();
-    fit();                                  // подрастает влево на недостающее
-    // выделяем всё — проще вставить ссылку поверх
-    setTimeout(() => inp.select(), 0);
-  });
-  inp.addEventListener('input', fit);       // вставили длинную ссылку — поле тянется
-  inp.addEventListener('blur', () => {
-    card()?.classList.remove('coord-editing');
-    resetFieldWidth(wrap);                  // возвращаем узкую колонку
-    showShort();
-  });
-  // Enter на телефоне закрывает клавиатуру и сворачивает поле
-  inp.addEventListener('keydown', e => { if (e.key === 'Enter') inp.blur(); });
-
-  inp.addEventListener('change', async () => {
-    const raw = inp.value.trim();
-    if (!raw && opts.allowEmpty) {
-      cur = { lat: null, lng: null };
-      onChange(cur); refresh(); inp.classList.remove('approx');
-      return;
-    }
-    const res = await parseAnyCoords(raw);
-    if (res) {
-      cur = normCoord(res);
-      inp.classList.toggle('approx', res.approx === true);
-      onChange(cur);
-      showMsg(res.approx ? '⚠️ Взят центр карты — проверьте точку' : `Сохранено ✓ (${res.source || 'ручной ввод'})`, res.approx ? 3200 : 1800);
-    }
-    refresh();   // не распозналось — вернётся прежнее значение
-  });
-
-  wrap.appendChild(inp); return wrap;
-}
-
-// Кнопка «открыть точку в Google Maps» — быстрая визуальная проверка
-function mkOpenMapBtn(getCoord) {
+// getCoord — читает текущее значение, onChange — сохраняет новое
+function mkCoordPin(getCoord, onChange, opts = {}) {
   const b = document.createElement('button');
-  b.className = 'coord-open-btn';
-  b.innerHTML = '🗺';
-  b.title = 'Открыть точку в Google Maps (проверить)';
+  b.className = 'coords-icon';
+  const paint = () => {
+    const c = getCoord();
+    const has = coordValid(c);
+    b.innerHTML = has ? PIN_HAS : PIN_NONE;
+    b.title = has ? `${coordText(c)}\nНажмите, чтобы изменить`
+                  : 'Координаты не заданы — нажмите, чтобы задать';
+  };
+  paint();
   b.onclick = e => {
     e.stopPropagation();
-    const c = getCoord();
-    if (!coordValid(c)) { showMsg('Нет координат'); return; }
-    window.open(`https://www.google.com/maps/search/?api=1&query=${fmtCoord(c.lat)},${fmtCoord(c.lng)}`, '_blank', 'noopener');
+    openCoordsModal({
+      title: opts.title || 'Координаты',
+      coord: getCoord(),
+      allowEmpty: opts.allowEmpty,
+      onSave(c) { onChange(c); paint(); }
+    });
   };
   return b;
 }
+
+// ── Окно правки координат (как на главной странице) ───────────────
+let _coordsCtx = null;
+
+function openCoordsModal({ title, coord, allowEmpty, onSave }) {
+  _coordsCtx = { onSave, allowEmpty };
+  document.getElementById('coordsModalTitle').textContent = title;
+  const inp = document.getElementById('coordsModalInput');
+  inp.value = coordText(coord);
+  setCoordsHint(
+    coordValid(coord) ? '' : (allowEmpty ? 'Координаты не заданы — можно оставить пустым' : 'Координаты не заданы'),
+    coordValid(coord) ? '' : 'warn'
+  );
+  document.getElementById('coordsModal').classList.add('show');
+  // Фокус НЕ ставим: иначе на телефоне сразу вылезает клавиатура
+  // и закрывает половину окна вместе с кнопками. Чаще всего нужны
+  // именно кнопки (карта, копировать), а не ручной ввод —
+  // клавиатура появится, когда сам тапнешь по полю.
+}
+function closeCoordsModal() {
+  document.getElementById('coordsModal').classList.remove('show');
+  _coordsCtx = null;
+}
+// cls: '' | 'warn' | 'err'
+function setCoordsHint(text, cls) {
+  const h = document.getElementById('coordsModalHint');
+  h.textContent = text || '';
+  h.classList.toggle('warn', cls === 'warn');
+  h.classList.toggle('err',  cls === 'err');
+}
+// Разбирает то, что сейчас в поле
+async function currentModalCoords() {
+  const raw = document.getElementById('coordsModalInput').value.trim();
+  if (!raw) return null;
+  return normCoord(await parseAnyCoords(raw));
+}
+
+document.getElementById('coordsBtnCancel').onclick = closeCoordsModal;
+
+// 🗺 Открыть точку в Google Maps — можно проверить ссылку до сохранения
+document.getElementById('coordsBtnOpenMap').onclick = async () => {
+  const c = await currentModalCoords();
+  if (!coordValid(c)) { setCoordsHint('Сначала введите координаты или ссылку', 'err'); return; }
+  window.open(`https://www.google.com/maps/search/?api=1&query=${fmtCoord(c.lat)},${fmtCoord(c.lng)}`, '_blank', 'noopener');
+};
+
+// 📋 Скопировать координаты в буфер
+document.getElementById('coordsBtnCopy').onclick = async () => {
+  const raw = document.getElementById('coordsModalInput').value.trim();
+  if (!raw) { setCoordsHint('Нечего копировать', 'err'); return; }
+  // Копируем в каноничном виде с 6 знаками, если распознали
+  const c = await currentModalCoords();
+  const text = coordValid(c) ? coordText(c) : raw;
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Запасной путь для старых WebView
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  setCoordsHint('Скопировано: ' + text, '');
+  showMsg('Скопировано 📋');
+};
+
+// ✔ Сохранить
+document.getElementById('coordsBtnSave').onclick = async () => {
+  if (!_coordsCtx) return;
+  const btn = document.getElementById('coordsBtnSave');
+  const raw = document.getElementById('coordsModalInput').value.trim();
+
+  // Пустое поле разрешено только там, где точка может жить без координат
+  if (!raw) {
+    if (!_coordsCtx.allowEmpty) { setCoordsHint('Введите координаты или ссылку', 'err'); return; }
+    snapshot('координаты');
+    _coordsCtx.onSave({ lat: null, lng: null });
+    closeCoordsModal(); markDirty(); render(); showMsg('Координаты очищены');
+    return;
+  }
+
+  btn.disabled = true;
+  setCoordsHint('Определяю координаты…', '');
+  try {
+    const res = await parseAnyCoords(raw);
+    if (!res) { setCoordsHint('Не удалось распознать. Введите «широта, долгота» или ссылку', 'err'); return; }
+    const c = normCoord(res);
+    snapshot('координаты');
+    _coordsCtx.onSave(c);
+    closeCoordsModal(); markDirty(); render();
+    showMsg(res.approx ? '⚠️ Взят центр карты — проверьте точку' : `Сохранено ✓ (${res.source || 'ручной ввод'})`,
+            res.approx ? 3200 : 1800);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+// Тапнули по полю сами — выделяем всё, чтобы вставить ссылку поверх
+document.getElementById('coordsModalInput').addEventListener('focus', function () {
+  setTimeout(() => this.select(), 0);
+});
+
+// Enter в поле = «Сохранить»
+document.getElementById('coordsModalInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('coordsBtnSave').click(); }
+});
+// Клик по затемнению закрывает окно
+document.getElementById('coordsModal').addEventListener('click', e => {
+  if (e.target.id === 'coordsModal') closeCoordsModal();
+});
+
+// ── Выбор точки на карте ──────────────────────────────────────────
+// Порт того же пикера, что на главной: Google Maps JS API,
+// поиск адреса, геолокация, перетаскиваемый маркер, полный экран.
+document.getElementById('coordsBtnPicker').onclick = () => openMapPicker();
+
+async function openMapPicker() {
+  const modal     = document.getElementById('mapPickerModal');
+  const container = document.getElementById('mapPickerContainer');
+  const coordsSpan = document.getElementById('mapPickerCoords');
+  const confirmBtn = document.getElementById('mapPickerConfirm');
+
+  modal.classList.add('show');
+  confirmBtn.disabled = true;
+  coordsSpan.textContent = '—';
+
+  let pickedLat = null, pickedLng = null;
+
+  // Ключ карт берём с сервера — в клиенте его не держим
+  let apiKey;
+  try {
+    const r = await fetch(api('/api/maps-key'));
+    apiKey = (await r.json()).key;
+    if (!apiKey) throw new Error('пустой ключ');
+  } catch (e) {
+    showMsg('❌ Ключ карт недоступен: ' + e.message, 3500);
+    modal.classList.remove('show');
+    return;
+  }
+
+  // Стартовая точка — из поля, иначе центр Рурской области
+  let initLat = 51.5, initLng = 7.0, initZoom = 10;
+  const cur = document.getElementById('coordsModalInput').value.trim();
+  const m = cur.match(/([-+]?\d{1,3}\.\d+)[,\s]+([-+]?\d{1,3}\.\d+)/);
+  if (m) { initLat = +m[1]; initLng = +m[2]; initZoom = 16; }
+
+  const initMap = () => {
+    const map = new google.maps.Map(container, {
+      center: { lat: initLat, lng: initLng },
+      zoom: initZoom,
+      mapTypeId: 'roadmap',
+      mapTypeControl: true,
+      mapTypeControlOptions: {
+        style: google.maps.MapTypeControlStyle.HORIZONTAL_BAR,
+        position: google.maps.ControlPosition.BOTTOM_LEFT,
+        mapTypeIds: ['roadmap', 'satellite'],
+      },
+      streetViewControl: false,
+      fullscreenControl: false,
+      zoomControl: false,
+    });
+
+    // Полноэкранный режим
+    const sheet = document.getElementById('mapPickerSheet');
+    const fsBtn = document.getElementById('mapFullscreenBtn');
+    let isFullscreen = false;
+    fsBtn.onclick = () => {
+      isFullscreen = !isFullscreen;
+      if (isFullscreen) {
+        sheet.style.cssText = 'position:fixed;inset:0;width:100vw;max-width:100vw;height:100dvh;border-radius:0;padding:0;display:flex;flex-direction:column;';
+        container.style.height = 'auto';
+        container.style.flex = '1';
+        fsBtn.textContent = '⊡'; fsBtn.title = 'Verkleinern';
+      } else {
+        sheet.style.cssText = '';
+        container.style.height = ''; container.style.flex = '';
+        fsBtn.textContent = '⛶'; fsBtn.title = 'Vollbild';
+      }
+      google.maps.event.trigger(map, 'resize');
+    };
+
+    // Кнопка «моё местоположение»
+    let geoMarker = null;
+    const geoIcon = color => `<svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm8.94 3A8.994 8.994 0 0 0 13 3.06V1h-2v2.06A8.994 8.994 0 0 0 3.06 11H1v2h2.06A8.994 8.994 0 0 0 11 20.94V23h2v-2.06A8.994 8.994 0 0 0 20.94 13H23v-2h-2.06zM12 19a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" fill="${color}"/></svg>`;
+    const geoBtn = document.createElement('button');
+    geoBtn.title = 'Mein Standort';
+    geoBtn.style.cssText = 'background:#fff;border:none;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.3);cursor:pointer;width:40px;height:40px;display:flex;align-items:center;justify-content:center;margin:10px;padding:0;';
+    geoBtn.innerHTML = geoIcon('#666');
+    geoBtn.onclick = () => {
+      if (!navigator.geolocation) { showMsg('Геолокация не поддерживается'); return; }
+      geoBtn.innerHTML = geoIcon('#4285F4');
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          map.panTo(loc); map.setZoom(17);
+          if (geoMarker) geoMarker.setPosition(loc);
+          else geoMarker = new google.maps.Marker({
+            position: loc, map,
+            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#4285F4', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 2 },
+            title: 'Mein Standort', zIndex: 1
+          });
+        },
+        err => { geoBtn.innerHTML = geoIcon('#666'); showMsg('Не удалось определить местоположение: ' + err.message, 3000); },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    };
+    map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(geoBtn);
+
+    // Поиск адреса
+    const searchInput = Object.assign(document.createElement('input'), {
+      type: 'text', placeholder: '🔍 Adresse suchen…',
+    });
+    searchInput.style.cssText = 'margin:8px;padding:7px 12px;width:240px;max-width:60vw;border:none;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.3);font-size:14px;outline:none;';
+    const searchBox = new google.maps.places.SearchBox(searchInput);
+    map.controls[google.maps.ControlPosition.TOP_LEFT].push(searchInput);
+    searchBox.addListener('places_changed', () => {
+      const places = searchBox.getPlaces();
+      if (!places || !places.length) return;
+      map.panTo(places[0].geometry.location);
+      map.setZoom(17);
+    });
+
+    // Маркер: ставится тапом, дальше можно перетаскивать
+    let marker = null;
+    const placeMarker = latLng => {
+      pickedLat = latLng.lat(); pickedLng = latLng.lng();
+      coordsSpan.textContent = `${pickedLat.toFixed(COORD_DP)}, ${pickedLng.toFixed(COORD_DP)}`;
+      confirmBtn.disabled = false;
+      if (marker) marker.setPosition(latLng);
+      else {
+        marker = new google.maps.Marker({ position: latLng, map, draggable: true, animation: google.maps.Animation.DROP });
+        marker.addListener('dragend', e => {
+          pickedLat = e.latLng.lat(); pickedLng = e.latLng.lng();
+          coordsSpan.textContent = `${pickedLat.toFixed(COORD_DP)}, ${pickedLng.toFixed(COORD_DP)}`;
+        });
+      }
+    };
+    if (m) placeMarker(new google.maps.LatLng(initLat, initLng));
+    map.addListener('click', e => placeMarker(e.latLng));
+  };
+
+  if (window.google && window.google.maps) {
+    container.innerHTML = '';
+    initMap();
+  } else {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text2);">⏳ Karte wird geladen…</div>';
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__redaktorMapInit`;
+    script.async = true;
+    window.__redaktorMapInit = () => { container.innerHTML = ''; initMap(); };
+    script.onerror = () => {
+      container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--red);">❌ Карта не загрузилась</div>';
+    };
+    document.head.appendChild(script);
+  }
+
+  // Подтвердить выбор — координаты уезжают в поле окна правки
+  confirmBtn.onclick = () => {
+    if (pickedLat === null) return;
+    document.getElementById('coordsModalInput').value =
+      `${pickedLat.toFixed(COORD_DP)}, ${pickedLng.toFixed(COORD_DP)}`;
+    setCoordsHint('Точка выбрана на карте — нажмите ✔ чтобы сохранить', '');
+    closePicker();
+  };
+
+  const closePicker = () => { modal.classList.remove('show'); pickedLat = null; };
+  document.getElementById('mapPickerClose').onclick  = closePicker;
+  document.getElementById('mapPickerCancel').onclick = closePicker;
+}
+
 function emptyState(icon, text) {
   const d = document.createElement('div'); d.className = 'empty-state';
   d.innerHTML = `<div class="empty-state-icon">${icon}</div><p>${text}</p>`; return d;
@@ -3890,7 +4301,8 @@ searchClear.addEventListener('click', () => {
 
 function filterCards(q) {
   document.querySelectorAll('#cards .card').forEach(card => {
-    const hay = (card.textContent + ' ' + [...card.querySelectorAll('input')].map(i => i.value).join(' ')).toLowerCase();
+    const hay = (card.textContent + ' ' + (card.dataset.coords || '') + ' ' +
+                 [...card.querySelectorAll('input')].map(i => i.value).join(' ')).toLowerCase();
     card.style.display = (!q || hay.includes(q)) ? '' : 'none';
   });
 }
