@@ -163,7 +163,9 @@ this.trefftravelTimes = {
   "P&R A42-Marvin": 25,
   "P&R A42-Maikel": 15,
   "P&R A42-René": 20,
-  "P&R A42-Vasyl": 25
+  "P&R A42-Vasyl": 25,
+  "OLGA-Park-Aleks": 5,
+  "P&R A42-Aleks": 20
 };
 
 // Приоритетные списки остановок и попутчики
