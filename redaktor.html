@@ -323,7 +323,7 @@ body {
    Так вся ширина карточки достаётся имени. */
 .coords-icon {
   flex: 0 0 auto;          /* не растягивается и не сжимается */
-  width: 26px; height: 26px; /* компактная зона тапа */
+  width: 24px; height: 24px; /* как .coords-icon на главной странице */
   border: none;            /* без рамки */
   background: transparent; /* прозрачный фон */
   padding: 0;              /* без отступов */
@@ -331,8 +331,10 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: transform .15s, opacity .15s;
 }
-.coords-icon svg { width: 22px; height: 22px; } /* размер самой булавки */
-.google-map-btn svg { width: 16px; height: 16px; } /* значок Google Maps в строке времени */
+/* Размеры сверены с index.html: там .coords-icon — кнопка 24×24
+   со «svg на все 100%», а .calc-route-icon — кнопка 24×24 с svg 22×22. */
+.coords-icon svg { width: 100%; height: 100%; }     /* булавка на всю кнопку, как на главной */
+.google-map-btn svg { width: 22px; height: 22px; }  /* значок Google Maps в строке времени */
 .coords-icon.has  { color: rgb(68,178,229); }  /* координаты заданы */
 .coords-icon.none { color: rgb(140,140,140); } /* координат нет */
 .coords-icon:hover  { transform: scale(1.12); } /* лёгкое увеличение */
@@ -453,6 +455,40 @@ body {
   box-shadow: var(--shadow-s);
   box-sizing: border-box;
 }
+
+/* Своя кнопка выбора водителя вместо нативного <select>.
+   Системную шторку <select> нельзя покрасить: в тёмной теме она
+   остаётся белой. На главной странице от неё отказались по той же
+   причине — там в CSS так и написано «Custom Picker». */
+.driver-picker {
+  width: 35%;                         /* как было у select */
+  flex: none;                         /* не растягивается */
+  font-family: var(--font);           /* основной шрифт */
+  font-size: 1rem;                    /* как у select */
+  font-weight: 600;                   /* полужирный */
+  color: var(--text);                 /* цвет темы */
+  background: var(--surface2);        /* фон темы */
+  border: 1px solid var(--border);    /* рамка темы */
+  border-radius: var(--r-sm);         /* скруглённые углы */
+  padding: 8px 10px;                  /* внутренние отступы */
+  cursor: pointer;                    /* курсор-рука */
+  display: flex;                      /* текст + стрелка */
+  align-items: center;                /* по центру */
+  gap: 6px;                           /* расстояние до стрелки */
+  text-align: left;                   /* текст слева */
+}
+.driver-picker span {
+  flex: 1;                            /* имя занимает всё место */
+  overflow: hidden;                   /* длинное имя обрезается */
+  text-overflow: ellipsis;            /* многоточием */
+  white-space: nowrap;                /* в одну строку */
+}
+.driver-picker .arrow {
+  flex: 0 0 auto;        /* стрелка не сжимается */
+  font-size: .7em;       /* мельче текста */
+  opacity: .6;           /* приглушённая */
+}
+.driver-picker:hover { border-color: var(--accent); }
 
 .driver-row select {
   width: 35%;
@@ -1344,7 +1380,11 @@ html.dark { color-scheme: dark; }
 }
 /* Размер иконок задаём здесь: библиотека отдаёт SVG без width/height,
    иначе он растянется на всю кнопку. */
-.cmodal-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
+.cmodal-btn svg { width: 26px; height: 26px; flex-shrink: 0; }
+/* Точные размеры как в index.html: openMap 28, openMapPicker 22 */
+#coordsBtnOpenMap svg { width: 28px; height: 28px; }
+#coordsBtnPicker  svg { width: 22px; height: 22px; }
+#coordsBtnCopy    svg { width: 23px; height: 23px; }
 
 /* Кнопки с текстом (Abbrechen / OK в окне карты) — по содержимому */
 .cmodal-btn.wide {
@@ -2697,16 +2737,41 @@ function renderOrders(box) {
 
   const row = document.createElement('div');
   row.className = 'driver-row';
-  const driverSel = document.createElement('select');
+  // Своя кнопка вместо <select>: нативную шторку нельзя покрасить,
+  // в тёмной теме она остаётся белой. Такое же решение на главной странице.
+  const driverSel = document.createElement('button');
   driverSel.id = 'driverSel';
-  // Порядок — как в файле (как ты расставил участников на вкладке «Участники»),
-  // а не по алфавиту. Нужен алфавит — отсортируй участников кнопкой ↕ Сорт.
-  drivers.forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = opt.textContent = d;
-    if (d === (participantOrders._lastDriver || drivers[0])) opt.selected = true;
-    driverSel.appendChild(opt);
-  });
+  driverSel.className = 'driver-picker';
+  driverSel.type = 'button';
+  // .value оставляем, чтобы остальной код не переписывать
+  driverSel.value = participantOrders._lastDriver && drivers.includes(participantOrders._lastDriver)
+    ? participantOrders._lastDriver
+    : drivers[0];
+
+  const driverLabel = document.createElement('span');
+  const driverArrow = document.createElement('span');
+  driverArrow.className = 'arrow';
+  driverArrow.textContent = '▼';
+  driverSel.appendChild(driverLabel);
+  driverSel.appendChild(driverArrow);
+  const paintDriver = () => { driverLabel.textContent = driverSel.value || '—'; };
+  paintDriver();
+
+  driverSel.onclick = () => {
+    // Порядок — как в файле (как ты расставил участников на вкладке
+    // «Участники»), а не по алфавиту. Нужен алфавит — кнопка ↕ Сорт.
+    bsOpen({
+      title: 'Водитель',
+      items: drivers,
+      mode: 'participant',
+      listLabel: 'ВЫБЕРИТЕ ВОДИТЕЛЯ',
+      onSelect(name) {
+        driverSel.value = name;
+        paintDriver();
+        driverSel.onchange && driverSel.onchange();
+      }
+    });
+  };
   row.appendChild(driverSel);
 
   const addPassBtn = document.createElement('button');
