@@ -171,11 +171,11 @@ this.trefftravelTimes = {
 // Приоритетные списки остановок и попутчики
 this.participantOrders = {
   "Sergii": ["Anatolii","Aleks","Sergio",{"treffpunkt":"Rathaus Osterfeld","persons":["René"]}],
-  "Anatolii": ["Sergii","Sergio","Vasyl"],
+  "Anatolii": ["Sergii","Sergio","Aleks","Vasyl"],
   "Andrii": ["Sergii","Anatolii","Sergio","Dima"],
   "Sergio": ["Anatolii","Sergii","Andrii","Dima"],
   "Dima": ["Anatolii","Sergii","Andrii","Sergio"],
-  "Alex": []
+  "Aleks": ["Sergio",{"main":"Anatolii","subParticipants":["René"]},"Sergii"]
 };
 
 // Прощание
