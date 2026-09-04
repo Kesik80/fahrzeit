@@ -272,17 +272,20 @@ body {
 
 /* Иконка перетаскивания (drag & drop) */
 .drag-handle {
-  color: var(--text2);   /* приглушённый цвет */
-  font-size: 18px;       /* размер точечного символа ⠿ */
-  cursor: grab;          /* курсор «рука схватить» */
-  flex-shrink: 0;        /* не сжимается */
-  opacity: .4;           /* почти прозрачный в покое */
-  transition: opacity .2s; /* плавное появление */
-  user-select: none;     /* нельзя выделить текстом */
-  padding: 10px 9px 10px 5px; /* зона захвата по вертикали, а не вширь —
-                                 раньше было 50px по бокам и имя не помещалось */
+  color: #999;              /* приглушённый серый, как .material-symbols-outlined в index.html */
+  cursor: grab;             /* курсор «рука схватить» */
+  flex-shrink: 0;           /* не сжимается */
+  display: flex;            /* центрируем иконку */
+  align-items: center;
+  justify-content: center;
+  width: 24px; height: 24px; /* зона захвата */
+  padding: 0;               /* отступы больше не нужны: иконка сама по размеру */
+  user-select: none;        /* нельзя выделить */
+  touch-action: none;       /* не мешаем перетаскиванию на телефоне */
 }
-.card:hover .drag-handle { opacity: .7; } /* становится видимее при hover на карточку */
+.drag-handle svg { width: 22px; height: 22px; }  /* стрелки вверх/вниз */
+body:not(.dark) .drag-handle { color: #666; }    /* в светлой теме темнее, как в index.html */
+.card:hover .drag-handle { color: var(--text2); } /* становится видимее при hover на карточку */
 
 /* Название записи в карточке (кликабельно для переименования) */
 .card-name {
@@ -367,28 +370,23 @@ body {
 
 /* Кнопка удаления записи (красный крестик) */
 .del-btn {
-  width: 28px; height: 28px;            /* размер кнопки */
-  border-radius: 0;                     /* без скруглений — вплотную к краю */
-  border: none;                         /* без рамки */
-  background: transparent;              /* прозрачный фон */
-  color: var(--red);                    /* красный крестик */
-  font-size: 14px;                      /* размер символа ✖ */
-  font-weight: 700;                     /* жирный крестик */
-  cursor: pointer;                      /* курсор-рука */
-  display: flex; align-items: center; justify-content: center; /* центрируем символ */
-  flex-shrink: 0;                       /* не сжимается */
-  transition: color .15s, transform .12s; /* анимация при hover */
-  opacity: .5;                          /* приглушён в покое */
-  padding: 0;                           /* без внутренних отступов */
-  margin: -10px 0 0 0;                  /* только вверх, без боковых отступов */
-  align-self: flex-start;               /* прижимаем к верху карточки */
+  width: 28px; height: 28px;    /* размер кнопки */
+  border: none;                 /* без рамки */
+  background: transparent;      /* прозрачный фон — как в index.html */
+  color: #dc3545;               /* тот же красный, что на главной */
+  border-radius: 4px;           /* скругление как в index.html */
+  font-size: 16px;              /* размер символа ✖ */
+  cursor: pointer;              /* курсор-рука */
+  flex-shrink: 0;               /* не сжимается */
+  display: flex;                /* центрируем символ */
+  align-items: center;
+  justify-content: center;
+  line-height: 1;               /* без лишней высоты строки */
+  padding: 0;                   /* без внутренних отступов */
+  transition: transform .15s, background .15s;
 }
-.del-btn:hover {
-  background: var(--red-lt); /* лёгкий красный фон при наведении */
-  color: var(--red);          /* красный крестик */
-  opacity: 1;                 /* полная непрозрачность */
-  transform: scale(1.1);      /* лёгкое увеличение */
-}
+.del-btn:hover  { background: var(--red-lt); }  /* лёгкая подсветка при наведении */
+.del-btn:active { transform: scale(.9); }      /* отклик на нажатие */
 
 /* Кнопка добавления участника в группу (синий плюс) */
 .add-sub-btn {
@@ -2460,7 +2458,6 @@ function renderCoordGroup(box, grp) {
     card.dataset.key = name;
 
     // Ручка перетаскивания — порядок в файле теперь меняется мышью/пальцем
-    card.appendChild(mkHandle());
 
     const nm = mkNameEl(name, newName => {
       if (src[newName]) { showMsg('Уже существует'); return false; }
@@ -2485,6 +2482,9 @@ function renderCoordGroup(box, grp) {
       c => { groupObj(grp)[name] = c; touchMeta(grp, name); },
       { title: name }
     ));
+
+    // Ручка перетаскивания — между координатами и крестиком
+    card.appendChild(mkHandle());
 
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление ' + name);
@@ -2523,7 +2523,6 @@ function renderTimeGroup(box, grp) {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.key = key;
-    card.appendChild(mkHandle());
 
     const nm = document.createElement('span');
     nm.className = 'card-name'; nm.style.cursor = 'default';
@@ -2589,6 +2588,8 @@ function renderTimeGroup(box, grp) {
 
     wrap.appendChild(ti); wrap.appendChild(unitLabel); wrap.appendChild(recBtn);
     card.appendChild(wrap);
+    card.appendChild(mkHandle());   // между значком карты и крестиком
+
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление ' + key);
       delete src[key]; render(); showMsg('Удалено');
@@ -2618,7 +2619,6 @@ function renderTextList(box, arr, icon, emptyText, modalTitle, placeholder, mark
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.idx = idx;
-    card.appendChild(mkHandle());
 
     const inp = document.createElement('input');
     inp.type = 'text'; inp.value = item;
@@ -2639,6 +2639,7 @@ function renderTextList(box, arr, icon, emptyText, modalTitle, placeholder, mark
       card.appendChild(badge);
     }
 
+    card.appendChild(mkHandle());   // между текстом и крестиком
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление');
       arr.splice(idx, 1);
@@ -2681,7 +2682,6 @@ function renderDestinations(box) {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.idx = idx;
-    card.appendChild(mkHandle());
 
     const nameInp = document.createElement('input');
     nameInp.type = 'text'; nameInp.value = dest.name;
@@ -2705,6 +2705,7 @@ function renderDestinations(box) {
       },
       { title: dest.name || 'Конечная точка', allowEmpty: true }
     ));
+    card.appendChild(mkHandle());   // между координатами и крестиком
     card.appendChild(mkDelBtn(() => {
       snapshot('удаление');
       defaultMachineDestinations.splice(idx, 1); render(); showMsg('Удалено');
@@ -3229,7 +3230,8 @@ function mkCard(isGroup, idx) {
 }
 function mkHandle() {
   const h = document.createElement('span');
-  h.className = 'drag-handle'; h.textContent = '⠿';
+  h.className = 'drag-handle';
+  h.innerHTML = Icons.get('move');   // те же стрелки вверх/вниз, что на главной
   h.title = 'Перетащите, чтобы изменить порядок';
   return h;
 }
