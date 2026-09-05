@@ -1159,6 +1159,8 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
 </style>
   <!-- Общая библиотека SVG-иконок: подключается до основного скрипта -->
   <script src="icons.js"></script>
+  <!-- Вход в редактор: отпечаток пальца + пароль -->
+  <script src="auth.js"></script>
 </head>
 <body data-install="banner">
 <main>
@@ -1273,6 +1275,10 @@ class="redaktor-modal-input"
 placeholder="Passwort eingeben"
 autocomplete="off"
 />
+<label id="redaktorBioRow" style="display:none;align-items:center;gap:8px;margin:10px 2px 2px;font-size:.85em;cursor:pointer;">
+<input type="checkbox" id="redaktorBioChk" checked style="width:16px;height:16px;accent-color:var(--primary-color,#2f6fed);">
+<span>🔒 Mit Fingerabdruck merken</span>
+</label>
 <div class="redaktor-modal-buttons">
 <button class="redaktor-modal-btn secondary" id="redaktorCancelBtn">Abbrechen</button>
 <button class="redaktor-modal-btn primary" id="redaktorSubmitBtn">Anmelden</button>
@@ -4565,6 +4571,23 @@ switcher.parentElement.addEventListener('touchmove', () => {
 </script>
 <script>
 // Авторизация Redaktor — пароль проверяется на сервере (Vercel)
+// Подстраховка: если auth.js не загрузился, страница не должна ломаться —
+// работаем по-старому, только с паролем.
+if (!window.Auth) {
+  console.warn('[auth] auth.js не загружен, вход только по паролю');
+  window.Auth = {
+    async check() { return false; },
+    remember(p) { try { localStorage.setItem('fz.auth.password', p); } catch {} },
+    password()  { try { return localStorage.getItem('fz.auth.password'); } catch { return null; } },
+    remembered(){ return !!window.Auth.password(); },
+    forget()    { try { localStorage.removeItem('fz.auth.password'); } catch {} },
+    async available() { return false; },
+    enrolled()  { return false; },
+    async enroll() { return false; },
+    async verify() { return false; },
+    async unlock() { return window.Auth.password(); }
+  };
+}
 document.addEventListener('DOMContentLoaded', () => {
 const link = document.getElementById('redaktorL');
 const modal = document.getElementById('redaktorModal');
@@ -4574,19 +4597,55 @@ const cancelBtn = document.getElementById('redaktorCancelBtn');
 
 if (!link) return;
 
-// Если уже авторизован в этой сессии — сразу переходим без модалки
-link.addEventListener('click', (e) => {
-  e.preventDefault();
-  if (sessionStorage.getItem('redaktorAuth') === '1') {
-    window.location.href = link.href;
-    return;
-  }
+const bioRow = document.getElementById('redaktorBioRow');
+const bioChk = document.getElementById('redaktorBioChk');
+
+// Показываем предложение про отпечаток только там, где он есть
+Auth.available().then(ok => {
+  if (ok && !Auth.enrolled()) bioRow.style.display = 'flex';
+});
+
+const openLoginModal = () => {
   modal.classList.add('show');
   input.value = '';
   input.classList.remove('error');
   submitBtn.innerHTML = 'Anmelden';
   submitBtn.disabled = false;
   setTimeout(() => input.focus(), 150);
+};
+
+// Порядок такой: отпечаток → память устройства → пароль
+link.addEventListener('click', async (e) => {
+  e.preventDefault();
+
+  // В этой же вкладке уже входили — не переспрашиваем
+  if (sessionStorage.getItem('redaktorAuth') === '1') {
+    window.location.href = link.href;
+    return;
+  }
+
+  if (Auth.remembered()) {
+    if (Auth.enrolled()) {
+      // Основной путь: подтверждаем отпечатком
+      link.style.opacity = '.5';
+      const ok = await Auth.verify();
+      link.style.opacity = '';
+      if (ok) {
+        sessionStorage.setItem('redaktorAuth', '1');
+        window.location.href = link.href;
+        return;
+      }
+      // Палец не подошёл или человек отменил — остаётся пароль
+      openLoginModal();
+      return;
+    }
+    // Пароль помним, отпечатка нет — пускаем сразу
+    sessionStorage.setItem('redaktorAuth', '1');
+    window.location.href = link.href;
+    return;
+  }
+
+  openLoginModal();
 });
 
 // При возврате назад (bfcache) — закрываем модалку
@@ -4629,6 +4688,14 @@ const checkPassword = async () => {
     if (data.ok) {
       submitBtn.innerHTML = '✅ Erfolgreich!';
       sessionStorage.setItem('redaktorAuth', '1');
+      Auth.remember(pwd);              // запоминаем устройство
+
+      // Привязываем отпечаток, если предложение было принято
+      if (bioRow.style.display !== 'none' && bioChk.checked && !Auth.enrolled()) {
+        submitBtn.innerHTML = '🔒 Fingerabdruck…';
+        const ok = await Auth.enroll();
+        submitBtn.innerHTML = ok ? '✅ Fingerabdruck aktiv' : '✅ Erfolgreich!';
+      }
       setTimeout(() => { window.location.href = link.href; }, 500);
     } else {
       submitBtn.innerHTML = 'Anmelden';

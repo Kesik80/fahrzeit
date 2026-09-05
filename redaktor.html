@@ -1480,6 +1480,8 @@ html.dark { color-scheme: dark; }
 </style>
   <!-- Общая библиотека SVG-иконок: подключается до основного скрипта -->
   <script src="icons.js"></script>
+  <!-- Вход: отпечаток пальца + пароль -->
+  <script src="auth.js"></script>
 </head>
 <body>
 
@@ -1549,7 +1551,7 @@ html.dark { color-scheme: dark; }
       <span class="tbtn-icon" data-svg-icon="plus"></span>
       <span class="tbtn-label"></span>
     </button>
-    <button class="tbtn" id="recalcBtn" title="Пересчитать время через API">
+    <button class="tbtn" id="recalcBtn" title="Пересчитать время через API / долгое нажатие — округлить всё до 5 минут">
       <span class="tbtn-icon" data-svg-icon="clock-pin"></span>
       <span class="tbtn-label"></span>
     </button>
@@ -1648,6 +1650,10 @@ html.dark { color-scheme: dark; }
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">⬆️ Загрузить stations.js</div>
+
+    <button class="mbtn mbtn-confirm" id="ghBioBtn" style="display:none;width:100%;margin-bottom:12px;">
+      🔒 Войти отпечатком
+    </button>
 
     <div class="field-label">Пароль</div>
     <input id="ghPasswordInp" class="modal-input" type="password" placeholder="Введите пароль…" autocomplete="current-password">
@@ -4085,12 +4091,70 @@ document.getElementById('saveBtn').onclick = () => {
 // ═══════════════════════════════════════
 //  RECALC MODAL
 // ═══════════════════════════════════════
-document.getElementById('recalcBtn').onclick = () => {
-  const prog = document.getElementById('recalcProgress');
-  prog.style.display = 'none'; prog.textContent = '';
-  document.getElementById('recalcStart').disabled = false;
-  openModal('recalcModal');
-};
+// Короткий тап — окно пересчёта. Долгий (700 мс) — округление всех времён
+// до 5 минут, той же логикой, что у кнопки btnGoogleAll на главной странице.
+(function setupRecalcButton() {
+  const btn = document.getElementById('recalcBtn');
+  let pressTimer = null;
+
+  const openRecalc = () => {
+    const prog = document.getElementById('recalcProgress');
+    prog.style.display = 'none'; prog.textContent = '';
+    document.getElementById('recalcStart').disabled = false;
+    openModal('recalcModal');
+  };
+
+  btn.addEventListener('pointerdown', () => {
+    pressTimer = setTimeout(() => { pressTimer = null; roundAllTimes(); }, 700);
+  });
+  btn.addEventListener('pointerup', () => {
+    // Таймер ещё не сработал → это был короткий тап
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; openRecalc(); }
+  });
+  btn.addEventListener('pointerleave', () => {
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  });
+  // Долгое нажатие на телефоне иначе вызывает системное меню
+  btn.addEventListener('contextmenu', e => e.preventDefault());
+})();
+
+// Округление до 5 минут — формула один в один из index.html:
+// остаток 0 или 1 отбрасываем вниз, остальное поднимаем вверх.
+// 12 → 10, 13 → 15, 2 → 5. Отличие одно: результат 0 недопустим
+// (у пары «время 0 минут» смысла нет), поэтому единица станет 5.
+function roundAllTimes() {
+  const round5 = m => {
+    const r = m % 5;
+    return r <= 1 ? m - r : m - r + 5;
+  };
+
+  const groups = [
+    { name: 'travelTimes',      obj: travelTimes,      isTreff: false },
+    { name: 'trefftravelTimes', obj: trefftravelTimes, isTreff: true  }
+  ];
+
+  // Сначала считаем, сколько изменится, чтобы зря не писать снимок отмены
+  let willChange = 0;
+  groups.forEach(g => Object.keys(g.obj).forEach(k => {
+    if (Math.max(round5(g.obj[k]), 5) !== g.obj[k]) willChange++;
+  }));
+
+  if (!willChange) { showMsg('⏱ Уже округлено'); return; }
+
+  snapshot('округление до 5 минут');
+  let changed = 0;
+  groups.forEach(g => Object.keys(g.obj).forEach(k => {
+    const r = Math.max(round5(g.obj[k]), 5);
+    if (r !== g.obj[k]) {
+      g.obj[k] = r;
+      setAutoFlag(k, g.isTreff, false);   // значение больше не «из Google»
+      changed++;
+    }
+  }));
+
+  markDirty(); render();
+  showMsg(`⏱ Округлено значений: ${changed}`, 2600);
+}
 document.getElementById('recalcCancel').onclick = () => closeModal('recalcModal');
 
 document.getElementById('recalcStart').onclick = async () => {
@@ -4226,13 +4290,58 @@ const defaultEntryMetaData = ${JSON.stringify(metaOut, null, 2)};`;
 // ═══════════════════════════════════════
 //  GITHUB
 // ═══════════════════════════════════════
-document.getElementById('ghUploadBtn').onclick = () => {
-  const saved = sessionStorage.uploadPassword;
-  document.getElementById('ghPasswordInp').value = saved || '';
-  document.getElementById('tokenHint').textContent = saved
-    ? '🔑 Пароль сохранён в сессии'
-    : '⚠️ Пароль хранится только до закрытия вкладки';
+// Подстраховка: если auth.js не загрузился, страница не должна ломаться —
+// работаем по-старому, только с паролем.
+if (!window.Auth) {
+  console.warn('[auth] auth.js не загружен, вход только по паролю');
+  window.Auth = {
+    async check() { return false; },
+    remember(p) { try { localStorage.setItem('fz.auth.password', p); } catch {} },
+    password()  { try { return localStorage.getItem('fz.auth.password'); } catch { return null; } },
+    remembered(){ return !!window.Auth.password(); },
+    forget()    { try { localStorage.removeItem('fz.auth.password'); } catch {} },
+    async available() { return false; },
+    enrolled()  { return false; },
+    async enroll() { return false; },
+    async verify() { return false; },
+    async unlock() { return window.Auth.password(); }
+  };
+}
+
+document.getElementById('ghUploadBtn').onclick = async () => {
+  const inp  = document.getElementById('ghPasswordInp');
+  const hint = document.getElementById('tokenHint');
+  const bio  = document.getElementById('ghBioBtn');
+
+  // Пароль помним на устройстве, а не только до закрытия вкладки
+  const saved = Auth.password() || sessionStorage.uploadPassword || '';
+
+  if (saved && Auth.enrolled()) {
+    // Отпечаток привязан — пароль показываем только после подтверждения
+    inp.value = '';
+    hint.textContent = '🔒 Подтвердите отпечатком или введите пароль';
+    bio.style.display = 'block';
+  } else {
+    inp.value = saved;
+    hint.textContent = saved
+      ? '🔑 Пароль сохранён на этом устройстве'
+      : '⚠️ Пароль будет сохранён на этом устройстве';
+    bio.style.display = 'none';
+  }
   openModal('ghModal');
+};
+
+// Кнопка «Войти отпечатком»: подтверждаем палец и сразу отправляем
+document.getElementById('ghBioBtn').onclick = async () => {
+  const bio = document.getElementById('ghBioBtn');
+  bio.disabled = true; bio.textContent = '🔒 Ожидание…';
+  const pwd = await Auth.unlock();
+  bio.disabled = false; bio.textContent = '🔒 Войти отпечатком';
+  if (!pwd) {
+    document.getElementById('tokenHint').textContent = '❌ Отпечаток не подтверждён — введите пароль';
+    return;
+  }
+  await uploadStationsViaServer(pwd);
 };
 
 document.getElementById('ghCancelBtn').onclick = () => closeModal('ghModal');
@@ -4240,8 +4349,6 @@ document.getElementById('ghCancelBtn').onclick = () => closeModal('ghModal');
 document.getElementById('ghSendStationsBtn').onclick = async () => {
   const password = document.getElementById('ghPasswordInp').value.trim();
   if (!password) { showMsg('Введите пароль'); return; }
-  sessionStorage.uploadPassword = password;
-  document.getElementById('tokenHint').textContent = '🔑 Пароль сохранён в сессии';
   await uploadStationsViaServer(password);
 };
 
@@ -4257,11 +4364,19 @@ async function uploadStationsViaServer(password) {
     });
     const d = await resp.json().catch(() => ({}));
     if (resp.ok && d.ok) {
+      // Сервер принял — значит пароль верный, можно запоминать
+      Auth.remember(password);
+      if (!Auth.enrolled() && await Auth.available()) {
+        const ok = await Auth.enroll();
+        if (ok) showMsg('🔒 Отпечаток привязан — в следующий раз без пароля', 3000);
+      }
       closeModal('ghModal');
       setStatus('ok', '✅ stations.js загружен на GitHub', '✅');
       showMsg('stations.js загружен ✅', 2500);
       markClean();
     } else if (resp.status === 401) {
+      // Сохранённый пароль устарел — стираем, иначе будет мешать каждый раз
+      if (password === Auth.password()) Auth.forget();
       showMsg('❌ Неверный пароль', 3500);      // модалку не закрываем — можно ввести заново
     } else {
       closeModal('ghModal');
