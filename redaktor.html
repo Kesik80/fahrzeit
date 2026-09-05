@@ -375,7 +375,10 @@ body:not(.dark) .drag-handle { color: #666; }    /* в светлой теме �
   background: transparent;      /* прозрачный фон — как в index.html */
   color: #dc3545;               /* тот же красный, что на главной */
   border-radius: 4px;           /* скругление как в index.html */
-  font-size: 16px;              /* размер символа ✖ */
+  font-size: 16px;              /* размер символа ✖ — как в index.html */
+  /* Шрифт тоже как в index.html. В Manrope знака ✖ нет, браузер
+     подставлял запасной шрифт и рисовал крестик заметно крупнее. */
+  font-family: Arial, sans-serif;
   cursor: pointer;              /* курсор-рука */
   flex-shrink: 0;               /* не сжимается */
   display: flex;                /* центрируем символ */
