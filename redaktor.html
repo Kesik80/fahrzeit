@@ -1428,15 +1428,19 @@ html.dark { color-scheme: dark; }
 .coords-hint.err  { color: var(--red); font-weight: 600; } /* не удалось распознать */
 .coords-hint.ok   { color: var(--green); font-weight: 700; } /* скопировано — видно сразу */
 
-/* Тёмная тема: точные цвета окна с главной страницы */
+/* Тёмная тема: цвета взяты из реального окна главной страницы.
+   Там фон задаётся переменной --modal-bg инлайновым !important-стилем
+   (#121212), а рамка приходит из CSS (#666). Правило body.dark
+   .modal-content{background:#444} в index.html до дела не доходит —
+   инлайновый стиль сильнее. Поэтому здесь именно #121212. */
 body.dark .cmodal-content {
-  background: #444;               /* окно светлее страницы */
-  color: #fff;                    /* белый текст */
+  background: #121212;            /* как --modal-bg на главной */
+  color: #fff;                    /* как --modal-text */
   border: 1px solid #666;         /* видимый светлый контур */
 }
-body.dark .cmodal-content label { color: #fff; }         /* пояснение тоже светлое */
+body.dark .cmodal-content label { color: #fff; }   /* пояснение светлое */
 body.dark .cmodal-content input[type=text] {
-  background: #333;               /* поле темнее окна — видно, куда вводить */
+  background: transparent;        /* как в index.html: фон окна просвечивает */
   color: #fff;                    /* белый текст ввода */
   border-color: #b0c4de;          /* светлая рамка поля */
 }
