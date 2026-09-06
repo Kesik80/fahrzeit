@@ -3404,8 +3404,9 @@ document.getElementById('coordsBtnCopy').onclick = async () => {
     document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); ta.remove();
   }
-  setCoordsHint('✓ Скопировано: ' + text, 'ok');
-  showMsg('Скопировано 📋');
+  // Формат сообщения такой же, как на главной: значок, слово, значение.
+  // Дублирующую подсказку под полем не показываем — хватает одного тоста.
+  showMsg('📋 Скопировано: ' + text, 3000);
 };
 
 // ✔ Сохранить
