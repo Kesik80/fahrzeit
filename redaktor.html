@@ -1317,11 +1317,14 @@ html.dark { color-scheme: dark; }
 .cmodal.show { display: flex; }     /* открытое состояние */
 
 .cmodal-content {
-  background: var(--surface);           /* фон окна */
+  /* Цвета сверены с окном «Koordinaten bearbeiten» на главной:
+     там в тёмной теме фон #444, рамка #666, текст белый —
+     окно заметно светлее страницы и имеет чёткий контур. */
+  background: var(--surface);           /* фон окна (в тёмной теме переопределяется ниже) */
   color: var(--text);                   /* цвет текста */
   padding: 22px 20px 18px;              /* внутренние отступы */
   border-radius: var(--r-md);           /* скруглённые углы */
-  border: 1px solid var(--border);      /* рамка */
+  border: 1px solid #b0c4de;            /* светлая рамка, как у полей в index.html */
   box-shadow: 0 8px 40px rgba(0,0,0,.45); /* тень */
   max-width: 340px; width: 100%;        /* компактное окно как на главной */
   text-align: center;                   /* заголовок и кнопки по центру */
@@ -1339,7 +1342,8 @@ html.dark { color-scheme: dark; }
 .cmodal-content label {
   display: block;        /* на всю ширину */
   font-size: .92rem;     /* чуть меньше основного */
-  color: var(--text2);   /* приглушённый */
+  color: var(--text);    /* светлый, как в index.html, а не приглушённый */
+  opacity: .85;          /* лишь слегка тише заголовка */
   line-height: 1.4;      /* межстрочный интервал */
   margin-bottom: 10px;   /* отступ до поля */
 }
@@ -1347,7 +1351,7 @@ html.dark { color-scheme: dark; }
   width: 100%;                        /* на всю ширину окна */
   padding: 11px 13px;                 /* удобно попадать пальцем */
   border-radius: var(--r-sm);         /* скруглённые углы */
-  border: 1.5px solid var(--border);  /* рамка */
+  border: 1.5px solid #b0c4de;        /* светлая рамка, как в index.html */
   background: var(--surface2);        /* фон поля */
   color: var(--text);                 /* цвет текста */
   font-family: var(--font);           /* основной шрифт */
@@ -1423,6 +1427,20 @@ html.dark { color-scheme: dark; }
 .coords-hint.warn { color: #ff9800; font-weight: 600; }  /* нет координат / взят центр карты */
 .coords-hint.err  { color: var(--red); font-weight: 600; } /* не удалось распознать */
 .coords-hint.ok   { color: var(--green); font-weight: 700; } /* скопировано — видно сразу */
+
+/* Тёмная тема: точные цвета окна с главной страницы */
+body.dark .cmodal-content {
+  background: #444;               /* окно светлее страницы */
+  color: #fff;                    /* белый текст */
+  border: 1px solid #666;         /* видимый светлый контур */
+}
+body.dark .cmodal-content label { color: #fff; }         /* пояснение тоже светлое */
+body.dark .cmodal-content input[type=text] {
+  background: #333;               /* поле темнее окна — видно, куда вводить */
+  color: #fff;                    /* белый текст ввода */
+  border-color: #b0c4de;          /* светлая рамка поля */
+}
+body.dark .coords-hint { color: #ddd; }  /* подсказка под полем заметнее */
 
 /* ══════════════════════════════════════
    ВЫБОР ТОЧКИ НА КАРТЕ
