@@ -1243,6 +1243,15 @@ html.dark { color-scheme: dark; }
 .hc-group.warn { border-left-color: #ff9800; }       /* предупреждение */
 .hc-group.err  { border-left-color: var(--red); }    /* ошибка */
 
+/* Иконка, встроенная в строку текста: выравниваем по базовой линии */
+.inline-icon {
+  display: inline-flex;      /* ведёт себя как буква */
+  align-items: center;       /* по центру строки */
+  vertical-align: -0.22em;   /* садим на базовую линию текста */
+  color: var(--accent);      /* заметна в потоке текста */
+}
+.inline-icon svg { display: block; }
+
 .hc-title {
   font-size: .92rem;   /* чуть меньше базового */
   font-weight: 700;    /* жирный */
@@ -1694,7 +1703,10 @@ body.dark .coords-hint { color: #ddd; }  /* подсказка под полем
 <div id="recalcModal" class="modal-overlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">🔄 Пересчёт времени через Google API</div>
+    <div class="modal-title">
+      <span class="inline-icon" data-svg-icon="clock-pin" data-svg-size="20"></span>
+      Пересчёт времени через Google API
+    </div>
 
     <div class="field-label">Что пересчитать</div>
     <select id="recalcTarget" class="modal-select">
@@ -3000,7 +3012,10 @@ function renderHealthcheck(box) {
 
     const desc = document.createElement('div');
     desc.className = 'hc-desc';
-    desc.textContent = iss.desc;
+    // {icon} в тексте заменяем на настоящую иконку кнопки пересчёта,
+    // чтобы подсказка не расходилась с панелью
+    desc.innerHTML = iss.desc.replace('{icon}',
+      `<span class="inline-icon">${Icons.get('clock-pin', { size: 16 })}</span>`);
     g.appendChild(desc);
 
     if (iss.items.length) {
@@ -3150,7 +3165,7 @@ function collectIssues() {
     .concat(Object.keys(trefftravelTimes).filter(k => trefftravelTimes[k] === DEFAULT_TT));
   out.push({
     level: 'warn', title: 'Время осталось значением по умолчанию (5 мин)', items: notCalced,
-    desc: 'Эти пары ни разу не считались через Google. Кнопка 🔄 в панели снизу пересчитает их пачкой.'
+    desc: 'Эти пары ни разу не считались через Google. Кнопка {icon} в панели снизу пересчитает их пачкой.'
   });
 
   // 8. Участники без своего порядка остановок
@@ -4129,15 +4144,25 @@ document.getElementById('saveBtn').onclick = () => {
     openModal('recalcModal');
   };
 
+  // Короткий тап ловим штатным click — он срабатывает надёжно.
+  // Раньше окно открывалось по pointerup, но браузер на телефоне
+  // при малейшем сдвиге пальца шлёт pointercancel вместо pointerup,
+  // и тап просто терялся: приходилось «додерживать» кнопку.
+  let longFired = false;
+
+  const cancelTimer = () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
+
   btn.addEventListener('pointerdown', () => {
-    pressTimer = setTimeout(() => { pressTimer = null; roundAllTimes(); }, 700);
+    longFired = false;
+    pressTimer = setTimeout(() => { pressTimer = null; longFired = true; roundAllTimes(); }, 700);
   });
-  btn.addEventListener('pointerup', () => {
-    // Таймер ещё не сработал → это был короткий тап
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; openRecalc(); }
-  });
-  btn.addEventListener('pointerleave', () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+  btn.addEventListener('pointerup',     cancelTimer);
+  btn.addEventListener('pointerleave',  cancelTimer);
+  btn.addEventListener('pointercancel', () => { cancelTimer(); longFired = true; });  // жест прерван — окно не открываем
+
+  btn.addEventListener('click', () => {
+    if (longFired) { longFired = false; return; }   // это было долгое нажатие
+    openRecalc();
   });
   // Долгое нажатие на телефоне иначе вызывает системное меню
   btn.addEventListener('contextmenu', e => e.preventDefault());
