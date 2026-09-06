@@ -867,7 +867,8 @@ html.dark { color-scheme: dark; }
   font-weight: 600;                         /* полужирный */
   opacity: 0;                               /* невидим по умолчанию */
   pointer-events: none;                     /* не перехватывает клики */
-  z-index: 500;                             /* поверх модалок */
+  z-index: 10000;   /* выше всех окон: у .cmodal стоит backdrop-filter,
+                       и всё, что ниже, попадает под размытие */                             /* поверх модалок */
   transition: opacity .2s, transform .2s;   /* плавное появление */
   white-space: nowrap;                      /* текст в одну строку */
   max-width: calc(100vw - 32px);            /* не шире экрана минус отступы */
