@@ -4308,27 +4308,50 @@ if (!window.Auth) {
   };
 }
 
-document.getElementById('ghUploadBtn').onclick = async () => {
+// Окно с паролем — запасной путь. Открываем его только если войти
+// молча не получилось: нет сохранённого пароля, палец не подтвердили
+// или сервер отказал.
+function openGhModal(message) {
   const inp  = document.getElementById('ghPasswordInp');
   const hint = document.getElementById('tokenHint');
   const bio  = document.getElementById('ghBioBtn');
 
-  // Пароль помним на устройстве, а не только до закрытия вкладки
   const saved = Auth.password() || sessionStorage.uploadPassword || '';
 
   if (saved && Auth.enrolled()) {
     // Отпечаток привязан — пароль показываем только после подтверждения
     inp.value = '';
-    hint.textContent = '🔒 Подтвердите отпечатком или введите пароль';
     bio.style.display = 'block';
+    hint.textContent = message || '🔒 Подтвердите отпечатком или введите пароль';
   } else {
     inp.value = saved;
-    hint.textContent = saved
-      ? '🔑 Пароль сохранён на этом устройстве'
-      : '⚠️ Пароль будет сохранён на этом устройстве';
     bio.style.display = 'none';
+    hint.textContent = message || (saved
+      ? '🔑 Пароль сохранён на этом устройстве'
+      : '⚠️ Пароль будет сохранён на этом устройстве');
   }
   openModal('ghModal');
+}
+
+document.getElementById('ghUploadBtn').onclick = async () => {
+  const btn = document.getElementById('ghUploadBtn');
+
+  // Ничего не помним — сразу спрашиваем пароль
+  if (!Auth.remembered()) { openGhModal(); return; }
+
+  if (Auth.enrolled()) {
+    // Основной путь: палец → отправка, без единого лишнего окна
+    btn.disabled = true;
+    showMsg('🔒 Подтвердите отпечатком', 8000);
+    const pwd = await Auth.unlock();
+    btn.disabled = false;
+    if (!pwd) { openGhModal('❌ Отпечаток не подтверждён — введите пароль'); return; }
+    await uploadStationsViaServer(pwd);
+    return;
+  }
+
+  // Пароль помним, отпечатка нет — отправляем молча
+  await uploadStationsViaServer(Auth.password());
 };
 
 // Кнопка «Войти отпечатком»: подтверждаем палец и сразу отправляем
@@ -4377,7 +4400,11 @@ async function uploadStationsViaServer(password) {
     } else if (resp.status === 401) {
       // Сохранённый пароль устарел — стираем, иначе будет мешать каждый раз
       if (password === Auth.password()) Auth.forget();
-      showMsg('❌ Неверный пароль', 3500);      // модалку не закрываем — можно ввести заново
+      showMsg('❌ Неверный пароль', 3500);
+      // Если отправляли молча, окно ещё не открыто — открываем для ввода
+      if (!document.getElementById('ghModal').classList.contains('show')) {
+        openGhModal('❌ Пароль не подошёл — введите заново');
+      }
     } else {
       closeModal('ghModal');
       showMsg('❌ Ошибка: ' + (d.error || resp.status), 4000);
