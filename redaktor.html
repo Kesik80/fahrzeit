@@ -1323,7 +1323,7 @@ html.dark { color-scheme: dark; }
   background: var(--surface);           /* фон окна (в тёмной теме переопределяется ниже) */
   color: var(--text);                   /* цвет текста */
   padding: 22px 20px 18px;              /* внутренние отступы */
-  border-radius: var(--r-md);           /* скруглённые углы */
+  border-radius: 14px;                  /* скругление заметнее, чем у --r-md (6px) */
   border: 1px solid #b0c4de;            /* светлая рамка, как у полей в index.html */
   box-shadow: 0 8px 40px rgba(0,0,0,.45); /* тень */
   max-width: 340px; width: 100%;        /* компактное окно как на главной */
@@ -1450,7 +1450,8 @@ body.dark .coords-hint { color: #ddd; }  /* подсказка под полем
    ВЫБОР ТОЧКИ НА КАРТЕ
 ══════════════════════════════════════ */
 .map-picker-sheet {
-  max-width: 600px;   /* шире обычного окна — внутри карта */
+  border-radius: 14px; /* то же скругление, что у окна координат */
+  max-width: 600px;    /* шире обычного окна — внутри карта */
   padding: 0;         /* содержимое само задаёт отступы */
   overflow: hidden;   /* карта не вылезает за скругления */
   text-align: left;   /* внутри обычное выравнивание */

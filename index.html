@@ -1026,6 +1026,7 @@ overflow-x: auto;
 #cancelGreeting                   { background: var(--danger-color)   !important; }
 .modal-btn.map-button            { background: var(--primary-color) !important; }
 .modal-btn.trash-btn              { background: #6d4c41 !important; }
+    .modal-btn.copy-button              { background: #7e57c2 !important; }  /* копировать координаты */
 /* фон модалки – переключается вместе с темой */
 .modal-content                   { background: #aaaaaa !important; color: #000 !important; }
 body.dark .modal-content        { background: #444444 !important; color: #fff !important
@@ -1308,6 +1309,8 @@ einige Sekunden verarbeitet.</p>
 <button class="map-button" id="openMapPicker" title="Punkt auf Karte wählen" data-svg-icon="map-picker" data-svg-size="22">
 
 </button>
+<button class="modal-btn copy-button"   id="copyCoords"   title="Koordinaten kopieren"
+        data-svg-icon="copy-doc" data-svg-size="23"></button>
 <button class="modal-btn save-button"   id="saveCoords"   title="Speichern">✔</button>
 <button class="modal-btn cancel-button" id="cancelCoords" title="Abbrechen">✕</button>
 </div>
@@ -1820,6 +1823,22 @@ this.elements.clearButton.addEventListener('click', () => this.clearLocalStorage
 this.elements.saveCoordsButton.addEventListener('click', () => this.saveCoordinates());
 this.elements.deleteGreetingButton.addEventListener('click', () => this.deleteGreeting());
 this.elements.cancelCoordsButton.addEventListener('click', () => this.closeModal());
+
+// Копировать координаты из поля в буфер обмена
+document.getElementById('copyCoords').addEventListener('click', async () => {
+  const text = this.elements.coordsInput.value.trim();
+  if (!text) { this.showToast('Nichts zu kopieren'); return; }
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Запасной путь для старых WebView
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0;';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); ta.remove();
+  }
+  this.showToast('📋 Kopiert: ' + text);
+});
 this.elements.saveGreetingButton.addEventListener('click', () => this.saveCoordinates());
 this.elements.cancelGreetingButton.addEventListener('click', () => this.closeModal());
 this.elements.openMapButton.addEventListener('click', () => this.openMapForSelection());
