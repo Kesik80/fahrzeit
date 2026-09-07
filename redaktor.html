@@ -1717,7 +1717,7 @@ body.dark .coords-hint { color: #ddd; }  /* подсказка под полем
 
     <div class="field-label">Режим</div>
     <select id="recalcMode" class="modal-select">
-      <option value="missing">Только со значением по умолчанию (5 мин)</option>
+      <option value="missing">Только незаполненные (заглушка 1 мин)</option>
       <option value="all">Пересчитать все пары</option>
     </select>
 
@@ -1741,7 +1741,12 @@ const GH_OWNER   = 'Kesik80';
 const GH_REPO    = 'fahrzeit';
 const GH_FILE    = 'stations.js';
 const GH_RAW_URL = `https://raw.githubusercontent.com/${GH_OWNER}/${GH_REPO}/main/${GH_FILE}`;
-const DEFAULT_TT = 5;
+// Значение-заглушка для только что созданной пары.
+// Раньше стояло 5 — но 5 минут это совершенно нормальное реальное
+// время, и отличить «ещё не считали» от «посчитали, получилось 5»
+// было невозможно. Единица в качестве времени поездки практически
+// не встречается, поэтому сразу бросается в глаза как «не заполнено».
+const DEFAULT_TT = 1;
 const COORD_DP   = 6;   // сколько знаков после запятой хранить у координат
 
 // Базовый адрес API.
@@ -2256,6 +2261,8 @@ function parseStationsText(text) {
     try {
       const m = evalBlock(metaB);
       COORD_GROUPS.forEach(g => { entryMeta[g] = m[g] || {}; });
+      // Восстанавливаем отметки «рассчитано через Google»
+      if (m.times) Object.keys(m.times).forEach(k => { autoCalcFlags[k] = true; });
     } catch { /* повреждённый блок метаданных не должен ломать загрузку */ }
   }
 }
@@ -3112,7 +3119,7 @@ function collectIssues() {
   out.push({
     level: 'warn', title: 'Не хватает пар Treffpunkt → участник', items: missingTreff,
     desc: 'Для каждого места встречи нужна строка времени до каждого участника.',
-    fixLabel: '➕ Создать недостающие (5 мин)',
+    fixLabel: '➕ Создать недостающие',
     fix: () => { missingTreff.forEach(k => trefftravelTimes[k] = DEFAULT_TT); return missingTreff.length; }
   });
 
@@ -3161,11 +3168,16 @@ function collectIssues() {
   });
 
   // 7. Времена, которые никогда не считались
-  const notCalced = Object.keys(travelTimes).filter(k => travelTimes[k] === DEFAULT_TT)
-    .concat(Object.keys(trefftravelTimes).filter(k => trefftravelTimes[k] === DEFAULT_TT));
+  // Заглушка = значение DEFAULT_TT И ни разу не подтверждённое.
+  // Если ты сам вписал такое время или его вернул Google — пара
+  // считается заполненной и в список не попадает.
+  const isPlaceholder = (obj, k, isTreff) =>
+    obj[k] === DEFAULT_TT && !getAutoFlag(k, isTreff);
+  const notCalced = Object.keys(travelTimes).filter(k => isPlaceholder(travelTimes, k, false))
+    .concat(Object.keys(trefftravelTimes).filter(k => isPlaceholder(trefftravelTimes, k, true)));
   out.push({
-    level: 'warn', title: 'Время осталось значением по умолчанию (5 мин)', items: notCalced,
-    desc: 'Эти пары ни разу не считались через Google. Кнопка {icon} в панели снизу пересчитает их пачкой.'
+    level: 'warn', title: `Время не заполнено (${DEFAULT_TT} мин — заглушка)`, items: notCalced,
+    desc: 'Эти пары созданы автоматически и ни разу не считались. Кнопка {icon} в панели снизу пересчитает их пачкой.'
   });
 
   // 8. Участники без своего порядка остановок
@@ -4183,9 +4195,14 @@ function roundAllTimes() {
     { name: 'trefftravelTimes', obj: trefftravelTimes, isTreff: true  }
   ];
 
+  // Заглушки не округляем: единица должна остаться единицей,
+  // иначе «не заполнено» молча превратится в «5 минут».
+  const skip = (g, k) => g.obj[k] === DEFAULT_TT && !getAutoFlag(k, g.isTreff);
+
   // Сначала считаем, сколько изменится, чтобы зря не писать снимок отмены
   let willChange = 0;
   groups.forEach(g => Object.keys(g.obj).forEach(k => {
+    if (skip(g, k)) return;
     if (Math.max(round5(g.obj[k]), 5) !== g.obj[k]) willChange++;
   }));
 
@@ -4194,6 +4211,7 @@ function roundAllTimes() {
   snapshot('округление до 5 минут');
   let changed = 0;
   groups.forEach(g => Object.keys(g.obj).forEach(k => {
+    if (skip(g, k)) return;
     const r = Math.max(round5(g.obj[k]), 5);
     if (r !== g.obj[k]) {
       g.obj[k] = r;
@@ -4216,13 +4234,13 @@ document.getElementById('recalcStart').onclick = async () => {
   const pairs = [];
   if (target === 'travelTimes' || target === 'both') {
     Object.keys(travelTimes).forEach(key => {
-      if (mode === 'missing' && travelTimes[key] !== DEFAULT_TT) return;
+      if (mode === 'missing' && !(travelTimes[key] === DEFAULT_TT && !getAutoFlag(key, false))) return;
       pairs.push({ key, src: travelTimes, isTreff: false });
     });
   }
   if (target === 'trefftravelTimes' || target === 'both') {
     Object.keys(trefftravelTimes).forEach(key => {
-      if (mode === 'missing' && trefftravelTimes[key] !== DEFAULT_TT) return;
+      if (mode === 'missing' && !(trefftravelTimes[key] === DEFAULT_TT && !getAutoFlag(key, true))) return;
       pairs.push({ key, src: trefftravelTimes, isTreff: true });
     });
   }
@@ -4277,6 +4295,17 @@ function buildExportText() {
     Object.keys(groupObj(g)).forEach(n => {
       const m = metaOf(g, n);
       if (m) metaOut[g][n] = m;
+    });
+  });
+
+  // Какие пары реально считались через Google. Раньше это жило только
+  // в памяти вкладки: после перезагрузки все значки карты становились
+  // серыми, а проверка не могла отличить настоящие времена от заглушек.
+  metaOut.times = {};
+  TIME_GROUPS.forEach(g => {
+    const isTreff = g === 'trefftravelTimes';
+    Object.keys(groupObj(g)).forEach(k => {
+      if (getAutoFlag(k, isTreff)) metaOut.times[flagKey(k, isTreff)] = 1;
     });
   });
 
