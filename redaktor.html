@@ -3149,7 +3149,13 @@ function makeSortable(listEl, onDone) {
     animation: 150,
     handle: '.drag-handle',
     disabled: filtering,
-    onEnd: evt => { if (evt.oldIndex !== evt.newIndex) onDone(); }
+    onStart: () => { if (navigator.vibrate) navigator.vibrate(15); },  // взяли карточку
+    onEnd: evt => {
+      if (evt.oldIndex !== evt.newIndex) {
+        if (navigator.vibrate) navigator.vibrate(10);   // положили на новое место
+        onDone();
+      }
+    }
   });
   if (filtering) {
     listEl.querySelectorAll('.drag-handle').forEach(h => {
@@ -3248,7 +3254,11 @@ function mkHandle() {
 }
 function mkDelBtn(cb) {
   const b = document.createElement('button'); b.className = 'del-btn'; b.textContent = '✖';
-  b.onclick = e => { e.stopPropagation(); cb(); markDirty(); };
+  b.onclick = e => {
+    e.stopPropagation();
+    if (navigator.vibrate) navigator.vibrate(20);   // удаление — заметнее обычного тапа
+    cb(); markDirty();
+  };
   return b;
 }
 function mkAddSubBtn() {
@@ -4112,7 +4122,12 @@ document.getElementById('saveBtn').onclick = () => {
 
   btn.addEventListener('pointerdown', () => {
     longFired = false;
-    pressTimer = setTimeout(() => { pressTimer = null; longFired = true; roundAllTimes(); }, 700);
+    pressTimer = setTimeout(() => {
+      pressTimer = null; longFired = true;
+      // Более заметная отдача: жест сработал, палец можно убрать
+      if (navigator.vibrate) navigator.vibrate(30);
+      roundAllTimes();
+    }, 700);
   });
   btn.addEventListener('pointerup',     cancelTimer);
   btn.addEventListener('pointerleave',  cancelTimer);
@@ -4427,6 +4442,7 @@ async function uploadStationsViaServer(password) {
       // Стираем только пароль. Привязку отпечатка оставляем:
       // палец не виноват, что пароль на сервере поменялся.
       if (password === Auth.password()) Auth.forgetPassword();
+      if (navigator.vibrate) navigator.vibrate(200);   // как на главной: длинная вибрация на отказ
       showMsg('❌ Неверный пароль', 3500);
       // Если отправляли молча, окно ещё не открыто — открываем для ввода
       if (!document.getElementById('ghModal').classList.contains('show')) {
@@ -4599,6 +4615,53 @@ function filterCards(q) {
 
 // Помечаем «изменено» при вводе в поля карточек
 document.getElementById('cards').addEventListener('change', markDirty);
+
+// ═══════════════════════════════════════
+//  ВИБРООТКЛИК
+//  Перенесено с главной страницы, чтобы кнопки отзывались
+//  одинаково в обоих приложениях.
+// ═══════════════════════════════════════
+
+// Android не даёт вибрировать до первого жеста пользователя.
+// Свайп (touchmove) за жест не считается, поэтому прогреваем
+// на первом же касании и сразу снимаем обработчик.
+document.addEventListener('touchstart', function wakeVibrate() {
+  if (navigator.vibrate) navigator.vibrate(0);
+  document.removeEventListener('touchstart', wakeVibrate);
+}, { passive: true });
+
+// Что считается «нажимаемым» в редакторе: кнопки, вкладки,
+// булавка координат, ручка перетаскивания, кнопка выбора водителя
+// и строки в нижней шторке выбора.
+const HAPTIC_SEL = 'button, .tab, .coords-icon, .drag-handle, .driver-picker, .bs-list-item, .card-name';
+
+// e.target не всегда элемент (бывает документ или текстовый узел),
+// а closest есть только у элементов — без проверки здесь падал TypeError
+const hapticTarget = e =>
+  (e.target && typeof e.target.closest === 'function') ? e.target.closest(HAPTIC_SEL) : null;
+
+document.addEventListener('touchstart', e => {
+  const el = hapticTarget(e);
+  if (el) el._touchStartTime = Date.now();
+}, { passive: true });
+
+document.addEventListener('touchend', e => {
+  const el = hapticTarget(e);
+  if (!el) return;
+  // Только короткое касание. Долгое нажатие — отдельный жест
+  // (округление времени, перетаскивание), там своя отдача.
+  if (el._touchStartTime && Date.now() - el._touchStartTime < 400) {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+  el._touchStartTime = null;
+}, { passive: true });
+
+// Чекбоксы и выпадающие списки
+document.addEventListener('change', e => {
+  if (e.target.type === 'checkbox' || e.target.tagName === 'SELECT') {
+    if (navigator.vibrate) navigator.vibrate(10);
+  }
+});
 
 // ═══════════════════════════════════════
 //  START

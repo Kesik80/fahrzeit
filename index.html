@@ -4404,15 +4404,18 @@ document.addEventListener('touchstart', function wakeVibrate() {
 
 // ── Глобальное вибро на кнопки, cp-trigger, чекбоксы ────────────
 // touchstart + короткое касание (не долгое нажатие)
+// e.target не всегда элемент (бывает документ или текстовый узел),
+// а closest есть только у элементов — без проверки здесь падал TypeError
+const hapticTarget = (e) =>
+  (e.target && typeof e.target.closest === 'function')
+    ? e.target.closest('button, .cp-trigger, .theme-toggle')
+    : null;
 document.addEventListener('touchstart', (e) => {
-  const t = e.target;
-  if (!t.closest('button') && !t.closest('.cp-trigger') && !t.closest('.theme-toggle')) return;
-  const el = t.closest('button') || t.closest('.cp-trigger') || t.closest('.theme-toggle');
-  el._touchStartTime = Date.now();
+  const el = hapticTarget(e);
+  if (el) el._touchStartTime = Date.now();
 }, { passive: true });
 document.addEventListener('touchend', (e) => {
-  const t = e.target;
-  const el = t.closest('button') || t.closest('.cp-trigger') || t.closest('.theme-toggle');
+  const el = hapticTarget(e);
   if (!el) return;
   // Вибро только если касание было коротким (< 400ms) — не долгое нажатие
   if (el._touchStartTime && Date.now() - el._touchStartTime < 400) {
