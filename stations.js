@@ -25,7 +25,7 @@ this.stations = {
   "Gelsenkirchen-Bismarck": {lat: 51.538627, lng: 7.108037},
   "Gevelsberg-West": {lat: 51.316939, lng: 7.314008},
   "Gutersloh": {lat: 51.907774, lng: 8.388256},
-  "Hagen": {lat: 51.373517, lng: 7.461144},
+  "Hagen": {lat: 51.372305, lng: 7.462295},
   "Hagen Hbf": {lat: 51.362268, lng: 7.461884},
   "Hamm": {lat: 51.672751, lng: 7.811458},
   "Holzwickede": {lat: 51.505033, lng: 7.619762},
@@ -220,6 +220,10 @@ const defaultEntryMetaData = {
     "Duisburg Hochfeld": {
       "c": "2026-09-03T22:51:42.865Z",
       "u": "2026-09-03T22:51:42.865Z"
+    },
+    "Hagen": {
+      "c": "2026-09-08T00:37:49.325Z",
+      "u": "2026-09-08T00:37:49.325Z"
     }
   },
   "treffpunkt": {
@@ -227,5 +231,6 @@ const defaultEntryMetaData = {
       "c": "2026-09-03T22:04:43.685Z",
       "u": "2026-09-03T22:08:01.456Z"
     }
-  }
+  },
+  "times": {}
 };
