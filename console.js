@@ -431,11 +431,15 @@
   /* ─── fetch ─── */
   const _fetch = window.fetch;
   window.fetch = function (resource, init) {
-    const url    = (typeof resource === 'string' ? resource : resource.url)
-                     .replace(location.origin, '').slice(0, 60);
-    const method = ((init && init.method) || 'GET').toUpperCase();
+    // fetch принимает строку, Request и URL. У URL нет свойства .url —
+    // раньше здесь падал TypeError и ломался сам запрос, а не только лог.
+    const raw = typeof resource === 'string' ? resource
+              : (resource && typeof resource.url === 'string') ? resource.url
+              : String(resource || '');
+    const url    = raw.replace(location.origin, '').slice(0, 60);
+    const method = ((init && init.method) || (resource && resource.method) || 'GET').toUpperCase();
     const t0     = Date.now();
-    addLine('net', '🌐', `${method} ${url} …`);
+    try { addLine('net', '🌐', `${method} ${url} …`); } catch (e) {}
     return _fetch.apply(this, arguments)
       .then(res => {
         addLine('net', '🌐', `${method} ${url} → ${res.status} (${Date.now() - t0}ms)`);
@@ -454,8 +458,9 @@
     let _m, _u, _t0;
     const origOpen = xhr.open.bind(xhr);
     xhr.open = (m, u, ...r) => {
-      _m = m.toUpperCase(); _u = String(u).replace(location.origin,'').slice(0,60);
-      return origOpen(m, u, ...r);
+      try { _m = String(m).toUpperCase(); _u = String(u).replace(location.origin,'').slice(0,60); }
+      catch (e) { _m = '?'; _u = '?'; }
+      return origOpen(m, u, ...r);   // сам запрос уходит в любом случае
     };
     xhr.addEventListener('loadstart', () => { _t0 = Date.now(); addLine('net','🌐',`${_m} ${_u} …`); });
     xhr.addEventListener('load',  () => addLine('net','🌐',`${_m} ${_u} → ${xhr.status} (${Date.now()-_t0}ms)`));
@@ -463,6 +468,16 @@
     return xhr;
   };
   window.XMLHttpRequest.prototype = _XHR.prototype;
+  // Переносим статические константы (UNSENT, OPENED, ... DONE) и всё,
+  // что было на оригинальном конструкторе. Библиотеки вроде Firebase
+  // и Google Maps сверяются с XMLHttpRequest.DONE — без этого они
+  // получали undefined и молча ломались.
+  try {
+    Object.getOwnPropertyNames(_XHR).forEach(k => {
+      if (k === 'prototype' || k === 'name' || k === 'length') return;
+      try { window.XMLHttpRequest[k] = _XHR[k]; } catch (e) {}
+    });
+  } catch (e) {}
 
   /* ─── Фильтры ─── */
   fAllBtn.addEventListener('click',   () => setFilter('ALL',   fAllBtn));

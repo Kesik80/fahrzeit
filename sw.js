@@ -17,12 +17,15 @@
    жить. Обычные правки html/js подхватываются сами, поднимать не нужно.
 */
 
-const CACHE = 'fahrzeit-v1';
+const CACHE = 'fahrzeit-v2';   // поднято: в CORE добавлены icons.js, auth.js, redaktor.html
 
 const CORE = [
   '/',
   '/index.html',
+  '/redaktor.html',
   '/stations.js',
+  '/icons.js',
+  '/auth.js',
   '/console.js',
   '/install.js',
   '/pwa-check.html',

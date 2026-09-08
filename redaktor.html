@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#1a1a1a" id="themeColorMeta">
 <title>Stations Editor</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <style>
 /* ══════════════════════════════════════
@@ -47,8 +45,12 @@
   --r-sm:      6px;
   --r-pill:    100px;
 
-  /* ── Шрифт (Manrope для редактора, как было) ── */
-  --font:      'Manrope', system-ui, sans-serif;
+  /* ── Шрифт ─────────────────────────────────────────────
+     Тот же, что на главной: там body { font-family: sans-serif },
+     то есть системный шрифт телефона. Раньше редактор тянул Manrope
+     из интернета — страницы выглядели по-разному, а офлайн шрифт
+     вообще не приезжал и текст прыгал. */
+  --font:      sans-serif;
 }
 
 /* Тёмная тема — из index */
@@ -94,7 +96,7 @@ body {
    ОСНОВНОЙ КОНТЕЙНЕР
 ══════════════════════════════════════ */
 .app {
-  max-width: 480px;        /* максимальная ширина — удобно для мобильных */
+  max-width: 500px;        /* максимальная ширина — удобно для мобильных */
   margin: 0 auto;          /* центрируем по горизонтали */
   display: flex;           /* flex-колонка для шапки + контента + панели */
   flex-direction: column;  /* элементы идут вертикально */
@@ -235,7 +237,10 @@ body {
 ══════════════════════════════════════ */
 .card {
   background: var(--surface);           /* белый / тёмный фон карточки */
-  border: 1px solid var(--border);      /* рамка */
+  /* Рамки нет: у .participant на главной её тоже нет, карточка
+     отделяется от фона только цветом. С рамкой список в тёмной теме
+     выглядел «клетчатым» и не похожим на главную. */
+  border: 1px solid transparent;        /* место под рамку держим — для :hover */
   border-radius: var(--r-sm);           /* скруглённые углы */
   padding: 4px 0px 4px 10px;           /* меньше справа — крестик у края */
   margin-bottom: 8px;                  /* отступ снизу между карточками */
@@ -594,7 +599,7 @@ body:not(.dark) .drag-handle { color: #666; }    /* в светлой теме �
 }
 
 .toolbar-center {
-  max-width: 480px;  /* ограничиваем по ширине как .app */
+  max-width: 500px;  /* ограничиваем по ширине как .app */
   margin: 0 auto;    /* центрируем */
   width: 100%;       /* на всю доступную ширину */
   display: flex;     /* кнопки в ряд */
@@ -791,57 +796,12 @@ html.dark { color-scheme: dark; }
 }
 
 /* Кнопки выбора типа (крупные, с иконкой) */
-.type-btn {
-  width: 100%;                          /* на всю ширину */
-  padding: 14px;                        /* просторные внутренние отступы */
-  border-radius: var(--r);              /* скруглённые углы */
-  border: 1.5px solid var(--border);    /* рамка */
-  background: var(--surface2);          /* фон */
-  font-family: var(--font);             /* основной шрифт */
-  font-size: .92rem;                    /* размер текста */
-  font-weight: 700;                     /* жирный */
-  color: var(--text);                   /* основной цвет */
-  cursor: pointer;                      /* курсор-рука */
-  text-align: left;                     /* текст прижат влево */
-  display: flex;                        /* иконка + текст в ряд */
-  align-items: center;                  /* по центру вертикально */
-  gap: 10px;                            /* расстояние между иконкой и текстом */
-  margin-bottom: 8px;                   /* отступ между кнопками */
-  transition: all .18s;                 /* анимация hover */
-}
-.type-btn:hover {
-  border-color: var(--accent);   /* синяя рамка */
-  background: var(--accent-lt);  /* светло-синий фон */
-  color: var(--accent);          /* синий текст */
-}
 
 /* Иконка-квадрат внутри type-btn */
-.type-btn-icon {
-  width: 36px; height: 36px;   /* квадрат 36×36 */
-  border-radius: var(--r-sm);  /* скруглённые углы */
-  display: flex; align-items: center; justify-content: center; /* центрируем эмодзи */
-  font-size: 18px;             /* размер эмодзи */
-  flex-shrink: 0;              /* не сжимается */
-}
-.tb-blue  .type-btn-icon { background: var(--accent-lt); } /* синий фон для type-btn синего типа */
-.tb-green .type-btn-icon { background: var(--green-lt); }  /* зелёный фон для type-btn зелёного типа */
 
 /* Разделитель внутри GitHub-модалки */
-.gh-divider {
-  border: none;                         /* убираем стандартную рамку hr */
-  border-top: 1px solid var(--border);  /* только верхняя линия */
-  margin: 16px 0;                       /* вертикальные отступы */
-}
 
 /* Заголовок секции внутри GitHub-модалки */
-.gh-section-title {
-  font-size: .78rem;        /* мелкий */
-  font-weight: 700;         /* жирный */
-  color: var(--text2);      /* приглушённый цвет */
-  margin-bottom: 8px;       /* отступ до элемента секции */
-  text-transform: uppercase; /* ЗАГЛАВНЫЕ */
-  letter-spacing: .5px;     /* разрежение букв */
-}
 
 /* Подсказка о сохранённом токене */
 .token-hint {
@@ -1202,19 +1162,6 @@ html.dark { color-scheme: dark; }
 /* ══════════════════════════════════════
    КНОПКА «ОТКРЫТЬ НА КАРТЕ» У КООРДИНАТ
 ══════════════════════════════════════ */
-.coord-open-btn {
-  width: 26px; height: 26px;   /* компактный квадрат */
-  border: none;                 /* без рамки */
-  background: transparent;      /* прозрачный фон */
-  cursor: pointer;              /* курсор-рука */
-  padding: 0;                   /* без отступов */
-  flex-shrink: 0;               /* не сжимается */
-  display: flex; align-items: center; justify-content: center;
-  opacity: .65;                 /* приглушена в покое */
-  transition: opacity .15s, transform .15s;
-}
-.coord-open-btn:hover  { opacity: 1; transform: scale(1.12); }
-.coord-open-btn:active { transform: scale(.92); }
 
 /* ══════════════════════════════════════
    СЧЁТЧИК ЗАПИСЕЙ НА ТАБЕ
@@ -3285,7 +3232,6 @@ function fitFieldWidth(el, text, reserve = 92) {
   const need = Math.ceil(measureText(text, el)) + 34;   // + padding и курсор
   el.style.flex = `0 0 ${Math.max(70, Math.min(need, avail))}px`;
 }
-function resetFieldWidth(el) { el.style.flex = ''; }
 
 function mkCard(isGroup, idx) {
   const d = document.createElement('div');
@@ -4478,7 +4424,9 @@ async function uploadStationsViaServer(password) {
       markClean();
     } else if (resp.status === 401) {
       // Сохранённый пароль устарел — стираем, иначе будет мешать каждый раз
-      if (password === Auth.password()) Auth.forget();
+      // Стираем только пароль. Привязку отпечатка оставляем:
+      // палец не виноват, что пароль на сервере поменялся.
+      if (password === Auth.password()) Auth.forgetPassword();
       showMsg('❌ Неверный пароль', 3500);
       // Если отправляли молча, окно ещё не открыто — открываем для ввода
       if (!document.getElementById('ghModal').classList.contains('show')) {

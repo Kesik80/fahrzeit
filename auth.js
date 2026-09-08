@@ -92,9 +92,18 @@
     password()         { return store.get(KEY_PWD); },
     remembered()       { return !!store.get(KEY_PWD); },
 
+    // Забыть всё: и пароль, и привязку отпечатка
     forget() {
       store.del(KEY_PWD);
       store.del(KEY_CRED);
+      try { sessionStorage.removeItem('uploadPassword'); } catch {}
+    },
+
+    // Забыть только пароль, отпечаток оставить.
+    // Нужно, когда сервер отверг сохранённый пароль: перезаписать его
+    // человек сможет, а вот заново привязывать палец — лишняя морока.
+    forgetPassword() {
+      store.del(KEY_PWD);
       try { sessionStorage.removeItem('uploadPassword'); } catch {}
     },
 
@@ -118,6 +127,8 @@
       try {
         const challenge = crypto.getRandomValues(new Uint8Array(32));
         const userId    = crypto.getRandomValues(new Uint8Array(16));
+        // Если ключ уже есть — не создаём второй на том же устройстве
+        const existing = store.get(KEY_CRED);
         const cred = await navigator.credentials.create({
           publicKey: {
             challenge,
@@ -132,6 +143,9 @@
               userVerification: 'required',         // именно палец, не просто пин
               residentKey: 'preferred'
             },
+            excludeCredentials: existing
+              ? [{ type: 'public-key', id: b64.dec(existing) }]
+              : [],
             timeout: 60000,
             attestation: 'none'
           }

@@ -803,13 +803,6 @@ outline: none;
 border-color: #007bff;
 box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
 }
-.modal-buttons {
-display: flex;
-flex-direction: row;
-gap: var(--spacing-unit);
-justify-content: center;
-margin-top: var(--spacing-unit)
-}
 .modal-content button {
 flex: 1;
 max-width: 120px;
@@ -1585,6 +1578,11 @@ return p ? `fahrzeitRechner_${p}_${key}` : `fahrzeitRechner${key.charAt(0).toUpp
 }
 saveData() {
 const k = (key) => this.profileKey(key);
+// Всё сохранение — в одном try. localStorage может отказать: переполнен,
+// приватный режим, отключён в настройках. Раньше первый же setItem бросал
+// исключение, остальные ключи не записывались (профиль оставался
+// наполовину сохранённым), а ошибка улетала в вызывающий код и рвала UI.
+try {
 if (this.startPoint) localStorage.setItem('fahrzeitLastDriver', this.startPoint);
 localStorage.setItem(k('greeting'), this.greeting);
 localStorage.setItem(k('greetings'), JSON.stringify(this.greetings));
@@ -1601,6 +1599,16 @@ localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
 localStorage.setItem(k('shortenLinks'), this.shortenLinks);
 localStorage.setItem(k('shortenMode'), this.shortenMode || 'bitly');
+} catch (e) {
+  console.warn('[saveData] не удалось сохранить:', e && e.name);
+  // QuotaExceededError и его вариант в Firefox
+  const full = e && (e.name === 'QuotaExceededError' || e.code === 22 || e.code === 1014);
+  try {
+    this.showToast(full
+      ? '⚠️ Speicher voll — Daten nicht gesichert'
+      : '⚠️ Daten konnten nicht gespeichert werden');
+  } catch (e2) {}
+}
 }
 resetToDefaults() {
 this._setShareButtons(false);
