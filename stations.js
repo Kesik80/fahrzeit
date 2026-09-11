@@ -34,14 +34,13 @@ this.stations = {
   "Köln-Deutzerfeld": {lat: 50.939972, lng: 6.987889},
   "Köln-Kalk, Stumpfgleis": {lat: 50.931185, lng: 7.013403},
   "Lage": {lat: 51.991198, lng: 8.800968},
-  "Münster (Westf)": {lat: 51.955868, lng: 7.636740},
+  "Münster (West)": {lat: 51.955868, lng: 7.636740},
   "Recklinghausen": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
   "Wuppertal-Steinbeck": {lat: 51.245710, lng: 7.130845},
-  "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435},
-  "Münster": {lat: 51.955896, lng: 7.636749}
+  "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435}
 };
 
 // Время в пути между участниками
@@ -225,10 +224,6 @@ const defaultEntryMetaData = {
     "Hagen": {
       "c": "2026-09-08T00:37:49.325Z",
       "u": "2026-09-08T00:37:49.325Z"
-    },
-    "Münster": {
-      "c": "2026-09-11T16:42:21.689Z",
-      "u": "2026-09-11T16:42:21.689Z"
     }
   },
   "treffpunkt": {
