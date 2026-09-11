@@ -40,7 +40,8 @@ this.stations = {
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
   "Wuppertal-Steinbeck": {lat: 51.245710, lng: 7.130845},
-  "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435}
+  "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435},
+  "Münster": {lat: 51.955896, lng: 7.636749}
 };
 
 // Время в пути между участниками
@@ -224,6 +225,10 @@ const defaultEntryMetaData = {
     "Hagen": {
       "c": "2026-09-08T00:37:49.325Z",
       "u": "2026-09-08T00:37:49.325Z"
+    },
+    "Münster": {
+      "c": "2026-09-11T16:42:21.689Z",
+      "u": "2026-09-11T16:42:21.689Z"
     }
   },
   "treffpunkt": {
