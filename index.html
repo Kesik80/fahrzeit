@@ -3068,6 +3068,31 @@ this.renderParticipants();
 this.initSortable();
 this.calculate();
 }
+// Момент выезда К участнику index по текущему расписанию.
+// Логика та же, что в кнопке «Пробки»: от времени прибытия отнимаем весь путь,
+// получаем момент выезда из дома, дальше прибавляем длительность пройденных
+// отрезков. Без заданного времени прибытия считать не от чего — тогда 'now'.
+_scheduledDeparture(index) {
+  if (!this.machineStop.arrivalTime) return 'now';
+  const [hh, mm] = this.machineStop.arrivalTime.split(':').map(Number);
+  if (!isFinite(hh) || !isFinite(mm)) return 'now';
+
+  const totalMin = this.participants.reduce((s, p) => s + (p.time || 0), 0)
+                 + (this.machineStop.time || 0);
+
+  const d = new Date();
+  d.setHours(hh, mm, 0, 0);
+  d.setMinutes(d.getMinutes() - totalMin);
+  // Выезд уже в прошлом — значит расписание на завтра. setDate() корректно
+  // переживает переход на зимнее/летнее время, в отличие от +86400 секунд.
+  if (d <= new Date()) d.setDate(d.getDate() + 1);
+
+  let cum = 0;
+  for (let i = 0; i < index; i++) cum += this.participants[i].time || 0;
+  d.setMinutes(d.getMinutes() + cum);
+
+  return Math.floor(d.getTime() / 1000).toString();
+}
 async calculateTravelTimeForParticipant(index) {
 const p = this.participants[index];
 if (!p) return;
@@ -3103,7 +3128,8 @@ try {
       originLng: prevLng,
       destLat: p.lat,
       destLng: p.lng,
-      departureTime: 'now'
+      // Раньше здесь было 'now' — считались вечерние пробки вместо утренних
+      departureTime: this._scheduledDeparture(index)
     })
   });
   if (!response.ok) {
@@ -3120,7 +3146,8 @@ try {
     this.renderParticipants();
     this.calculate();
     const trafficIcon = data.hasTraffic ? ' 🚦' : '';
-    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${trafficIcon}`);
+    const när = this.machineStop.arrivalTime ? ` (${this.machineStop.arrivalTime} Uhr)` : ' (jetzt)';
+    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${trafficIcon}${när}`);
   } else {
     throw new Error('Fehler in der API-Antwort');
   }
@@ -3142,41 +3169,55 @@ return;
 }
 const lastParticipant = validParticipants[validParticipants.length - 1];
 
-// Определяем время для расчета трафика
-let departureTime = 'now';
-if (this.machineStop.arrivalTime) {
-// Если задано время прибытия, рассчитываем departure_time
-const [hours, minutes] = this.machineStop.arrivalTime.split(':');
-const arrivalDate = new Date();
-arrivalDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-// Конвертируем в Unix timestamp (секунды)
-departureTime = Math.floor(arrivalDate.getTime() / 1000).toString();
-}
+// Время ОТПРАВЛЕНИЯ = время прибытия минус длительность отрезка.
+// Раньше сюда уходило само время прибытия, и Google считал пробки на 9:00,
+// хотя от последнего участника ты выезжаешь раньше — на длину этого отрезка.
+const buildDeparture = (legMinutes) => {
+  if (!this.machineStop.arrivalTime) return 'now';
+  const [hh, mm] = this.machineStop.arrivalTime.split(':').map(Number);
+  const d = new Date();
+  d.setHours(hh, mm, 0, 0);
+  d.setMinutes(d.getMinutes() - legMinutes);
+  // Момент уже прошёл — значит речь про завтра. setDate() корректно переживает
+  // переход на зимнее/летнее время, в отличие от прибавления 86400 секунд.
+  if (d <= new Date()) d.setDate(d.getDate() + 1);
+  return Math.floor(d.getTime() / 1000).toString();
+};
+
+const askGoogle = async (legMinutes) => {
+  const response = await fetch('/api/calculate-time', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      originLat: lastParticipant.lat,
+      originLng: lastParticipant.lng,
+      destLat: this.machineStop.lat,
+      destLng: this.machineStop.lng,
+      departureTime: buildDeparture(legMinutes)
+    })
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || 'API-Anfragefehler');
+  }
+  return response.json();
+};
 
 try {
 this.showToast('🔄 Fahrtzeit wird berechnet…');
 
-// Вызываем Vercel serverless function
-const response = await fetch('/api/calculate-time', {
-method: 'POST',
-headers: {
-'Content-Type': 'application/json',
-},
-body: JSON.stringify({
-originLat: lastParticipant.lat,
-originLng: lastParticipant.lng,
-destLat: this.machineStop.lat,
-destLng: this.machineStop.lng,
-departureTime: departureTime
-})
-});
-
-if (!response.ok) {
-const errorData = await response.json();
-throw new Error(errorData.message || 'API-Anfragefehler');
+// Длительность отрезка нужна, чтобы узнать время выезда, но узнать её можно
+// только запросом. Берём текущую оценку, а если Google вернул заметно другое —
+// один раз уточняем: время выезда сдвинулось, а вместе с ним и пробки.
+const assumed = this.machineStop.time || 20;
+let data = await askGoogle(assumed);
+if (data.success && this.machineStop.arrivalTime &&
+    Math.abs(data.duration.minutes - assumed) >= 3) {
+  try {
+    const refined = await askGoogle(data.duration.minutes);
+    if (refined.success) data = refined;
+  } catch (e) { /* уточнение не вышло — остаёмся с первым результатом */ }
 }
-
-const data = await response.json();
 
 if (data.success) {
 // Обновляем время машины
