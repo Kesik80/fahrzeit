@@ -99,7 +99,7 @@ this.treffpunkt = {
   "Golf Parkplatz": {lat: 51.522662, lng: 6.892937},
   "Lirich P&R Parkplatz": {lat: 51.475975, lng: 6.812210},
   "OLGA-Park": {lat: 51.500434, lng: 6.868634},
-  "P&R A42": {lat: 51.535695, lng: 7.096155},
+  "P&R A42": {lat: 51.535652, lng: 7.096069},
   "P&R Herten A2": {lat: 51.572438, lng: 7.133029},
   "Rathaus Osterfeld": {lat: 51.501270, lng: 6.889513}
 };
@@ -234,6 +234,10 @@ const defaultEntryMetaData = {
     "Golf Parkplatz": {
       "c": "2026-09-12T17:45:05.265Z",
       "u": "2026-09-12T17:45:05.265Z"
+    },
+    "P&R A42": {
+      "c": "2026-09-12T17:46:01.391Z",
+      "u": "2026-09-12T17:46:01.391Z"
     },
     "Rathaus Osterfeld": {
       "c": "2026-09-03T22:04:43.685Z",
