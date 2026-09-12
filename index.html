@@ -4268,7 +4268,14 @@ _routePoints(reverse, gpsCoords, includeOrigin = true) {
   } else {
     parts.forEach(p => { const c = coordsOf(p); if (c) stops.push(c); });
     if (machine.lat && machine.lng) {
-      stops.push({ lat: r6(machine.lat), lng: r6(machine.lng), name: machine.name || 'Ziel' });
+      // Название станции показываем всегда, независимо от галочки showDestName:
+      // она управляет текстом сообщения, а здесь нужно точно знать, куда едешь.
+      const st = machine.stationName || '';
+      const mName = machine.name || 'Ziel';
+      stops.push({
+        lat: r6(machine.lat), lng: r6(machine.lng),
+        name: st && st !== mName ? `${mName} (${st})` : mName
+      });
     }
   }
   if (!stops.length) return null;
