@@ -127,6 +127,7 @@ transition: opacity .15s, transform .1s;
 .maps-btn      { background: #4285f4; }
 .maps-back-btn { background: #e67e00; }
 .traffic-btn       { background: #e65100; }
+.legs-btn          { background: #0f9d58; }
 .share-native-btn  { background: #607d8b; }
 #output .result-line {
 border-radius: 3px;
@@ -1237,6 +1238,9 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
     
   </button>
   <button id="btnTraffic" class="share-btn traffic-btn" title="Verkehr nach Zeitplan prüfen" data-svg-icon="traffic" data-svg-size="28">
+    
+  </button>
+  <button id="btnLegs" class="share-btn legs-btn" title="Halt für Halt navigieren" data-svg-icon="pin" data-svg-size="28">
     
   </button>
 
@@ -4024,6 +4028,7 @@ if (reverse) {
     );
   });
   const gps = await getGps();
+  await this._ensurePlaceIds(true);
   const url = this._buildRouteUrl(true, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
@@ -4040,6 +4045,7 @@ if (reverse) {
   });
   const gps = await getGps();
   if (!gps) { this.showToast('⚠ Standort konnte nicht ermittelt werden.'); return; }
+  await this._ensurePlaceIds(false);
   const url = this._buildRouteUrl(false, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
@@ -4095,67 +4101,286 @@ try { ok = document.execCommand('copy'); } catch(e) {}
 document.body.removeChild(ta);
 this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 }
-// Строит ссылку в "плоском" формате /maps/dir/точка1/точка2/.../точкаN/data=!4m2!4m1!3e0 —
-// именно так Google Maps формирует ссылку, когда шеришь текущий маршрут.
-// В отличие от api=1&waypoints=... здесь каждая точка — настоящая остановка,
-// поэтому при ручном удалении пройденной точки во время навигации приложение
-// пересчитывает маршрут по оставшимся остановкам, а не строит его заново "не туда".
-// mode: 'flat' (по умолчанию) | 'api' — для driver.html, который парсит query-параметры.
+// ── Ссылки для Google Maps ────────────────────────────────────────────────
+//
+// Проблема: голая пара lat,lng в ссылке — это для Google лишь "запрос", который
+// он геокодирует в ближайшее известное место. Отсюда увод к соседнему адресу,
+// и особенно — переезд точек при пересчёте маршрута внутри навигации.
+//
+// Решение: рядом с путём кладём блок data=..., где каждая остановка описана явно
+// как координата с пустым place_id (0x0:0x0). Так Google Maps строит "точку на
+// карте" (dropped pin), а не результат поиска, и заново её не геокодирует.
+// Структура одной остановки: !1m5!1m1!1s0x0:0x0!2m2!1d<lng>!2d<lat>  (6 токенов)
+// Обёртка: !4m<6N+2>!4m<6N+1> ...остановки... !3e0   (3e0 = автомобиль)
+//
+// Что это НЕ чинит: Google в любом случае притягивает точку к ближайшей дороге —
+// так работает его маршрутизатор, ссылкой это не отключается. И он не обещает
+// ничего о том, как поведёт себя список остановок после ручного редактирования
+// прямо в навигации. Для этого есть режим "по одной точке" — _buildLegUrl ниже.
+//
+// mode: 'flat' (по умолчанию) | 'api' — для driver.html, он парсит query-параметры.
 _buildRouteUrl(reverse, gpsCoords, mode = 'flat') {
-  const r6  = (v) => Number(Number(v).toFixed(6));
-  const enc = (lat, lng) => `${r6(lat)},${r6(lng)}`;
+  const pts = this._routePoints(reverse, gpsCoords);
+  if (!pts || pts.length < 2) return null;
+
+  const fmt = (pt) => `${pt.lat},${pt.lng}`;
+
+  // Лучший вариант: у всех остановок (кроме старта — это наш GPS) есть place_id.
+  // Тогда Google получает конкретные места, а не координаты для геокодирования,
+  // и при пересчёте маршрута ему нечего интерпретировать заново.
+  const stopsOnly = pts.slice(1);
+  if (mode === 'flat' && stopsOnly.length && stopsOnly.every(pt => pt.placeId)) {
+    const dest = stopsOnly[stopsOnly.length - 1];
+    const wps  = stopsOnly.slice(0, -1);
+    let u = 'https://www.google.com/maps/dir/?api=1' +
+            `&origin=${encodeURIComponent(fmt(pts[0]))}` +
+            `&destination=${encodeURIComponent(fmt(dest))}` +
+            `&destination_place_id=${encodeURIComponent(dest.placeId)}`;
+    if (wps.length) {
+      // Порядок и количество waypoint_place_ids обязаны совпадать с waypoints,
+      // иначе Google молча игнорирует весь список идентификаторов.
+      u += `&waypoints=${wps.map(fmt).join('%7C')}` +
+           `&waypoint_place_ids=${wps.map(w => encodeURIComponent(w.placeId)).join('%7C')}`;
+    }
+    return u + '&travelmode=driving';
+  }
+
+  if (mode === 'api') {
+    const o = fmt(pts[0]), d = fmt(pts[pts.length - 1]);
+    const wp = pts.slice(1, -1).map(fmt);
+    let u = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}` +
+            `&destination=${encodeURIComponent(d)}`;
+    if (wp.length) u += `&waypoints=${wp.join('%7C')}`;
+    return u + '&travelmode=driving';
+  }
+
+  // Явные координатные остановки: долгота (1d) идёт перед широтой (2d) — так у Google
+  const stops = pts.map(pt => `!1m5!1m1!1s0x0:0x0!2m2!1d${pt.lng}!2d${pt.lat}`).join('');
+  const n = pts.length;
+  const data = `!3m1!4b1!4m${6 * n + 2}!4m${6 * n + 1}${stops}!3e0`;
+
+  return 'https://www.google.com/maps/dir/' + pts.map(fmt).join('/') + '/data=' + data;
+}
+
+// Ссылка на ОДНУ точку. Здесь нечего пересчитывать и нечего удалять,
+// поэтому увести маршрут Google просто некуда.
+_buildLegUrl(pt) {
+  if (!pt) return null;
+  let u = 'https://www.google.com/maps/dir/?api=1' +
+          `&destination=${encodeURIComponent(pt.lat + ',' + pt.lng)}`;
+  if (pt.placeId) u += `&destination_place_id=${encodeURIComponent(pt.placeId)}`;
+  return u + '&travelmode=driving&dir_action=navigate';
+}
+
+// ── place_id: кэш и разрешение координат ──────────────────────────────
+// Кэш общий для всех профилей: координата — она и есть координата.
+// Ключ — «широта,долгота» с 6 знаками, ровно как в ссылке.
+_pidKey(pt) { return pt.lat + ',' + pt.lng; }
+
+_loadPlaceIds() {
+  if (this._placeIds) return this._placeIds;
+  try { this._placeIds = JSON.parse(localStorage.getItem('fahrzeitPlaceIds') || '{}'); }
+  catch (e) { this._placeIds = {}; }
+  return this._placeIds;
+}
+
+_savePlaceIds() {
+  try { localStorage.setItem('fahrzeitPlaceIds', JSON.stringify(this._placeIds || {})); }
+  catch (e) { console.warn('[placeId] не сохранился кэш:', e && e.name); }
+}
+
+// Дозапрашивает только то, чего нет в кэше. Возвращает число новых записей.
+async _resolvePlaceIds(pts) {
+  const cache = this._loadPlaceIds();
+  const missing = [];
+  const seen = {};
+  (pts || []).forEach(pt => {
+    const k = this._pidKey(pt);
+    if (cache[k] || seen[k]) return;
+    seen[k] = 1;
+    missing.push(pt);
+  });
+  if (!missing.length) return 0;
+
+  try {
+    const r = await fetch('/api/place-id', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ points: missing.map(p => ({ lat: p.lat, lng: p.lng })) })
+    });
+    const d = await r.json();
+    if (!d || !Array.isArray(d.results)) return 0;
+    let n = 0;
+    d.results.forEach((res, i) => {
+      const k = this._pidKey(missing[i]);
+      // Пишем и неудачу тоже — иначе будем дёргать геокодер на каждый маршрут
+      cache[k] = res && res.placeId
+        ? { placeId: res.placeId, address: res.address || '', precision: res.precision || '' }
+        : { placeId: null, address: '', precision: (res && res.precision) || 'FAIL' };
+      if (cache[k].placeId) n++;
+    });
+    this._savePlaceIds();
+    return n;
+  } catch (e) {
+    console.warn('[placeId] запрос не прошёл:', e && e.message);
+    return 0;
+  }
+}
+
+// Добирает place_id для всех остановок маршрута, если чего-то не хватает
+async _ensurePlaceIds(reverse) {
+  const stops = this._routePoints(reverse, null, false);
+  if (!stops || !stops.length) return;
+  const cache = this._loadPlaceIds();
+  if (!stops.some(pt => !cache[this._pidKey(pt)])) return;
+  this.showToast('📍 Adressen werden ermittelt…');
+  await this._resolvePlaceIds(stops);
+}
+
+// Сбросить кэш — если Google привязал точку не к тому дому
+_clearPlaceIds() {
+  this._placeIds = {};
+  this._savePlaceIds();
+  this.showToast('🔄 Adress-Cache geleert');
+}
+
+// Общий сборщик точек маршрута: [{lat, lng, name}]
+_routePoints(reverse, gpsCoords, includeOrigin = true) {
+  const r6 = (v) => Number(Number(v).toFixed(6));
   const parts   = this.participants.filter(p => p.name);
   const machine = this.machineStop;
   const startC  = this.startPointCoords;
 
   // Координаты берём с самого участника — они могли быть отредактированы вручную,
-  // и только если их нет, обращаемся к общему реестру имён / Treffpunkt.
-  const getCoordsForParticipant = (p) => {
-    if (p.lat && p.lng) return [enc(p.lat, p.lng)];
-    if (p.isTreffpunkt) {
-      const t = this.treffpunkt[p.name];
-      return (t && t.lat && t.lng) ? [enc(t.lat, t.lng)] : [];
-    }
-    const c = this.nameToCoordinates[p.name];
-    return (c && c.lat && c.lng) ? [enc(c.lat, c.lng)] : [];
+  // и только если их нет, обращаемся к реестру имён / Treffpunkt.
+  const coordsOf = (p) => {
+    if (p.lat && p.lng) return { lat: r6(p.lat), lng: r6(p.lng), name: p.name };
+    const src = p.isTreffpunkt ? this.treffpunkt[p.name] : this.nameToCoordinates[p.name];
+    return (src && src.lat && src.lng) ? { lat: r6(src.lat), lng: r6(src.lng), name: p.name } : null;
   };
 
-  const origin = gpsCoords ? enc(gpsCoords.lat, gpsCoords.lng) : null;
-  if (!origin) return null;
-
-  const waypoints = [];
-  let destination = null;
-
+  const stops = [];
   if (reverse) {
-    [...parts].reverse().forEach(p => getCoordsForParticipant(p).forEach(c => waypoints.push(c)));
-    if (startC && startC.lat && startC.lng) destination = enc(startC.lat, startC.lng);
-    else if (waypoints.length > 0) destination = waypoints.pop();
-    else return null;
+    [...parts].reverse().forEach(p => { const c = coordsOf(p); if (c) stops.push(c); });
+    if (startC && startC.lat && startC.lng) {
+      stops.push({ lat: r6(startC.lat), lng: r6(startC.lng), name: this.startPoint || 'Start' });
+    }
   } else {
-    parts.forEach(p => getCoordsForParticipant(p).forEach(c => waypoints.push(c)));
-    if (machine.lat && machine.lng) destination = enc(machine.lat, machine.lng);
-    else if (waypoints.length > 0) destination = waypoints.pop();
-    else return null;
+    parts.forEach(p => { const c = coordsOf(p); if (c) stops.push(c); });
+    if (machine.lat && machine.lng) {
+      stops.push({ lat: r6(machine.lat), lng: r6(machine.lng), name: machine.name || 'Ziel' });
+    }
+  }
+  if (!stops.length) return null;
+
+  let all = stops;
+  if (includeOrigin) {
+    if (!gpsCoords) return null;
+    all = [{ lat: r6(gpsCoords.lat), lng: r6(gpsCoords.lng), name: 'Standort' }].concat(stops);
   }
 
-  // Убираем подряд идущие дубликаты (GPS-старт может совпасть с первой точкой) —
-  // повторяющаяся остановка ломает пересчёт маршрута в Google Maps.
-  const all = [origin, ...waypoints, destination].filter(Boolean);
-  const points = all.filter((c, i) => i === 0 || c !== all[i - 1]);
-  if (points.length < 2) return null;
+  // Подряд идущие дубликаты (GPS-старт совпал с первой точкой) ломают пересчёт
+  const uniq = all.filter((c, i) => i === 0 || c.lat !== all[i - 1].lat || c.lng !== all[i - 1].lng);
 
-  if (mode === 'api') {
-    const o = points[0], d = points[points.length - 1];
-    const wp = points.slice(1, -1);
-    let u = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}`;
-    if (wp.length) u += `&waypoints=${wp.join('%7C')}`;
-    return u + '&travelmode=driving';
-  }
-
-  // Координаты состоят только из цифр, точки, минуса и запятой — они безопасны
-  // в пути URL; запятую специально не кодируем, чтобы ссылка выглядела как "родная".
-  return 'https://www.google.com/maps/dir/' + points.join('/') + '/data=!4m2!4m1!3e0';
+  // Подмешиваем place_id из кэша — за его наполнение отвечает _resolvePlaceIds()
+  const cache = this._loadPlaceIds();
+  uniq.forEach(pt => {
+    const hit = cache[this._pidKey(pt)];
+    if (hit && hit.placeId) { pt.placeId = hit.placeId; pt.address = hit.address || ''; }
+  });
+  return uniq;
 }
+
+// Список остановок по одной. Приехал — вернулся в Fahrzeit — нажал следующую.
+// Внутри Google Maps ничего не удаляем, поэтому и ломаться нечему.
+_openLegPicker(reverse = false) {
+  const pts = this._routePoints(reverse, null, false);
+  if (!pts || !pts.length) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:10002;background:rgba(0,0,0,.62);' +
+    'display:flex;align-items:flex-end;justify-content:center;padding:14px;box-sizing:border-box;';
+  const sheet = document.createElement('div');
+  sheet.style.cssText = 'background:var(--surface,#1e1e1e);color:var(--text,#e1e1e1);' +
+    'border-radius:22px;padding:18px;width:100%;max-width:480px;box-sizing:border-box;' +
+    'max-height:82vh;overflow-y:auto;';
+  ov.appendChild(sheet);
+  ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+  document.body.appendChild(ov);
+
+  const render = () => {
+    const cache = this._loadPlaceIds();
+    sheet.innerHTML =
+      '<h3 style="margin:0 0 4px;font-size:17px;text-align:center;">Halt für Halt</h3>' +
+      '<p style="margin:0 0 14px;font-size:12.5px;opacity:.6;text-align:center;line-height:1.35;">' +
+      'Ein Ziel pro Navigation. Nach der Ankunft zurück zu Fahrzeit und den nächsten Halt tippen.</p>';
+
+    pts.forEach((pt, idx) => {
+      const hit = cache[this._pidKey(pt)];
+      const pid = hit && hit.placeId;
+      // Показываем, что именно Google понял под этой координатой — так сразу видно,
+      // если он привязал точку не к тому дому
+      const sub = pid ? (hit.address || 'Ort erkannt')
+                      : (hit ? 'Kein Ort gefunden — es werden Koordinaten benutzt'
+                             : 'Noch nicht geprüft');
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.style.cssText = 'width:100%;display:flex;align-items:center;gap:11px;text-align:left;' +
+        'margin:0 0 8px;padding:11px 13px;border:1px solid var(--border,#333);border-radius:14px;' +
+        'background:var(--bg,#121212);color:inherit;font-family:inherit;font-size:15px;cursor:pointer;';
+      b.innerHTML =
+        '<span style="flex:none;width:26px;height:26px;border-radius:8px;' +
+        'background:' + (pid ? 'var(--success-color,#28a745)' : 'var(--info-color,#6c757d)') + ';' +
+        'color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;">' + (idx + 1) + '</span>' +
+        '<span style="flex:1;min-width:0;">' +
+          '<span class="lp-name" style="display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>' +
+          '<span class="lp-sub" style="display:block;font-size:11.5px;opacity:.55;margin-top:2px;' +
+          'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>' +
+        '</span>';
+      b.querySelector('.lp-name').textContent = pt.name || ('Halt ' + (idx + 1));
+      b.querySelector('.lp-sub').textContent = sub;
+      b.onclick = () => {
+        const full = Object.assign({}, pt);
+        if (pid) full.placeId = pid;
+        window.open(this._buildLegUrl(full), '_blank');
+      };
+      sheet.appendChild(b);
+    });
+
+    const mkBtn = (text, bg, fn) => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.textContent = text;
+      el.style.cssText = 'width:100%;margin-top:8px;padding:12px;border:0;border-radius:14px;' +
+        'background:' + bg + ';color:#fff;font-family:inherit;font-size:14.5px;' +
+        'font-weight:600;cursor:pointer;';
+      el.onclick = fn;
+      sheet.appendChild(el);
+      return el;
+    };
+
+    const missing = pts.filter(pt => !cache[this._pidKey(pt)]).length;
+    mkBtn(missing ? `Adressen prüfen (${missing})` : 'Adressen neu prüfen',
+          'var(--primary-color,#007bff)', async (e) => {
+      e.target.disabled = true;
+      e.target.textContent = 'Wird geprüft…';
+      if (!missing) { this._placeIds = {}; this._savePlaceIds(); }
+      const n = await this._resolvePlaceIds(pts);
+      this.showToast(`📍 ${n} von ${pts.length} Orten erkannt`);
+      render();
+    });
+    mkBtn('Schließen', 'var(--info-color,#6c757d)', () => ov.remove());
+  };
+
+  render();
+
+  // Первый заход — сразу подтягиваем то, чего нет в кэше
+  const cache0 = this._loadPlaceIds();
+  if (pts.some(pt => !cache0[this._pidKey(pt)])) {
+    this._resolvePlaceIds(pts).then(() => { if (document.body.contains(ov)) render(); });
+  }
+}
+
 _initShareButtons() {
 const slBitly = document.getElementById('shortenBitly');
 const slFhr = document.getElementById('shortenFhr');
@@ -4206,8 +4431,18 @@ openGoogleMaps(returnTrip = false) {
   }
 
   navigator.geolocation.getCurrentPosition(
-    (position) => {
+    async (position) => {
       const gps = { lat: position.coords.latitude, lng: position.coords.longitude };
+      // Сначала добираем place_id для остановок, иначе Google получит голые
+      // координаты и снова уведёт маршрут к ближайшему адресу
+      const stops = this._routePoints(returnTrip, null, false);
+      if (stops && stops.length) {
+        const cache = this._loadPlaceIds();
+        if (stops.some(pt => !cache[this._pidKey(pt)])) {
+          this.showToast('📍 Adressen werden ermittelt…');
+          await this._resolvePlaceIds(stops);
+        }
+      }
       const url = this._buildRouteUrl(returnTrip, gps);
       if (!url) {
         this.showToast("Nicht genug Koordinaten für die Route.");
@@ -4518,6 +4753,7 @@ document.addEventListener('click', e => {
   }
   if (e.target.id === 'btnMapsTo' || e.target.closest('#btnMapsTo'))   { app._copyRouteLink(false); return; }
   if (e.target.id === 'btnMapsBack' || e.target.closest('#btnMapsBack')) { app._copyRouteLink(true);  return; }
+  if (e.target.id === 'btnLegs' || e.target.closest('#btnLegs')) { app._openLegPicker(false); return; }
   if (e.target.id === 'copyOutputBtn' || e.target.closest('#copyOutputBtn')) { app.copyResult(); return; }
 
 
