@@ -96,7 +96,7 @@ this.travelTimes = {
 
 // Пункты встречи (Treffpunkt)
 this.treffpunkt = {
-  "Golf Parkplatz": {lat: 51.522611, lng: 6.893011},
+  "Golf Parkplatz": {lat: 51.522662, lng: 6.892937},
   "Lirich P&R Parkplatz": {lat: 51.475975, lng: 6.812210},
   "OLGA-Park": {lat: 51.500434, lng: 6.868634},
   "P&R A42": {lat: 51.535695, lng: 7.096155},
@@ -231,6 +231,10 @@ const defaultEntryMetaData = {
     }
   },
   "treffpunkt": {
+    "Golf Parkplatz": {
+      "c": "2026-09-12T17:45:05.265Z",
+      "u": "2026-09-12T17:45:05.265Z"
+    },
     "Rathaus Osterfeld": {
       "c": "2026-09-03T22:04:43.685Z",
       "u": "2026-09-03T22:08:01.456Z"
