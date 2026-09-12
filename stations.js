@@ -4,7 +4,7 @@ const defaultCoords = {
   "Anatolii": {lat: 51.522697, lng: 6.859275},
   "Aleks": {lat: 51.511287, lng: 6.878713},
   "Sergio": {lat: 51.519965, lng: 6.887640},
-  "Vasyl": {lat: 51.515227, lng: 6.893755},
+  "Vasyl": {lat: 51.515384, lng: 6.893649},
   "René": {lat: 51.476281, lng: 6.861856},
   "Dima": {lat: 51.551753, lng: 7.102285},
   "Andrii": {lat: 51.534558, lng: 6.861061},
@@ -211,6 +211,10 @@ const defaultMachineDestinationsData = [
 // Главная страница его не читает — нужен только для сортировки «по дате».
 const defaultEntryMetaData = {
   "defaultCoords": {
+    "Vasyl": {
+      "c": "2026-09-12T17:44:21.275Z",
+      "u": "2026-09-12T17:44:21.275Z"
+    },
     "Maikel": {
       "c": "2026-09-05T02:52:32.861Z",
       "u": "2026-09-05T02:52:32.861Z"
