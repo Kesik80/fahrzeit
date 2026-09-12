@@ -101,7 +101,7 @@ this.treffpunkt = {
   "OLGA-Park": {lat: 51.500434, lng: 6.868634},
   "P&R A42": {lat: 51.535652, lng: 7.096069},
   "P&R Herten A2": {lat: 51.572438, lng: 7.133029},
-  "Rathaus Osterfeld": {lat: 51.501270, lng: 6.889513}
+  "Rathaus Osterfeld": {lat: 51.501029, lng: 6.889456}
 };
 
 // Время в пути от пункта встречи до каждого участника
@@ -241,7 +241,7 @@ const defaultEntryMetaData = {
     },
     "Rathaus Osterfeld": {
       "c": "2026-09-03T22:04:43.685Z",
-      "u": "2026-09-03T22:08:01.456Z"
+      "u": "2026-09-12T17:46:39.078Z"
     }
   },
   "times": {}
