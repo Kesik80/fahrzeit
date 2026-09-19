@@ -39,6 +39,7 @@ this.stations = {
   "Recklinghausen": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
+  "Wanne-Eickel 2": {lat: 51.534819, lng: 7.181459},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
   "Wuppertal-Steinbeck": {lat: 51.245710, lng: 7.130845},
   "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435}
@@ -233,6 +234,10 @@ const defaultEntryMetaData = {
     "Köln Bonntor": {
       "c": "2026-09-15T02:50:59.677Z",
       "u": "2026-09-15T02:51:34.570Z"
+    },
+    "Wanne-Eickel 2": {
+      "c": "2026-09-19T10:08:36.730Z",
+      "u": "2026-09-19T10:08:36.730Z"
     }
   },
   "treffpunkt": {
