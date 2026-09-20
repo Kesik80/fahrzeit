@@ -19,6 +19,7 @@ this.stations = {
   "Duisburg Hochfeld": {lat: 51.409617, lng: 6.764010},
   "Düsseldorf Raht": {lat: 51.270511, lng: 6.825857},
   "Engelskirchen": {lat: 50.985726, lng: 7.408556},
+  "Essen": {lat: 51.449515, lng: 7.001882},
   "Essen West": {lat: 51.453927, lng: 6.979462},
   "Gelsenkirchen Horst Nord": {lat: 51.541535, lng: 7.020281},
   "Gelsenkirchen Horst Nord 2": {lat: 51.539072, lng: 7.009012},
@@ -226,6 +227,10 @@ const defaultEntryMetaData = {
     "Duisburg Hochfeld": {
       "c": "2026-09-03T22:51:42.865Z",
       "u": "2026-09-03T22:51:42.865Z"
+    },
+    "Essen": {
+      "c": "2026-09-20T13:32:49.076Z",
+      "u": "2026-09-20T13:32:49.076Z"
     },
     "Hagen": {
       "c": "2026-09-08T00:37:49.325Z",
