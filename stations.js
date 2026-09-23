@@ -207,7 +207,8 @@ const defaultMachineDestinationsData = [
   { name: "an der Sauna", lat: 51.509300, lng: 6.903112 },
   { name: "Hotel \"Am Stadtpark\"", lat: 51.178319, lng: 9.368378 },
   { name: "Opladen Plasser", lat: 51.059318, lng: 7.012283 },
-  { name: "Deutsch Kurs", lat: 51.481780, lng: 7.137622 }
+  { name: "Deutsch Kurs", lat: 51.481780, lng: 7.137622 },
+  { name: "InnoTrans Messe Berlin", lat: 52.501243, lng: 13.274211 }
 ];
 
 // Служебный блок редактора: когда запись добавлена (c) и изменена (u).
