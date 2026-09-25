@@ -37,6 +37,7 @@ this.stations = {
   "Köln-Kalk, Stumpfgleis": {lat: 50.931185, lng: 7.013403},
   "Lage": {lat: 51.991198, lng: 8.800968},
   "Münster (Westf)": {lat: 51.955868, lng: 7.636740},
+  "Recklinghausen": {lat: 51.621831, lng: 7.206602},
   "Recklinghausen Süd": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
@@ -240,6 +241,10 @@ const defaultEntryMetaData = {
     "Köln Bonntor": {
       "c": "2026-09-15T02:50:59.677Z",
       "u": "2026-09-15T02:51:34.570Z"
+    },
+    "Recklinghausen": {
+      "c": "2026-09-25T10:22:20.394Z",
+      "u": "2026-09-25T10:22:20.394Z"
     },
     "Wanne-Eickel 2": {
       "c": "2026-09-19T10:08:36.730Z",
