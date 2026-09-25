@@ -37,7 +37,7 @@ this.stations = {
   "Köln-Kalk, Stumpfgleis": {lat: 50.931185, lng: 7.013403},
   "Lage": {lat: 51.991198, lng: 8.800968},
   "Münster (Westf)": {lat: 51.955868, lng: 7.636740},
-  "Recklinghausen": {lat: 51.568298, lng: 7.198117},
+  "Recklinghausen Süd": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wanne-Eickel 2": {lat: 51.534819, lng: 7.181459},
