@@ -9,7 +9,8 @@ const defaultCoords = {
   "Dima": {lat: 51.551753, lng: 7.102285},
   "Andrii": {lat: 51.534558, lng: 6.861061},
   "Marvin": {lat: 51.556472, lng: 6.731424},
-  "Maikel": {lat: 51.556472, lng: 6.731424}
+  "Maikel": {lat: 51.556472, lng: 6.731424},
+  "Phil": {lat: 51.518532, lng: 6.877118}
 };
 
 // реестр станций
@@ -96,7 +97,17 @@ this.travelTimes = {
   "Aleks-René": 15,
   "Aleks-Marvin": 25,
   "Aleks-Vasyl": 5,
-  "Aleks-Maikel": 25
+  "Aleks-Maikel": 25,
+  "Phil-Sergii": 10,
+  "Phil-Anatolii": 5,
+  "Phil-Aleks": 5,
+  "Phil-Sergio": 5,
+  "Phil-Vasyl": 5,
+  "Phil-René": 15,
+  "Phil-Dima": 20,
+  "Phil-Andrii": 5,
+  "Phil-Marvin": 20,
+  "Phil-Maikel": 20
 };
 
 // Пункты встречи (Treffpunkt)
@@ -224,6 +235,10 @@ const defaultEntryMetaData = {
     "Maikel": {
       "c": "2026-09-05T02:52:32.861Z",
       "u": "2026-09-05T02:52:32.861Z"
+    },
+    "Phil": {
+      "c": "2026-09-27T15:05:42.257Z",
+      "u": "2026-09-27T15:05:42.257Z"
     }
   },
   "stations": {
@@ -270,5 +285,7 @@ const defaultEntryMetaData = {
       "u": "2026-09-12T17:46:39.078Z"
     }
   },
-  "times": {}
+  "times": {
+    "tt:Phil-Anatolii": 1
+  }
 };
