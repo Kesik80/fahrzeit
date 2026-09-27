@@ -18,6 +18,7 @@ this.stations = {
   "Dortmund-Lütgendortmund": {lat: 51.497711, lng: 7.366530},
   "Duisburg Hochfeld": {lat: 51.409617, lng: 6.764010},
   "Düsseldorf Raht": {lat: 51.270511, lng: 6.825857},
+  "Düsseldorf-Gerresheim": {lat: 51.220547, lng: 6.865885},
   "Engelskirchen": {lat: 50.985726, lng: 7.408556},
   "Essen": {lat: 51.449515, lng: 7.001882},
   "Essen West": {lat: 51.453927, lng: 6.979462},
@@ -229,6 +230,10 @@ const defaultEntryMetaData = {
     "Duisburg Hochfeld": {
       "c": "2026-09-03T22:51:42.865Z",
       "u": "2026-09-03T22:51:42.865Z"
+    },
+    "Düsseldorf-Gerresheim": {
+      "c": "2026-09-27T14:56:26.725Z",
+      "u": "2026-09-27T14:56:26.725Z"
     },
     "Essen": {
       "c": "2026-09-20T13:32:49.076Z",
