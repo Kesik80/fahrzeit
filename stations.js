@@ -22,6 +22,7 @@ this.stations = {
   "Düsseldorf-Gerresheim": {lat: 51.220547, lng: 6.865885},
   "Engelskirchen": {lat: 50.985726, lng: 7.408556},
   "Essen": {lat: 51.449515, lng: 7.001882},
+  "Essen Donao": {lat: 51.451918, lng: 7.021460},
   "Essen West": {lat: 51.453927, lng: 6.979462},
   "Gelsenkirchen Horst Nord": {lat: 51.541535, lng: 7.020281},
   "Gelsenkirchen Horst Nord 2": {lat: 51.539072, lng: 7.009012},
@@ -253,6 +254,10 @@ const defaultEntryMetaData = {
     "Essen": {
       "c": "2026-09-20T13:32:49.076Z",
       "u": "2026-09-20T13:32:49.076Z"
+    },
+    "Essen Donao": {
+      "c": "2026-09-28T12:15:38.980Z",
+      "u": "2026-09-28T12:15:38.980Z"
     },
     "Hagen": {
       "c": "2026-09-08T00:37:49.325Z",
