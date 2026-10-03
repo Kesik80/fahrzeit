@@ -43,6 +43,7 @@ this.stations = {
   "Recklinghausen": {lat: 51.621831, lng: 7.206602},
   "Recklinghausen Süd": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
+  "Troisdorf": {lat: 50.814186, lng: 7.146110},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wanne-Eickel 2": {lat: 51.534819, lng: 7.181459},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
@@ -270,6 +271,10 @@ const defaultEntryMetaData = {
     "Recklinghausen": {
       "c": "2026-09-25T10:22:20.394Z",
       "u": "2026-09-25T10:22:20.394Z"
+    },
+    "Troisdorf": {
+      "c": "2026-10-03T13:03:57.597Z",
+      "u": "2026-10-03T13:04:12.177Z"
     },
     "Wanne-Eickel 2": {
       "c": "2026-09-19T10:08:36.730Z",
