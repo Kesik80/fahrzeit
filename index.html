@@ -1003,14 +1003,17 @@ cursor: pointer;
 font-size: 24px;
 user-select: none;
 }
-/* жёстко тёмный фон и светлый текст */
-body.dark pre#output {
-background: #1e1e1e !important;
-color: #e1e1e1 !important;
-border: 1px solid #333 !important;
-border-radius: 6px !important;
-padding: 10px !important;
-margin: 0 !important;
+/* Блок результата. Раньше он был описан ТОЛЬКО для тёмной темы, а в светлой
+   доставались браузерные умолчания <pre> (margin: 1em 0, без рамки и фона) —
+   отсюда разные отступы и пропадающая карточка при переключении темы.
+   Теперь правило одно на обе темы, цвета приходят из переменных. */
+pre#output {
+background: var(--surface);
+color: var(--text);
+border: 1px solid var(--border);
+border-radius: 6px;
+padding: 10px;
+margin: 0 0 var(--spacing-unit) 0;
 overflow-x: auto;
 }
 /* цветные кнопки модалки – всегда свои */
@@ -4056,6 +4059,9 @@ const tsr = document.getElementById('tripSummaryRow');
 if (tsr) tsr.style.display = visible ? 'flex' : 'none';
 }
 async _copyRouteLink(reverse) {
+if (this._routeBusy) { this.showToast('⏳ Route wird noch erstellt…'); return; }
+this._routeBusy = true;
+try {
 const msg = reverse ? '📋 Rückweg-Route kopiert!' : '📋 Route kopiert!';
 if (reverse) {
   // Для обратного маршрута берём текущий GPS как точку старта
@@ -4065,7 +4071,7 @@ if (reverse) {
     navigator.geolocation.getCurrentPosition(
       p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
     );
   });
   const gps = await getGps();
@@ -4081,7 +4087,7 @@ if (reverse) {
     navigator.geolocation.getCurrentPosition(
       p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
     );
   });
   const gps = await getGps();
@@ -4089,8 +4095,10 @@ if (reverse) {
   await this._ensurePlaceIds(false);
   const url = this._buildRouteUrl(false, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
+  console.log('[route] ' + (url.indexOf('place_id') !== -1 ? 'place_id' : 'координаты') + ': ' + url);
   await this._shortenAndCopy(url, msg);
 }
+} finally { this._routeBusy = false; }
 }
 async _shortenAndCopy(url, msg) {
 if (!this.shortenLinks || !this.shortenMode) { this._copyToClipboard(url, msg); return; }
@@ -4218,6 +4226,18 @@ _buildLegUrl(pt) {
 // Ключ — «широта,долгота» с 6 знаками, ровно как в ссылке.
 _pidKey(pt) { return pt.lat + ',' + pt.lng; }
 
+// Запись кэша, если ей можно пользоваться. Удачный поиск живёт вечно,
+// а неудачу храним только 6 часов: раньше один сбой сети «залипал» навсегда,
+// и маршрут из-за одной точки без place_id молча падал обратно на старый
+// формат ссылки — отсюда и разный результат при разных нажатиях.
+_pidEntry(pt) {
+  const hit = this._loadPlaceIds()[this._pidKey(pt)];
+  if (!hit) return null;
+  if (hit.placeId) return hit;
+  const SIX_H = 6 * 60 * 60 * 1000;
+  return (hit.ts && Date.now() - hit.ts < SIX_H) ? hit : null;
+}
+
 _loadPlaceIds() {
   if (this._placeIds) return this._placeIds;
   try { this._placeIds = JSON.parse(localStorage.getItem('fahrzeitPlaceIds') || '{}'); }
@@ -4237,7 +4257,7 @@ async _resolvePlaceIds(pts) {
   const seen = {};
   (pts || []).forEach(pt => {
     const k = this._pidKey(pt);
-    if (cache[k] || seen[k]) return;
+    if (this._pidEntry(pt) || seen[k]) return;
     seen[k] = 1;
     missing.push(pt);
   });
@@ -4257,7 +4277,7 @@ async _resolvePlaceIds(pts) {
       // Пишем и неудачу тоже — иначе будем дёргать геокодер на каждый маршрут
       cache[k] = res && res.placeId
         ? { placeId: res.placeId, address: res.address || '', precision: res.precision || '' }
-        : { placeId: null, address: '', precision: (res && res.precision) || 'FAIL' };
+        : { placeId: null, address: '', precision: (res && res.precision) || 'FAIL', ts: Date.now() };
       if (cache[k].placeId) n++;
     });
     this._savePlaceIds();
@@ -4272,8 +4292,7 @@ async _resolvePlaceIds(pts) {
 async _ensurePlaceIds(reverse) {
   const stops = this._routePoints(reverse, null, false);
   if (!stops || !stops.length) return;
-  const cache = this._loadPlaceIds();
-  if (!stops.some(pt => !cache[this._pidKey(pt)])) return;
+  if (!stops.some(pt => !this._pidEntry(pt))) return;
   this.showToast('📍 Adressen werden ermittelt…');
   await this._resolvePlaceIds(stops);
 }
@@ -4357,14 +4376,14 @@ _openLegPicker(reverse = false) {
   document.body.appendChild(ov);
 
   const render = () => {
-    const cache = this._loadPlaceIds();
     sheet.innerHTML =
       '<h3 style="margin:0 0 4px;font-size:17px;text-align:center;">Halt für Halt</h3>' +
       '<p style="margin:0 0 14px;font-size:12.5px;opacity:.6;text-align:center;line-height:1.35;">' +
       'Ein Ziel pro Navigation. Nach der Ankunft zurück zu Fahrzeit und den nächsten Halt tippen.</p>';
 
     pts.forEach((pt, idx) => {
-      const hit = cache[this._pidKey(pt)];
+      // Через _pidEntry: просроченная неудача снова считается «ещё не проверено»
+      const hit = this._pidEntry(pt);
       const pid = hit && hit.placeId;
       // Показываем, что именно Google понял под этой координатой — так сразу видно,
       // если он привязал точку не к тому дому
@@ -4407,7 +4426,7 @@ _openLegPicker(reverse = false) {
       return el;
     };
 
-    const missing = pts.filter(pt => !cache[this._pidKey(pt)]).length;
+    const missing = pts.filter(pt => !this._pidEntry(pt)).length;
     mkBtn(missing ? `Adressen prüfen (${missing})` : 'Adressen neu prüfen',
           'var(--primary-color,#007bff)', async (e) => {
       e.target.disabled = true;
@@ -4423,8 +4442,7 @@ _openLegPicker(reverse = false) {
   render();
 
   // Первый заход — сразу подтягиваем то, чего нет в кэше
-  const cache0 = this._loadPlaceIds();
-  if (pts.some(pt => !cache0[this._pidKey(pt)])) {
+  if (pts.some(pt => !this._pidEntry(pt))) {
     this._resolvePlaceIds(pts).then(() => { if (document.body.contains(ov)) render(); });
   }
 }
@@ -4463,30 +4481,40 @@ lines.forEach(el => {
 }
 
 openGoogleMaps(returnTrip = false) {
+  // Построение маршрута асинхронное: GPS + запрос place_id. Без замка два
+  // быстрых нажатия запускают два независимых построения, и в Google Maps
+  // улетают две ссылки подряд — причём выиграть может та, что собралась
+  // раньше, то есть со СТАРЫМ составом точек.
+  if (this._routeBusy) { this.showToast('⏳ Route wird noch erstellt…'); return; }
+  this._routeBusy = true;
+  const release = () => { this._routeBusy = false; };
+
   const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
 
   if (!returnTrip) {
     const hasDest = this.machineStop.lat && this.machineStop.lng;
     if (validParticipants.length === 0 && !hasDest) {
       this.showToast("Bitte Koordinaten des Ziels angeben oder Teilnehmer hinzufügen.");
+      release();
       return;
     }
   }
 
   if (!navigator.geolocation) {
     this.showToast("Geolokalisierung wird nicht unterstützt.");
+    release();
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
     async (position) => {
+      try {
       const gps = { lat: position.coords.latitude, lng: position.coords.longitude };
       // Сначала добираем place_id для остановок, иначе Google получит голые
       // координаты и снова уведёт маршрут к ближайшему адресу
       const stops = this._routePoints(returnTrip, null, false);
       if (stops && stops.length) {
-        const cache = this._loadPlaceIds();
-        if (stops.some(pt => !cache[this._pidKey(pt)])) {
+        if (stops.some(pt => !this._pidEntry(pt))) {
           this.showToast('📍 Adressen werden ermittelt…');
           await this._resolvePlaceIds(stops);
         }
@@ -4496,13 +4524,20 @@ openGoogleMaps(returnTrip = false) {
         this.showToast("Nicht genug Koordinaten für die Route.");
         return;
       }
+      // В консоли видно, какой формат ссылки ушёл в Google Maps:
+      // api=1 с place_id — точки как конкретные места; /dir/ — только координаты
+      console.log('[route] ' + (url.indexOf('place_id') !== -1 ? 'place_id' : 'координаты') + ': ' + url);
       window.open(url, '_blank');
+      } finally { release(); }
     },
     (error) => {
       console.error("Ошибка геолокации:", error);
       this.showToast("Standort konnte nicht ermittelt werden. Bitte Zugriff erlauben.");
+      release();
     },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    // Свежая позиция: раньше допускалась минутной давности, и повторное
+    // построение уходило от точки, где ты был минуту назад.
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
   );
 }
 _destLabel() {
@@ -4777,7 +4812,7 @@ window._openDriver = function() {
   navigator.geolocation.getCurrentPosition(
     p => go({ lat: p.coords.latitude, lng: p.coords.longitude }),
     () => go(null),
-    { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
   );
 };
 document.addEventListener('click', e => {
