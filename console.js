@@ -1,5 +1,5 @@
 /* ================================================
-   mobile-console.js  v2.7
+   mobile-console.js  v2.8
    Использование: <script src="console.js"></script>
    ================================================ */
 
@@ -17,6 +17,7 @@
   const ICO_COPY  = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
   const ICO_CHECK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
   const ICO_TRASH = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>`;
+  const ICO_DL    = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
   const ICO_JS    = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`;
   const ICO_RUN   = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
   const ICO_CON   = `<svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M5.646 9.146a.5.5 0 0 1 .708 0L8 10.793l1.646-1.647a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 0-.708zM14.5 13h-5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM3 5.5A2.5 2.5 0 0 1 5.5 3h9A2.5 2.5 0 0 1 17 5.5v9a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 3 14.5V5.5zM5.5 4A1.5 1.5 0 0 0 4 5.5V6h12v-.5A1.5 1.5 0 0 0 14.5 4h-9zM4 7v7.5A1.5 1.5 0 0 0 5.5 16h9a1.5 1.5 0 0 0 1.5-1.5V7H4z"/></svg>`;
@@ -228,12 +229,13 @@
     <div id="_mc_resize"></div>
     <div id="_mc_toolbar">
       <div id="_mc_row1">
-        <span id="_mc_title">console v2.7</span>
+        <span id="_mc_title">console v2.8</span>
         <button id="_mc_f_all" class="active">ALL</button>
         <button id="_mc_f_click">CLICK</button>
         <button id="_mc_f_ls">LS</button>
         <button id="_mc_js_btn" title="JS ввод">${ICO_JS} JS</button>
         <button id="_mc_cpy" title="Копировать">${ICO_COPY}</button>
+        <button id="_mc_dl"  title="Скачать .txt">${ICO_DL}</button>
         <button id="_mc_clr" title="Очистить">${ICO_TRASH}</button>
       </div>
       <div id="_mc_js_row">
@@ -263,6 +265,7 @@
   const jsRun     = document.getElementById('_mc_js_run');
   const clrBtn    = document.getElementById('_mc_clr');
   const cpyBtn    = document.getElementById('_mc_cpy');
+  const dlBtn     = document.getElementById('_mc_dl');
   const resizer   = document.getElementById('_mc_resize');
   const badge     = document.getElementById('_mc_badge');
 
@@ -540,9 +543,9 @@
     }
   });
 
-  /* ─── Копировать ─── */
-  cpyBtn.addEventListener('click', () => {
-    const text = lines
+  /* ─── Текст лога (только видимые строки, как и показано на экране) ─── */
+  function collectText() {
+    return lines
       .filter(({ el }) => !el.classList.contains('hidden'))
       .map(({ el }) => {
         const t = el.querySelector('.mc-ts')?.textContent  || '';
@@ -551,6 +554,11 @@
         return `${t} ${g} ${x}`.trim();
       })
       .join('\n');
+  }
+
+  /* ─── Копировать ─── */
+  cpyBtn.addEventListener('click', () => {
+    const text = collectText();
     navigator.clipboard.writeText(text).then(() => {
       cpyBtn.innerHTML = ICO_CHECK;
       cpyBtn.classList.add('ok');
@@ -559,6 +567,59 @@
       cpyBtn.innerHTML = '✗';
       setTimeout(() => { cpyBtn.innerHTML = ICO_COPY; }, 1500);
     });
+  });
+
+  /* ─── Скачать .txt ───
+     На телефоне выделить длинный лог пальцем невозможно, а буфер обмена
+     переживает не каждое переключение приложений. Файл надёжнее: его можно
+     отправить в мессенджер или приложить к сообщению. */
+  dlBtn.addEventListener('click', () => {
+    const body = collectText();
+    if (!body) {
+      dlBtn.innerHTML = '∅';
+      setTimeout(() => { dlBtn.innerHTML = ICO_DL; }, 1200);
+      return;
+    }
+
+    const pad  = n => String(n).padStart(2, '0');
+    const d    = new Date();
+    const date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${String(d.getFullYear()).slice(-2)}`;
+    const time = `${pad(d.getHours())}.${pad(d.getMinutes())}`;
+    // Имя проекта берём из домена: fahrzeit.vercel.app → fahrzeit
+    const host = (location.hostname || '').split('.')[0].replace(/[^a-z0-9-]/gi, '');
+    const name = `${host || 'console'}_${date}_${time}.txt`;
+
+    const head = [
+      `# ${name}`,
+      `# ${d.toString()}`,
+      `# ${location.href}`,
+      // Считаем 🔴 прямо в тексте: errorCount обнуляется при открытии панели,
+      // а в файл нужно реальное число ошибок, попавших в выгрузку
+      `# filter: ${filter}   lines: ${body.split('\n').length}   errors: ${(body.match(/🔴/g) || []).length}`,
+      `# ${navigator.userAgent}`,
+      ''
+    ].join('\n');
+
+    try {
+      // \uFEFF — BOM: без него редакторы на Android открывают кириллицу кракозябрами
+      const blob = new Blob(['\uFEFF' + head + body + '\n'], { type: 'text/plain;charset=utf-8' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      // Снимаем ссылку не сразу: некоторым браузерам она нужна ещё мгновение
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+
+      dlBtn.innerHTML = ICO_CHECK;
+      dlBtn.classList.add('ok');
+      setTimeout(() => { dlBtn.innerHTML = ICO_DL; dlBtn.classList.remove('ok'); }, 1500);
+    } catch (e) {
+      dlBtn.innerHTML = '✗';
+      setTimeout(() => { dlBtn.innerHTML = ICO_DL; }, 1500);
+    }
   });
 
   /* ─── Очистка ─── */
@@ -599,6 +660,6 @@
     }
   });
 
-  console.log('mobile console v2.7 ready');
+  console.log('mobile console v2.8 ready');
 
 })();
