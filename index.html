@@ -1523,9 +1523,19 @@ try {
     const defaultNames = new Set(freshDefaults.map(d => d.name));
     const userDefined = this.machineDestinations.filter(d => !defaultNames.has(d.name));
     this.machineDestinations = [...freshDefaults, ...userDefined];
+    this._srcDests = JSON.parse(JSON.stringify(freshDefaults));
   }
-  // Синхронизируем координаты участников из обновлённых данных stations
-  this.syncCoordinates();
+  // Снимок прочитанного stations.js — с ним сверяются все сохранённые координаты
+  this._src = JSON.parse(JSON.stringify({
+    people: this.defaultCoordinates || {}, treff: this.treffpunkt || {},
+    stations: this.stations || {}, dests: this._srcDests || []
+  }));
+  this._coordsFetchedAt = Date.now();
+  this.syncCoordinates().forEach(c => console.log('[sync] ' + c));
+  // Ручные правки, которые сейчас перекрывают stations.js, — чтобы не были сюрпризом
+  this.participants.concat([this.machineStop]).forEach(o => {
+    if (o && o.coordsBase !== undefined) console.log(`[sync] ${o.name}: manuell ${o.lat},${o.lng} (stations.js: ${o.coordsBase})`);
+  });
   // Если у водителя нет сохранённого списка — загружаем из participantOrders
   if (this.startPoint && this.participants.length === 0) {
     this.updateStartPoint(this.startPoint);
@@ -1574,13 +1584,130 @@ if (participant.name && !participant.timeManuallyEdited) {
 if (participant.name) previousPoint = participant.name;
 });
 }
+// ── Координаты: stations.js — единственный источник правды ───────────────
+//
+// Раньше из stations.js обновлялись только люди. Treffpunkt и станция
+// назначения жили своей копией из localStorage: исправил точку в редакторе —
+// а в маршрут продолжала уходить старая, пока не удалишь её и не добавишь заново.
+//
+// Правило теперь одно для всех точек:
+//   • что названо в stations.js — берётся оттуда;
+//   • правка через 📍 в самом приложении держится до тех пор, пока в
+//     stations.js для этой точки не появится НОВОЕ значение (coordsBase хранит
+//     то, что было в stations.js на момент правки);
+//   • точки, которых в stations.js нет, не трогаем — сверять не с чем.
+//
+// this._src — снимок последнего прочитанного stations.js. Сверяем с ним,
+// а не с рабочими реестрами: те меняются при ручных правках.
+_srcFor(p) {
+  const S = this._src || {};
+  return p.isTreffpunkt ? (S.treff || {})[p.name] : (S.people || {})[p.name];
+}
+_srcForMachine() {
+  const S = this._src || {}, m = this.machineStop || {};
+  if (m.stationName && S.stations && S.stations[m.stationName]) return S.stations[m.stationName];
+  const first = (this.machineDestinations[0] || {}).name;
+  if (m.name !== first) {
+    const d = (S.dests || []).find(x => x.name === m.name);
+    if (d && d.lat && d.lng) return d;
+  }
+  return null;
+}
+// Вызывается после ручного ввода координат
+_markManual(obj, src) {
+  if (!src || src.lat == null || src.lng == null) { delete obj.coordsBase; return; }
+  if (Number(src.lat) === Number(obj.lat) && Number(src.lng) === Number(obj.lng)) delete obj.coordsBase;
+  else obj.coordsBase = `${src.lat},${src.lng}`;
+}
+// Возвращает список изменений (для лога)
 syncCoordinates() {
+const changes = [];
+const apply = (obj, src, label) => {
+  if (!src || src.lat == null || src.lng == null) return false;
+  if (obj.coordsBase !== undefined) {
+    if (obj.coordsBase === `${src.lat},${src.lng}`) return false;   // ручная правка ещё в силе
+    delete obj.coordsBase;                                            // в stations.js пришло новое
+  }
+  if (Number(obj.lat) === Number(src.lat) && Number(obj.lng) === Number(src.lng)) return false;
+  changes.push(`${label}: ${obj.lat},${obj.lng} → ${src.lat},${src.lng}`);
+  obj.lat = src.lat; obj.lng = src.lng;
+  return true;
+};
 this.participants.forEach(p => {
-const coords = this.nameToCoordinates[p.name];
-if (coords) { p.lat = coords.lat; p.lng = coords.lng; }
+  if (!p.name) return;
+  // Координата сменилась — рассчитанное Google время для неё больше не годится
+  if (apply(p, this._srcFor(p), p.name)) { p.routeCalculated = false; p.hasTraffic = false; p.trafficDeltaMin = 0; }
 });
+const m = this.machineStop;
+if (m) {
+  const label = m.stationName ? `${m.name} (${m.stationName})` : m.name;
+  if (apply(m, this._srcForMachine(), label)) m.autoCalculated = false;
+}
 const startCoords = this.nameToCoordinates[this.startPoint];
 this.startPointCoords = startCoords ? { lat: startCoords.lat, lng: startCoords.lng } : { lat: null, lng: null };
+return changes;
+}
+
+// Вырезает блок {...} после ключевого слова, считая скобки
+_extractBlock(str, keyword) {
+  const idx = str.indexOf(keyword);
+  if (idx === -1) return null;
+  const start = str.indexOf('{', idx);
+  if (start === -1) return null;
+  let depth = 0;
+  for (let i = start; i < str.length; i++) {
+    if (str[i] === '{') depth++;
+    else if (str[i] === '}') { depth--; if (depth === 0) return str.slice(start, i + 1); }
+  }
+  return null;
+}
+
+// Перед построением маршрута перечитываем координаты из stations.js.
+// Установленное приложение может висеть в памяти сутками и ни разу не
+// перезагрузиться — тогда правка из редактора до него просто не доходит.
+// Не чаще раза в минуту, с коротким таймаутом; без сети едем на том, что есть.
+async _refreshStationCoords() {
+  if (this._coordsFetchedAt && Date.now() - this._coordsFetchedAt < 60000) return 0;
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 2500);
+    const resp = await fetch('stations.js', { cache: 'no-cache', signal: ctl.signal });
+    clearTimeout(timer);
+    if (!resp.ok) return 0;
+    const text = await resp.text();
+    const read = (kw) => {
+      const block = this._extractBlock(text, kw);
+      return block ? Function('"use strict";return (' + block + ')')() : null;
+    };
+    const coords = read('const defaultCoords');
+    const stations = read('this.stations');
+    const treff = read('this.treffpunkt');
+    const S = this._src || (this._src = {});
+    const clone = (o) => JSON.parse(JSON.stringify(o));
+    // В рабочий реестр переносим только то, что в stations.js реально сменилось
+    // с прошлого чтения: правки, сделанные на этом телефоне, не затираем.
+    const merge = (target, prev, next) => Object.keys(next).forEach(n => {
+      const a = prev && prev[n], b = next[n];
+      if (!target[n] || !a || Number(a.lat) !== Number(b.lat) || Number(a.lng) !== Number(b.lng)) {
+        target[n] = { lat: b.lat, lng: b.lng };
+      }
+    });
+    if (coords)   { merge(this.nameToCoordinates, S.people, coords); this.defaultCoordinates = coords; S.people = clone(coords); }
+    if (treff)    { merge(this.treffpunkt, S.treff, treff); S.treff = clone(treff); }
+    if (stations) { this.stations = stations; S.stations = clone(stations); }
+    this._coordsFetchedAt = Date.now();
+
+    const changes = this.syncCoordinates();
+    if (changes.length) {
+      changes.forEach(c => console.log('[sync] ' + c));
+      this.saveData(); this.renderParticipants(); this.initSortable();
+      this.showToast(`📍 ${changes.length} Koordinate${changes.length > 1 ? 'n' : ''} aus stations.js aktualisiert`);
+    }
+    return changes.length;
+  } catch (e) {
+    console.warn('[sync] stations.js nicht erreichbar: ' + (e && e.name));
+    return 0;
+  }
 }
 profileKey(key) {
 const p = this.startPoint || '';
@@ -2239,6 +2366,7 @@ machineNameTrigger.addEventListener('click', () => {
         this.machineStop.lat = dest.lat;
         this.machineStop.lng = dest.lng;
         this.machineStop.autoCalculated = false;
+        delete this.machineStop.coordsBase;   // взято из списка заново — ручной правки больше нет
       } else if (dest) {
         this.machineStop.lat = null;
         this.machineStop.lng = null;
@@ -2669,6 +2797,9 @@ this.updateParticipantTimes();
 else if (this.isEditingMachine) {
 if (!coords) { this.showToast('⚠️ Bitte Koordinaten eingeben'); return; }
 this.machineStop.lat = coords.lat; this.machineStop.lng = coords.lng;
+// Совпала со станцией из списка — дальше обновляется из stations.js.
+// Не совпала — точку поставили руками, она перекрывает stations.js.
+this._markManual(this.machineStop, this._srcForMachine());
 // BUGFIX: синхронизируем координаты и в machineDestinations
 const destEntry = this.machineDestinations.find(d => d.name === this.machineStop.name);
 if (destEntry) { destEntry.lat = coords.lat; destEntry.lng = coords.lng; }
@@ -2691,7 +2822,9 @@ pEdit.lat = coords.lat;
 pEdit.lng = coords.lng;
 pEdit.timeManuallyEdited = false;
 pEdit.routeCalculated = false;
-// Синхронизируем реестр — иначе syncCoordinates() перезапишет правку при перезагрузке
+// Помечаем ручную правку: она перекрывает stations.js, пока там не появится новое значение
+this._markManual(pEdit, this._srcFor(pEdit));
+// Рабочий реестр тоже обновляем — им пользуются списки выбора
 if (pEdit.name) {
 if (pEdit.isTreffpunkt) this.treffpunkt[pEdit.name] = { lat: coords.lat, lng: coords.lng };
 else this.nameToCoordinates[pEdit.name] = { lat: coords.lat, lng: coords.lng };
@@ -2992,6 +3125,7 @@ this.calculate();
 // ===== Методы для Treffpunkt =====
 updateTreffpunktName(index, newName) {
 const coords = this.treffpunkt[newName] || { lat: null, lng: null };
+delete this.participants[index].coordsBase;
 this.participants[index].name = newName;
 this.participants[index].lat = coords.lat;
 this.participants[index].lng = coords.lng;
@@ -3004,6 +3138,7 @@ this.calculate();
 }
 updateName(index, newName) {
 const coords = this.nameToCoordinates[newName] || { lat: null, lng: null };
+delete this.participants[index].coordsBase;
 this.participants[index].name = newName;
 this.participants[index].lat = coords.lat;
 this.participants[index].lng = coords.lng;
@@ -4065,6 +4200,7 @@ async _copyRouteLink(reverse) {
 if (this._routeBusy) { this.showToast('⏳ Route wird noch erstellt…'); return; }
 this._routeBusy = true;
 try {
+await this._refreshStationCoords();
 const msg = reverse ? '📋 Rückweg-Route kopiert!' : '📋 Route kopiert!';
 if (reverse) {
   // Для обратного маршрута берём текущий GPS как точку старта
@@ -4397,6 +4533,12 @@ _openLegPicker(reverse = false) {
   ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
   document.body.appendChild(ov);
 
+  // Координаты могли устареть — перечитываем и, если что-то сменилось,
+  // открываем список заново уже с новыми
+  this._refreshStationCoords().then(n => {
+    if (n && document.body.contains(ov)) { ov.remove(); this._openLegPicker(reverse); }
+  });
+
   const render = () => {
     sheet.innerHTML =
       '<h3 style="margin:0 0 4px;font-size:17px;text-align:center;">Halt für Halt</h3>' +
@@ -4528,12 +4670,15 @@ openGoogleMaps(returnTrip = false) {
     return;
   }
 
+  // Запускаем сразу, параллельно с GPS — ожидания это не добавляет
+  const fresh = this._refreshStationCoords();
+  let opened = false;
+
   navigator.geolocation.getCurrentPosition(
     async (position) => {
       try {
       const gps = { lat: position.coords.latitude, lng: position.coords.longitude };
-      // Сначала добираем place_id для остановок, иначе Google получит голые
-      // координаты и снова уведёт маршрут к ближайшему адресу
+      await fresh;
       // place_id нужен только формату 'placeid'. Для native он лишний —
       // Google для собственных остановок обходится координатами.
       const stops = this._routePoints(returnTrip, null, false);
@@ -4551,7 +4696,10 @@ openGoogleMaps(returnTrip = false) {
       }
       console.log('[route] ' + (this.routeFormat || 'native') + ' · ' + pts0 + ' точек: ' + url);
       window.open(url, '_blank');
-      } finally { release(); }
+      // Ссылка ушла — ещё две секунды не принимаем нажатий, чтобы случайный
+      // второй тап не отправил в Google Maps тот же маршрут повторно
+      opened = true;
+      } finally { if (opened) setTimeout(release, 2000); else release(); }
     },
     (error) => {
       console.error("Ошибка геолокации:", error);
@@ -4710,6 +4858,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // ── ПРОФИЛИ ──────────────────────────────────────────────
 window.app = new FahrzeitRechner();
 window._appInstance = app;
+// По этой строке в логе видно, какая сборка реально работает на телефоне
+console.log('[app] build 07.10.26 01.15 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
