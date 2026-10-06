@@ -1386,6 +1386,9 @@ this.useSuperscriptTime = false;
 this.showDestName = false;
 this.shortenLinks = true;
 this.shortenMode = "fhr";
+// Формат ссылки для Google Maps: 'native' (как пишет сам Google) | 'placeid' | 'api'
+try { this.routeFormat = localStorage.getItem('fahrzeitRouteFormat') || 'native'; }
+catch (e) { this.routeFormat = 'native'; }
 this.sortable = null;
 this.elements = {
 greetingSelect: document.getElementById('greeting'),
@@ -4075,7 +4078,7 @@ if (reverse) {
     );
   });
   const gps = await getGps();
-  await this._ensurePlaceIds(true);
+  if (this.routeFormat === 'placeid') await this._ensurePlaceIds(true);
   const url = this._buildRouteUrl(true, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
   await this._shortenAndCopy(url, msg);
@@ -4092,10 +4095,10 @@ if (reverse) {
   });
   const gps = await getGps();
   if (!gps) { this.showToast('⚠ Standort konnte nicht ermittelt werden.'); return; }
-  await this._ensurePlaceIds(false);
+  if (this.routeFormat === 'placeid') await this._ensurePlaceIds(false);
   const url = this._buildRouteUrl(false, gps);
   if (!url) { this.showToast('Nicht genug Koordinaten für die Route.'); return; }
-  console.log('[route] ' + (url.indexOf('place_id') !== -1 ? 'place_id' : 'координаты') + ': ' + url);
+  console.log('[route] ' + (this.routeFormat || 'native') + ': ' + url);
   await this._shortenAndCopy(url, msg);
 }
 } finally { this._routeBusy = false; }
@@ -4168,17 +4171,29 @@ this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 // прямо в навигации. Для этого есть режим "по одной точке" — _buildLegUrl ниже.
 //
 // mode: 'flat' (по умолчанию) | 'api' — для driver.html, он парсит query-параметры.
-_buildRouteUrl(reverse, gpsCoords, mode = 'flat') {
+_buildRouteUrl(reverse, gpsCoords, mode) {
   const pts = this._routePoints(reverse, gpsCoords);
   if (!pts || pts.length < 2) return null;
 
   const fmt = (pt) => `${pt.lat},${pt.lng}`;
+  mode = mode || this.routeFormat || 'native';
 
-  // Лучший вариант: у всех остановок (кроме старта — это наш GPS) есть place_id.
-  // Тогда Google получает конкретные места, а не координаты для геокодирования,
-  // и при пересчёте маршрута ему нечего интерпретировать заново.
+  // ── native: один в один то, что Google Maps пишет САМ ──────────────────
+  // Формат снят с двух его собственных ссылок на один и тот же маршрут —
+  // с 8 и с 7 точками. Правило: !4m(2N+4)!4m(2N+3), затем по !1m1!4e1 на
+  // каждую точку, затем !2m1!11b1 и !3e0 (автомобиль).
+  // Это единственный формат, про который точно известно, что приложение
+  // его понимает — потому что приложение его и породило. place_id здесь
+  // не используется: Google для своих же остановок обходится координатами.
+  if (mode === 'native') {
+    const n = pts.length;
+    const data = `!4m${2 * n + 4}!4m${2 * n + 3}` + '!1m1!4e1'.repeat(n) + '!2m1!11b1!3e0';
+    return 'https://www.google.com/maps/dir/' + pts.map(fmt).join('/') + '/data=' + data;
+  }
+
+  // ── placeid: наш прежний формат, остановки как конкретные места ────────
   const stopsOnly = pts.slice(1);
-  if (mode === 'flat' && stopsOnly.length && stopsOnly.every(pt => pt.placeId)) {
+  if (mode === 'placeid' && stopsOnly.length && stopsOnly.every(pt => pt.placeId)) {
     const dest = stopsOnly[stopsOnly.length - 1];
     const wps  = stopsOnly.slice(0, -1);
     let u = 'https://www.google.com/maps/dir/?api=1' +
@@ -4194,21 +4209,23 @@ _buildRouteUrl(reverse, gpsCoords, mode = 'flat') {
     return u + '&travelmode=driving';
   }
 
-  if (mode === 'api') {
-    const o = fmt(pts[0]), d = fmt(pts[pts.length - 1]);
-    const wp = pts.slice(1, -1).map(fmt);
-    let u = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}` +
-            `&destination=${encodeURIComponent(d)}`;
-    if (wp.length) u += `&waypoints=${wp.join('%7C')}`;
-    return u + '&travelmode=driving';
-  }
+  // ── api: простые query-параметры, нужен driver.html ───────────────────
+  const o = fmt(pts[0]), d = fmt(pts[pts.length - 1]);
+  const wp = pts.slice(1, -1).map(fmt);
+  let u = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}` +
+          `&destination=${encodeURIComponent(d)}`;
+  if (wp.length) u += `&waypoints=${wp.join('%7C')}`;
+  return u + '&travelmode=driving';
+}
 
-  // Явные координатные остановки: долгота (1d) идёт перед широтой (2d) — так у Google
-  const stops = pts.map(pt => `!1m5!1m1!1s0x0:0x0!2m2!1d${pt.lng}!2d${pt.lat}`).join('');
-  const n = pts.length;
-  const data = `!3m1!4b1!4m${6 * n + 2}!4m${6 * n + 1}${stops}!3e0`;
-
-  return 'https://www.google.com/maps/dir/' + pts.map(fmt).join('/') + '/data=' + data;
+// Какой формат ссылки уходит в Google Maps. Меняется прямо из консоли:
+//   app.setRouteFormat('placeid')   — вернуть прежний формат с place_id
+//   app.setRouteFormat('native')    — формат самого Google (по умолчанию)
+setRouteFormat(v) {
+  this.routeFormat = (v === 'placeid' || v === 'api') ? v : 'native';
+  try { localStorage.setItem('fahrzeitRouteFormat', this.routeFormat); } catch (e) {}
+  this.showToast('🔗 Format: ' + this.routeFormat);
+  return this.routeFormat;
 }
 
 // Ссылка на ОДНУ точку. Здесь нечего пересчитывать и нечего удалять,
@@ -4512,8 +4529,11 @@ openGoogleMaps(returnTrip = false) {
       const gps = { lat: position.coords.latitude, lng: position.coords.longitude };
       // Сначала добираем place_id для остановок, иначе Google получит голые
       // координаты и снова уведёт маршрут к ближайшему адресу
+      // place_id нужен только формату 'placeid'. Для native он лишний —
+      // Google для собственных остановок обходится координатами.
       const stops = this._routePoints(returnTrip, null, false);
-      if (stops && stops.length) {
+      const pts0 = (stops ? stops.length : 0) + 1;
+      if (this.routeFormat === 'placeid' && stops && stops.length) {
         if (stops.some(pt => !this._pidEntry(pt))) {
           this.showToast('📍 Adressen werden ermittelt…');
           await this._resolvePlaceIds(stops);
@@ -4524,9 +4544,7 @@ openGoogleMaps(returnTrip = false) {
         this.showToast("Nicht genug Koordinaten für die Route.");
         return;
       }
-      // В консоли видно, какой формат ссылки ушёл в Google Maps:
-      // api=1 с place_id — точки как конкретные места; /dir/ — только координаты
-      console.log('[route] ' + (url.indexOf('place_id') !== -1 ? 'place_id' : 'координаты') + ': ' + url);
+      console.log('[route] ' + (this.routeFormat || 'native') + ' · ' + pts0 + ' точек: ' + url);
       window.open(url, '_blank');
       } finally { release(); }
     },
