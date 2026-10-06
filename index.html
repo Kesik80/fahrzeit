@@ -4232,10 +4232,13 @@ setRouteFormat(v) {
 // поэтому увести маршрут Google просто некуда.
 _buildLegUrl(pt) {
   if (!pt) return null;
-  let u = 'https://www.google.com/maps/dir/?api=1' +
-          `&destination=${encodeURIComponent(pt.lat + ',' + pt.lng)}`;
-  if (pt.placeId) u += `&destination_place_id=${encodeURIComponent(pt.placeId)}`;
-  return u + '&travelmode=driving&dir_action=navigate';
+  // destination_place_id отсюда УБРАН намеренно. Google отдаёт идентификатору
+  // приоритет над координатой: один неверный id в кэше молча перебивал
+  // правильную координату, и ткнуть мимо можно было сколько угодно раз подряд.
+  // Координата проверяема глазами, идентификатор — нет.
+  return 'https://www.google.com/maps/dir/?api=1' +
+         `&destination=${encodeURIComponent(pt.lat + ',' + pt.lng)}` +
+         '&travelmode=driving&dir_action=navigate';
 }
 
 // ── place_id: кэш и разрешение координат ──────────────────────────────
@@ -4250,9 +4253,11 @@ _pidKey(pt) { return pt.lat + ',' + pt.lng; }
 _pidEntry(pt) {
   const hit = this._loadPlaceIds()[this._pidKey(pt)];
   if (!hit) return null;
-  if (hit.placeId) return hit;
-  const SIX_H = 6 * 60 * 60 * 1000;
-  return (hit.ts && Date.now() - hit.ts < SIX_H) ? hit : null;
+  const age = hit.ts ? Date.now() - hit.ts : Infinity;
+  // Удачный поиск живёт месяц: Google уточняет свою базу, да и просто
+  // ошибочная запись не должна оставаться навсегда. Неудача — шесть часов.
+  if (hit.placeId) return age < 30 * 24 * 3600 * 1000 ? hit : null;
+  return age < 6 * 3600 * 1000 ? hit : null;
 }
 
 _loadPlaceIds() {
@@ -4293,7 +4298,7 @@ async _resolvePlaceIds(pts) {
       const k = this._pidKey(missing[i]);
       // Пишем и неудачу тоже — иначе будем дёргать геокодер на каждый маршрут
       cache[k] = res && res.placeId
-        ? { placeId: res.placeId, address: res.address || '', precision: res.precision || '' }
+        ? { placeId: res.placeId, address: res.address || '', precision: res.precision || '', ts: Date.now() }
         : { placeId: null, address: '', precision: (res && res.precision) || 'FAIL', ts: Date.now() };
       if (cache[k].placeId) n++;
     });
@@ -4424,9 +4429,9 @@ _openLegPicker(reverse = false) {
       b.querySelector('.lp-name').textContent = pt.name || ('Halt ' + (idx + 1));
       b.querySelector('.lp-sub').textContent = sub;
       b.onclick = () => {
-        const full = Object.assign({}, pt);
-        if (pid) full.placeId = pid;
-        window.open(this._buildLegUrl(full), '_blank');
+        const u = this._buildLegUrl(pt);
+        console.log('[leg] ' + (pt.name || '') + ': ' + u);
+        window.open(u, '_blank');
       };
       sheet.appendChild(b);
     });
