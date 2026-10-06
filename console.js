@@ -1,5 +1,5 @@
 /* ================================================
-   mobile-console.js  v2.8
+   mobile-console.js  v2.9
    Использование: <script src="console.js"></script>
    ================================================ */
 
@@ -7,6 +7,14 @@
   'use strict';
 
   const MAX_LINES = 300;
+  // Лог переживает перезагрузку страницы. Без этого любое доказательство
+  // терялось, стоило один раз закрыть вкладку.
+  const STORE_KEY  = '_mc_log';
+  const STORE_MAX  = 300;        // строк
+  const STORE_CAP  = 200 * 1024; // байт, чтобы не упереться в квоту
+  let   persisted  = [];
+  let   storeTimer = null;
+  let   storeOff   = false;      // выключается, если localStorage отказал
   let lines      = [];
   let filter     = 'ALL';
   let errorCount = 0;
@@ -177,6 +185,12 @@
     .mc-line.hidden { display: none; }
     .mc-ts  { color: var(--mc-ts); flex-shrink: 0; white-space: nowrap; transition: color .25s; }
     .mc-tag { flex-shrink: 0; }
+    /* строки прошлого сеанса — приглушены, чтобы не путать с текущими */
+    .mc-line.mc-old { opacity: .62; }
+    .mc-line.mc-sep {
+      justify-content: center; opacity: .5; font-size: 10px;
+      letter-spacing: .1em; padding: 4px 0;
+    }
     .mc-txt { flex: 1; min-width: 0; }
 
     /* цвета текста лога одинаковы в обеих темах — они и так контрастные */
@@ -229,7 +243,7 @@
     <div id="_mc_resize"></div>
     <div id="_mc_toolbar">
       <div id="_mc_row1">
-        <span id="_mc_title">console v2.8</span>
+        <span id="_mc_title">console v2.9</span>
         <button id="_mc_f_all" class="active">ALL</button>
         <button id="_mc_f_click">CLICK</button>
         <button id="_mc_f_ls">LS</button>
@@ -357,6 +371,62 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
 
+  function saveSoon() {
+    if (storeOff) return;
+    clearTimeout(storeTimer);
+    storeTimer = setTimeout(() => {
+      try {
+        let data = persisted.slice(-STORE_MAX);
+        let json = JSON.stringify(data);
+        // Если не влезаем в лимит — отрезаем старое, пока не влезет
+        while (json.length > STORE_CAP && data.length > 20) {
+          data = data.slice(Math.ceil(data.length / 4));
+          json = JSON.stringify(data);
+        }
+        localStorage.setItem(STORE_KEY, json);
+        persisted = data;
+      } catch (e) {
+        storeOff = true;   // квота или приватный режим — молча живём без истории
+      }
+    }, 600);
+  }
+
+  function makeLine(type, tag, text, tsStr, old) {
+    const div = document.createElement('div');
+    div.className = `mc-line t-${type}` + (old ? ' mc-old' : '');
+    if (!isVisible(type)) div.classList.add('hidden');
+    div.innerHTML =
+      `<span class="mc-ts">[${tsStr}]</span>` +
+      `<span class="mc-tag">${tag}</span>` +
+      `<span class="mc-txt">${esc(text)}</span>`;
+    return div;
+  }
+
+  // Подтягиваем прошлый сеанс при старте
+  function restore() {
+    let data;
+    try { data = JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
+    catch (e) { return; }
+    if (!Array.isArray(data) || !data.length) return;
+    persisted = data.slice(-STORE_MAX);
+
+    const sep = document.createElement('div');
+    sep.className = 'mc-line mc-sep';
+    sep.innerHTML = '<span class="mc-txt">── früherer Verlauf ──</span>';
+    logEl.appendChild(sep);
+
+    persisted.forEach(r => {
+      const div = makeLine(r.y, r.g, r.x, r.t, true);
+      logEl.appendChild(div);
+      lines.push({ type: r.y, el: div });   // badge не трогаем: ошибки старые
+    });
+
+    const sep2 = document.createElement('div');
+    sep2.className = 'mc-line mc-sep';
+    sep2.innerHTML = '<span class="mc-txt">── diese Sitzung ──</span>';
+    logEl.appendChild(sep2);
+  }
+
   function addLine(type, tag, text) {
     if (lines.length >= MAX_LINES) {
       const removed = lines.shift();
@@ -370,17 +440,19 @@
       errorCount++;
       updateBadge();
     }
-    const div = document.createElement('div');
-    div.className = `mc-line t-${type}`;
-    if (!isVisible(type)) div.classList.add('hidden');
-    div.innerHTML =
-      `<span class="mc-ts">[${ts()}]</span>` +
-      `<span class="mc-tag">${tag}</span>` +
-      `<span class="mc-txt">${esc(text)}</span>`;
+    const stamp = ts();
+    const div = makeLine(type, tag, text, stamp, false);
     logEl.appendChild(div);
     if (isVisible(type)) logEl.scrollTop = logEl.scrollHeight;
     lines.push({ type, el: div });
+
+    persisted.push({ t: stamp, g: tag, x: String(text), y: type });
+    if (persisted.length > STORE_MAX) persisted = persisted.slice(-STORE_MAX);
+    saveSoon();
   }
+
+  // Показываем прошлый сеанс до того, как посыпятся новые строки
+  restore();
 
   /* ─── console.log / warn / error ─── */
   function patchConsole(method, type, tag) {
@@ -627,6 +699,9 @@
     logEl.innerHTML = '';
     lines = [];
     errorCount = 0;
+    persisted = [];
+    clearTimeout(storeTimer);
+    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
     updateBadge();
   });
 
@@ -660,6 +735,6 @@
     }
   });
 
-  console.log('mobile console v2.8 ready');
+  console.log('mobile console v2.9 ready');
 
 })();
