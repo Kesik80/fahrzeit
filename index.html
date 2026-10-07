@@ -1330,6 +1330,8 @@ this.startPointPassengers = [];
 this.defaultStartPassengers = {};
 this.farewell = 'Tschüss 👋';
 this.farewells = ['Tschüss 👋'];
+this.defaultFarewells = [];          // список прощаний из stations.js
+this._serverListsLoaded = false;     // true, когда stations.js прочитан
 this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null, autoCalculated: false };
 this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
@@ -1452,18 +1454,22 @@ try {
   // Приветствия из stations.js
   const grM = text.match(/const\s+defaultGreetingsData\s*=\s*(\[[\s\S]*?\]);/);
   if (grM) {
-    this.defaultGreetings = Function('"use strict";return (' + grM[1] + ')')();
-    if (!this.greetings || this.greetings.length === 0) this.greetings = [...this.defaultGreetings];
-    if (!this.greeting) this.greeting = this.defaultGreetings[0];
+    const list = Function('"use strict";return (' + grM[1] + ')')();
+    if (Array.isArray(list) && list.length) this.defaultGreetings = list;
   }
   // Прощание из stations.js
   const farewellM = text.match(/const\s+defaultFarewellData\s*=\s*({[\s\S]*?});/);
   if (farewellM) {
     const fd = Function('"use strict";return (' + farewellM[1] + ')')();
     this.defaultFarewellText = fd.text || 'Tschüss 👋';
-    if (fd.list) this.farewells = fd.list;
+    this.defaultFarewells = Array.isArray(fd.list) ? fd.list : [];
     if (!localStorage.getItem(this.profileKey('farewell'))) this.farewell = this.defaultFarewellText;
   }
+  // Раньше приветствия из stations.js брались, только если сохранённый список пуст,
+  // а он никогда не пуст — и новые приветствия из редактора в приложение не попадали.
+  // Прощания, наоборот, заменялись целиком, и добавленные на телефоне пропадали.
+  this._serverListsLoaded = true;
+  this._applyServerLists();
   // Попутчики стартовой точки из stations.js
   const spM2 = text.match(/const\s+defaultStartPassengersData\s*=\s*({[\s\S]*?});/);
   if (spM2) this.defaultStartPassengers = Function('"use strict";return (' + spM2[1] + ')')();
@@ -1713,6 +1719,11 @@ localStorage.setItem(k('useUhrBei'), this.useUhrBei);
 localStorage.setItem(k('startPassengers'), JSON.stringify(this.startPointPassengers));
 localStorage.setItem(k('farewell'), this.farewell);
 localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
+// С чем из stations.js эти списки были сведены — см. _mergeServerList
+if (this._serverListsLoaded) {
+  localStorage.setItem(k('greetingsBase'), JSON.stringify(this.defaultGreetings));
+  localStorage.setItem(k('farewellsBase'), JSON.stringify(this.defaultFarewells));
+}
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
 localStorage.setItem(k('shortenLinks'), this.shortenLinks);
@@ -1726,6 +1737,26 @@ localStorage.setItem(k('shortenMode'), this.shortenMode || 'bitly');
       ? '⚠️ Speicher voll — Daten nicht gesichert'
       : '⚠️ Daten konnten nicht gespeichert werden');
   } catch (e2) {}
+}
+}
+// Список в приложении = список из stations.js + то, что добавлено на этом телефоне.
+// base — список из stations.js на момент прошлого сохранения: что было в нём и
+// исчезло, удалено в редакторе и возвращаться не должно.
+_mergeServerList(server, local, base) {
+const known = new Set([...server, ...(base || [])]);
+const extras = (local || []).filter((x, i, arr) => x && !known.has(x) && arr.indexOf(x) === i);
+return [...server, ...extras];
+}
+_applyServerLists() {
+if (!this._serverListsLoaded) return;
+const read = (key) => {
+  try { const v = JSON.parse(localStorage.getItem(this.profileKey(key))); return Array.isArray(v) ? v : null; }
+  catch (e) { return null; }
+};
+this.greetings = this._mergeServerList(this.defaultGreetings, this.greetings, read('greetingsBase'));
+if (!this.greeting) this.greeting = this.greetings[0] || '';
+if (this.defaultFarewells.length) {
+  this.farewells = this._mergeServerList(this.defaultFarewells, this.farewells, read('farewellsBase'));
 }
 }
 resetToDefaults() {
@@ -1764,7 +1795,7 @@ this._undoSnapshot = {
   _profileKey: this.startPoint,
 };
 ['greeting','greetings','participants','machineStop','machineDestinations',
-'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','shortenMode','startPassengers','farewell','farewells']
+'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','shortenMode','startPassengers','farewell','farewells','greetingsBase','farewellsBase']
 .forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
@@ -1887,6 +1918,7 @@ this.resetToDefaults();
 // НЕ вызываем updateStartPoint — он перезапишет participants из participantOrders
 // Просто синхронизируем координаты из nameToCoordinates
 this.syncCoordinates();
+this._applyServerLists();
 }
 addEventListeners() {
 // Кастомный picker для приветствия
@@ -2544,7 +2576,8 @@ document.getElementById('stationSelect').style.display = 'none';
 this.elements.greetingLabel.style.display = 'block';
 this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = isAdding ? '' : this.farewell;
-this.elements.deleteGreetingButton.style.display = (!isAdding && this.farewells.length > 1) ? 'inline-block' : 'none';
+// Прощания из stations.js удаляются только в редакторе — здесь они вернулись бы при следующей загрузке
+this.elements.deleteGreetingButton.style.display = (!isAdding && this.farewells.length > 1 && !this.defaultFarewells.includes(this.farewell)) ? 'inline-block' : 'none';
 this.elements.greetingBtnsRow.style.display = 'flex';
 modal.style.display = 'flex'; modal.classList.add('active');
 this.elements.greetingInput.focus();
@@ -2561,7 +2594,8 @@ if (this.isAddingNewFarewell) {
   this.farewell = newFarewell;
 } else {
   const idx = this.farewells.indexOf(this.farewell);
-  if (idx !== -1) this.farewells[idx] = newFarewell;
+  if (idx !== -1 && !this.defaultFarewells.includes(this.farewell)) this.farewells[idx] = newFarewell;
+  else if (!this.farewells.includes(newFarewell)) this.farewells.push(newFarewell);
   this.farewell = newFarewell;
 }
 this.isEditingFarewell = false;
@@ -2575,6 +2609,8 @@ if (this.isEditingGreeting) {
 const old = this.greeting;
 const idx = this.greetings.indexOf(old);
 if (idx !== -1 && !this.defaultGreetings.includes(old)) this.greetings[idx] = newGreeting;
+// Приветствие из stations.js не переписываем — правка сохраняется рядом как своё
+else if (!this.greetings.includes(newGreeting)) this.greetings.push(newGreeting);
 this.greeting = newGreeting;
 } else if (this.isAddingNewGreeting) {
 this.greetings.push(newGreeting);
@@ -2736,7 +2772,7 @@ this.showToast('✅ Koordinaten gespeichert');
 }
 deleteGreeting() {
 if (this.isEditingFarewell) {
-  if (this.farewells.length > 1) {
+  if (this.farewells.length > 1 && !this.defaultFarewells.includes(this.farewell)) {
     this.farewells = this.farewells.filter(f => f !== this.farewell);
     this.farewell = this.farewells[0];
     this.isEditingFarewell = false;
@@ -4744,7 +4780,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 07.10.26 23.10 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 00.25 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
