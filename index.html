@@ -35,8 +35,6 @@ window.addEventListener('appinstalled', function () {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="color-scheme" content="dark light" id="color-scheme-meta">
 <title>Fahrzeit Rechner</title>
-<link rel="stylesheet"
-href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=swap_vert" />
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/latlon-geohash@2.0.0/latlon-geohash.min.js"></script>
 <style>
@@ -96,14 +94,6 @@ background: var(--danger-color)
 }
 .route-back {
 background: #6f42c1
-}
-.time-display.is-fallback {
-color: #ff9800 !important;
-font-weight: 700;
-}
-.time-display.has-traffic {
-color: #ff9800 !important;
-font-weight: 700;
 }
 .share-btn {
 flex: 0 0 calc((100% - 24px) / 5);
@@ -167,358 +157,7 @@ background: rgba(0,123,255,0.12);
 background: rgba(40,167,69,0.25);
 transition: background 0s;
 }
-.greeting-container {
-background: var(--surface);
-border-radius: var(--border-radius);
-padding: var(--spacing-unit);
-margin-bottom: var(--spacing-unit);
-box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
-display: flex;
-align-items: center;
-gap: var(--spacing-unit);
-flex-wrap: nowrap;
-overflow: hidden
-}
-.greeting-container select {
-width: 35%;
-padding: var(--small-spacing);
-border: 1px solid #ddd;
-border-radius: 4px;
-font-size: 1em;
-box-sizing: border-box
-}
 
-.greeting-container .edit-greeting-btn {
-width: 24px;
-height: 24px;
-background: transparent;
-border: none;
-border-radius: 4px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-line-height: 1;
-padding: 0;
-color: var(--text) !important;
-transform: translate(5px, -5px);
-}
-
-.greeting-container .start-point-coords {
-width: 24px;
-height: 24px;
-background: transparent;
-border: none;
-border-radius: 4px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-line-height: 1;
-padding: 0;
-color: var(--text) !important;
-transform: translateY(-5px);
-
-}
-.participant {
-background: var(--surface);
-border-radius: var(--border-radius);
-padding: var(--spacing-unit);
-margin-bottom: var(--spacing-unit);
-display: flex;
-align-items: center;
-gap: var(--spacing-unit);
-flex-wrap: nowrap;
-overflow: hidden;
-box-shadow: 0 1px 3px rgba(0, 0, 0, .1)
-}
-.participant select,
-.participant input[type=text] {
-flex: 1;
-min-width: 0;
-max-width: 35%;
-padding: var(--small-spacing);
-border: 1px solid var(--border, #ddd);
-border-radius: 4px;
-font-size: 1em;
-box-sizing: border-box;
-background: var(--surface);
-color: var(--text)
-}
-.participant input[type=number] {
-width: 50px;
-padding: var(--small-spacing);
-border: 1px solid #ddd;
-border-radius: 4px;
-font-size: 1em;
-text-align: center
-}
-.time-display {
-min-width: 35px;
-max-width: 35px;
-padding: 6px 10px;
-border: 2px solid var(--border);
-border-radius: 4px;
-font-size: 0.95em;
-text-align: center;
-background: var(--surface);
-color: var(--text);
-cursor: pointer;
-transition: all 0.2s;
-user-select: none;
-white-space: nowrap;
-
-}
-.time-display:hover {
-border-color: var(--primary-color);
-background: rgba(0, 123, 255, 0.05);
-}
-.time-display.auto-calculated {
-border-color: #ffc107;
-}
-.time-display.auto-calculated:hover {
-border-color: #ff9800;
-}
-.time-display.route-calculated {
-border-color: #1a73e8;
-}
-.time-display.route-calculated:hover {
-border-color: #1558b0;
-}
-.participant .right-section {
-margin-left: auto;
-display: flex;
-gap: var(--small-spacing);
-align-items: center;
-justify-content: flex-end;
-min-height: 32px;
-}
-.participant .remove-btn {
-width: 20px;
-height: 20px;
-background: var(--danger-color);
-color: white;
-border: none;
-border-radius: 4px;
-font-size: 16px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-line-height: 1;
-padding: 0;
-transform: translate(5px, -18px);
-}
-.participant .remove-btn::before {
-  content: "✖";
-  position: relative;
-  top: -1px;
-}
-/* Кнопка hinzugefügtия дополнительного участника */
-.add-sub-btn {
-width: 22px;
-height: 22px;
-background: var(--primary-color);
-color: white;
-border: none;
-border-radius: 50%;
-cursor: pointer;
-font-size: 16px;
-font-weight: bold;
-line-height: 1;
-transition: all 0.2s;
-display: flex;
-align-items: center;
-justify-content: center;
-flex-shrink: 0;
-transform: translateY(-5px);
-}
-.add-sub-btn:hover {
-background: #0056b3;
-transform: translateY(-5px) scale(1.1);
-}
-/* Группа участников */
-.participant-group {
-margin-bottom: var(--spacing-unit);
-}
-.participant.main-participant {
-margin-bottom: 0;
-}
-/* Дополнительные участники */
-.sub-participant {
-background: var(--surface);
-border-left: 3px solid var(--primary-color);
-border-radius: var(--border-radius);
-padding: 8px var(--spacing-unit);
-margin-left: 30px;
-margin-top: 4px;
-display: flex;
-align-items: center;
-gap: 8px;
-box-shadow: 0 1px 2px rgba(0, 0, 0, .05);
-}
-.sub-participant select {
-flex: 1;
-min-width: 35%;
-max-width: 35%;
-padding: var(--small-spacing);
-border: 1px solid #ddd;
-border-radius: 4px;
-font-size: 1em;
-box-sizing: border-box;
-background: var(--surface);
-color: var(--text);
-}
-
-/* крестик entferntия участников */
-.sub-participant .remove-sub-btn {
-width: 20px;
-height: 20px;
-background: transparent;
-color: #dc3545;
-border: none;
-border-radius: 4px;
-font-size: 16px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-line-height: 1;
-padding: 0;
-align-self: flex-start;
-transform: translate(5px, -18px);
-margin-left: auto;
-transition: transform .12s;
-}
-.sub-participant .remove-sub-btn::before {
-  content: "✖";
-  position: relative;
-  top: -1px;
-}
-.sub-participant .remove-sub-btn:hover {
-background: transparent;
-transform: translate(5px, -18px) scale(1.1);
-}
-.sub-participant .drag-handle-sub {
-cursor: grab;
-color: #999;
-font-size: 16px;
-user-select: none;
-}
-/* Участник с Treffpunkt — подсветка */
-.participant.has-treffpunkt {
-}
-
-/* крестик времени прибытия */
-.time-remove {
-width: 24px;
-height: 24px;
-background: transparent;
-color: var(--danger-color);
-border: none;
-border-radius: 4px;
-font-size: 16px;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-flex-shrink: 0;
-line-height: 1;
-transform: translateY(-5px);
-margin-top: -17px;
-margin-right: -7px;
-}
-.time-remove::before {
-  content: "✖";
-  position: relative;
-  top: -1px;
-}
-/* красные крестики ВСЕГДА */
-.time-remove,
-.remove-btn,
-.remove-sub-btn {
-background: transparent !important;   /* фон прозрачный */
-color: #dc3545 !important;            /* красный крестик */
-border: none !important;
-border-radius: 4px;
-cursor: pointer;
-}
-
-.arrival-time {
-font-weight: bold;
-cursor: pointer;
-font-size: 1em;
-display: flex;
-align-items: center;
-justify-content: center;
-padding: var(--small-spacing);
-border-radius: 4px;
-line-height: 1;
-background: var(--surface);
-color: var(--text);
-border: 2px solid var(--border);
-}
-.time-icon,
-.coords-icon,
-.start-point-coords {
-font-size: 24px;
-width: 24px;
-height: 24px;
-border: none;
-background: transparent;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-line-height: 1;
-padding: 0;
-transform: translateY(-5px)
-}
-.coords-icon svg {
-width: 100%;
-height: 100%
-}
-.start-point-coords svg {
-width: 100%;
-height: 100%
-}
-.calc-route-icon {
-width: 24px;
-height: 24px;
-border: none;
-background: transparent;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-padding: 0;
-flex-shrink: 0;
-transform: translateY(-5px);
-transition: transform 0.2s ease;
-}
-.calc-route-icon:hover {
-transform: translateY(-5px) scale(1.1);
-}
-.calc-route-icon:active {
-transform: translateY(-5px) scale(0.95);
-}
-.calc-route-icon svg {
-width: 22px;
-height: 22px;
-}
-.material-symbols-outlined {
-font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-font-size: 24px;
-color: #999;
-cursor: grab
-}
-body:not(.dark) .material-symbols-outlined {
-color: #666;
-}
 input,
 select {
 font-size: 1em
@@ -954,19 +593,7 @@ color-scheme: light;
 --map-header-bg: var(--primary-color, #007bff);
 --map-header-color: #fff;
 }
-body.dark .participant.machine {
-background: var(--surface);
-border-color: var(--border);
-}
-.participant.machine select {
-flex: 0 0 35%;
-min-width: 0;
-max-width: 35%;
-width: 35%;
-}
-/* контейнеры, карточки, модалки, поля ввода */
-.greeting-container,
-.participant,
+/* блок результата, модалки, поля ввода */
 pre,
 input,
 select {
@@ -1030,13 +657,6 @@ body.dark .modal-content        { background: #444444 !important; color: #fff !i
 ;
 border: 1px solid #666 !important;
 }
-/* цвет карандаша – вместе с темой */
-.pencil-icon {
-width: 18px;
-height: 18px;
-fill: var(--text) !important;   /* будет чёрным днём, белым ночью */
-}
-
 /* ── Tap-анимация для кнопок добавления — через JS ───────────── */
 
 /* ── Custom Picker (replaces native <select>) ───────────────────── */
@@ -1134,19 +754,313 @@ body.dark .cp-item.add-new { color: #5c9fff !important; }
   font-size: 0.95em; font-weight: 600; cursor: pointer; opacity: 0.65;
 }
 body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #e1e1e1 !important; }
-/* greeting-container cp-trigger sizing */
-.greeting-container .cp-trigger { width: 35%; flex-shrink: 0; }
-/* participant cp-trigger sizing */
-.participant .cp-trigger {
-  flex: 1; min-width: 0; max-width: 35%;
+/* ══ Fahrplan ═══════════════════════════════════════════════════════
+   Start, Halte und Ziel sind ein Blatt mit durchgehender Linie links.
+   Jede Zeile (.fp-row): Zeitspalte · Name · Werkzeuge · rechts schmale
+   Randspalte für das rote ✖. Farbe steht nur für einen Zustand:
+   rot = Koordinaten fehlen, blau = von Google berechnet,
+   orange = Stau / Schätzwert, gefüllt blau = Ankunftszeit (die Eingabe,
+   von der der ganze Plan abhängt). */
+:root {
+--rail: #c9ced6;
+--muted: #667085;
+--hair: rgba(0, 0, 0, .08);
+--accent: #1f6feb;
+--accent-soft: rgba(31, 111, 235, .1);
+--on-accent: #ffffff;
+--warn: #b45f00;
+--dest: #f2b600;
 }
-.participant.machine .cp-trigger {
-  flex: 0 0 35%; min-width: 0; max-width: 35%; width: 35%;
+body.dark {
+--rail: #3a4150;
+--muted: #9aa3b2;
+--hair: rgba(255, 255, 255, .08);
+--accent: #5aa2ff;
+--accent-soft: rgba(90, 162, 255, .14);
+--on-accent: #0b1b33;
+--warn: #ffa733;
 }
-/* farewell cp-trigger */
-#farewellTrigger { flex: 1; min-width: 0; }
-/* sub-participant cp-trigger */
-.sub-participant .cp-trigger { flex: 0 0 35%; min-width: 0; max-width: 35%; }
+.fp-sheet {
+background: var(--surface);
+border-radius: 16px;
+overflow: hidden;
+margin-bottom: var(--spacing-unit);
+}
+.fp-row {
+position: relative;
+display: flex;
+align-items: center;
+min-height: 56px;
+box-sizing: border-box;
+padding: 8px 28px 8px 42px;
+background: var(--surface);
+color: var(--text);
+border-top: 1px solid var(--hair);
+}
+.start-row { border-top: 0; }
+/* Linie */
+.fp-row::before {
+content: '';
+position: absolute;
+left: 19px;
+top: -1px;
+bottom: 0;
+width: 2px;
+background: var(--rail);
+}
+.start-row::before { top: 50%; }
+.fp-dest::before { bottom: 50%; }
+/* Knoten: Ring = Start, Punkt = Halt, Quadrat = Treffpunkt, gelbes Quadrat = Ziel */
+.fp-row::after {
+content: '';
+position: absolute;
+left: 14px;
+top: 50%;
+width: 12px;
+height: 12px;
+margin-top: -6px;
+box-sizing: border-box;
+border-radius: 50%;
+background: var(--text);
+box-shadow: 0 0 0 3px var(--surface);
+}
+.start-row::after { background: var(--surface); border: 2.5px solid var(--text); }
+.has-treffpunkt::after { border-radius: 3px; }
+.fp-dest::after {
+left: 13px;
+width: 14px;
+height: 14px;
+margin-top: -7px;
+border-radius: 3px;
+background: var(--dest);
+}
+.sub-participant::after { display: none; }
+/* Zeitspalte */
+.fp-time {
+flex: 0 0 56px;
+width: 56px;
+margin-right: 8px;
+line-height: 1.15;
+}
+.time-display {
+cursor: pointer;
+user-select: none;
+-webkit-tap-highlight-color: transparent;
+}
+.time-display:active { opacity: .55; }
+.fp-clock {
+display: block;
+font-weight: 700;
+font-size: 1.08em;
+font-variant-numeric: tabular-nums;
+white-space: nowrap;
+}
+.fp-clock.is-empty { color: var(--rail); }
+.fp-leg {
+display: block;
+font-size: .75em;
+color: var(--muted);
+font-variant-numeric: tabular-nums;
+white-space: nowrap;
+}
+.time-display.route-calculated .fp-leg,
+.time-display.auto-calculated .fp-leg { color: var(--accent); }
+.time-display.has-traffic .fp-leg,
+.time-display.is-fallback .fp-leg { color: var(--warn); font-weight: 700; }
+input.time-edit {
+flex: 0 0 56px;
+width: 56px;
+height: 38px;
+margin: 0 8px 0 0;
+padding: 0;
+box-sizing: border-box;
+text-align: center;
+font-size: 16px;
+border: 2px solid var(--accent) !important;
+border-radius: 8px;
+outline: none;
+}
+.fp-time input.time-edit { height: 30px; margin: 5px 0 0; }
+/* Ankunftszeit */
+.arrival-time {
+display: inline-block;
+margin: 0 -7px;
+padding: 5px 7px;
+border-radius: 9px;
+background: var(--accent);
+color: var(--on-accent);
+font-weight: 700;
+font-size: 1.08em;
+line-height: 1.15;
+font-variant-numeric: tabular-nums;
+white-space: nowrap;
+cursor: pointer;
+user-select: none;
+-webkit-tap-highlight-color: transparent;
+}
+.arrival-time.is-empty {
+background: transparent;
+color: var(--accent);
+box-shadow: inset 0 0 0 2px var(--accent);
+}
+.arrival-time:active { opacity: .7; }
+.arrival-time:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+/* зона нажатия у отрезка цели — шириной с кнопку времени */
+.fp-dest .time-display { margin: 0 -7px; padding: 6px 7px 3px; }
+/* Name */
+.fp-row .cp-trigger {
+flex: 1 1 auto;
+min-width: 0;
+padding: 6px 0;
+border: 0;
+background: transparent;
+font-weight: 600;
+font-size: 1.02em;
+justify-content: flex-start;
+gap: 6px;
+white-space: normal;
+}
+.fp-row .cp-label {
+min-width: 0;
+overflow: hidden;
+display: -webkit-box;
+-webkit-box-orient: vertical;
+-webkit-line-clamp: 2;
+overflow-wrap: break-word;
+line-height: 1.2;
+}
+.fp-row .cp-label.is-placeholder { color: var(--muted); font-weight: 400; }
+.fp-row .cp-label.fp-name2 { display: block; }
+.fp-name2 > span,
+.fp-station {
+display: block;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.fp-station { font-weight: 400; font-size: .74em; color: var(--muted); }
+.fp-row .cp-arrow { font-size: .55em; color: var(--muted); opacity: 1; }
+/* Werkzeuge */
+.fp-tool {
+flex: 0 0 32px;
+width: 32px;
+height: 32px;
+margin: 0;
+padding: 0;
+border: 0;
+border-radius: 8px;
+background: transparent;
+color: var(--muted);
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+}
+.fp-tool svg { width: 22px; height: 22px; }
+.fp-tool:active { background: var(--hair); }
+.coords-icon.is-missing,
+.start-point-coords.is-missing { color: var(--danger-color); }
+.calc-route-icon.is-on { color: var(--accent); }
+.drag-handle { cursor: grab; }
+/* Löschen: rot, oben rechts in der Ecke der Zeile */
+.remove-btn,
+.remove-sub-btn {
+position: absolute;
+top: 3px;
+right: 4px;
+width: 24px;
+height: 24px;
+margin: 0;
+padding: 0;
+border: 0;
+border-radius: 4px;
+background: transparent;
+color: var(--danger-color);
+font-size: 15px;
+line-height: 1;
+display: flex;
+align-items: center;
+justify-content: center;
+cursor: pointer;
+}
+.remove-btn::before,
+.remove-sub-btn::before { content: "✖"; }
+/* Mitfahrer: unter dem Namen ihres Halts, ohne eigenen Knoten */
+.sub-participant.fp-row {
+min-height: 34px;
+padding-top: 0;
+padding-bottom: 0;
+padding-left: 106px;
+border-top: 0;
+}
+.sub-participant.fp-row:last-child { padding-bottom: 6px; }
+.sub-participant .cp-trigger { font-weight: 400; font-size: .95em; padding: 4px 0; }
+.sub-participant .remove-sub-btn { top: 5px; }
+/* Nachricht: Gruß, Abschied und Schreibweise der Zeiten */
+.fp-msg {
+background: var(--surface);
+color: var(--text);
+border-radius: 16px;
+padding: 12px;
+margin-bottom: var(--spacing-unit);
+display: flex;
+flex-wrap: wrap;
+align-items: center;
+gap: 6px;
+}
+.fp-msg .cp-trigger {
+flex: 1 1 0;
+min-width: 0;
+padding: 9px;
+border-radius: 10px;
+font-size: .94em;
+}
+.fp-msg .cp-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.fp-pen {
+flex: 0 0 28px;
+width: 28px;
+height: 32px;
+margin: 0;
+padding: 0;
+border: 0;
+background: transparent;
+color: var(--muted);
+}
+.fp-opts { flex: 1 0 100%; display: flex; gap: 6px; font-size: .8em; }
+.fp-opts label { flex: 1 1 auto; min-width: 0; position: relative; display: block; cursor: pointer; }
+.fp-opts input {
+position: absolute;
+inset: 0;
+width: 100%;
+height: 100%;
+margin: 0;
+opacity: 0;
+cursor: pointer;
+}
+.fp-opts span {
+display: block;
+padding: 7px 6px;
+border: 1px solid var(--border);
+border-radius: 999px;
+text-align: center;
+color: var(--muted);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.fp-opts input:checked + span {
+border-color: var(--accent);
+color: var(--accent);
+background: var(--accent-soft);
+}
+.fp-opts input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+/* Узкие экраны: значки плотнее, чтобы имени хватало места */
+@media (max-width: 380px) {
+.fp-row { padding-right: 24px; }
+.fp-tool { flex-basis: 28px; width: 28px; }
+.fp-tool svg { width: 20px; height: 20px; }
+.sub-participant.fp-row { padding-left: 106px; }
+}
 
 /* ── Universal Bottom Sheet Modal ─────────────────────────────── */
 /* Стили строятся в JS (bsOpen/bsRenderList) через inline style.cssText —
@@ -1174,21 +1088,35 @@ style="position:fixed; inset:1px auto auto 3px; margin:4px; z-index:9999; backgr
 title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 
 </a>
-<div class="greeting-container">
+<!-- Fahrplan: Start → Halte → Ziel als ein Blatt -->
+<div class="fp-sheet">
+<div class="start-row fp-row">
+<div class="fp-time"><span class="fp-clock is-empty" id="startClock">––:––</span><span class="fp-leg">Abfahrt</span></div>
 <div id="startPoint" class="cp-trigger" aria-label="Startpunkt wählen" role="button" tabindex="0">
-  <span id="startPointLabel">Startpunkt wählen</span><span class="cp-arrow">▼</span>
+  <span id="startPointLabel" class="cp-label">Startpunkt wählen</span><span class="cp-arrow">▼</span>
 </div>
-<button class="start-point-coords" title="Startpunkt-Koordinaten bearbeiten"></button>
+<button class="start-point-coords fp-tool" title="Startpunkt-Koordinaten bearbeiten" aria-label="Startpunkt-Koordinaten bearbeiten"></button>
+<button class="add-sub-btn fp-tool" id="addStartPassengerBtn" title="Mitfahrer hinzufügen" aria-label="Mitfahrer hinzufügen" data-svg-icon="person-plus"></button>
+</div>
+<div id="startPassengersContainer"></div>
+<div id="participants"></div>
+</div>
+<!-- Nachricht: Gruß, Abschied, Schreibweise der Zeiten -->
+<div class="fp-msg">
 <div id="greeting" class="cp-trigger" aria-label="Begrüßung wählen" role="button" tabindex="0">
   <span id="greetingTriggerLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
 </div>
-<button class="edit-greeting-btn pencil-icon" title="Begrüßung bearbeiten" data-svg-icon="pencil" data-svg-size="18">
-
-</button>
-<button class="add-sub-btn" id="addStartPassengerBtn" title="Mitfahrer hinzufügen" style="transform:translate(5px, -5px);">+</button>
+<button class="edit-greeting-btn fp-pen" title="Begrüßung bearbeiten" aria-label="Begrüßung bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
+<div id="farewellTrigger" class="cp-trigger" aria-label="Abschied wählen" role="button" tabindex="0">
+  <span id="farewellLabel"></span><span class="cp-arrow">▼</span>
 </div>
-<div id="startPassengersContainer" style="margin-left:0;"></div>
-<div id="participants"></div>
+<button id="editFarewellBtn" class="fp-pen" title="Abschied bearbeiten" aria-label="Abschied bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
+<div class="fp-opts">
+  <label title="Zeiten ausschreiben"><input type="checkbox" id="useUhrBei"><span id="exUhrBei">um … Uhr bei</span></label>
+  <label title="Minuten hochgestellt"><input type="checkbox" id="useSuperscriptTime"><span id="exSuperscript">12³⁰</span></label>
+  <label title="Ort hinter dem Ziel nennen"><input type="checkbox" id="showDestName"><span id="exDestName">(Ort)</span></label>
+</div>
+</div>
 <div class="button-container">
 <button class="add" title="Teilnehmer hinzufügen" data-svg-icon="person-add" data-svg-size="28">
 
@@ -1553,13 +1481,40 @@ try {
   this.showToast('⚠️ stations.js nicht gefunden – Standarddaten nicht geladen');
 }
 }
-formatMinutes(minutes) {
-if (minutes < 60) {
-return `${minutes}`;
+// Подпись отрезка в колонке времени: «+5 Min», «+1 h 05»
+_legLabel(minutes) {
+const m = Math.max(0, Math.round(Number(minutes) || 0));
+return m < 60 ? `+${m} Min` : `+${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`;
 }
-const hours = Math.floor(minutes / 60);
-const mins = minutes % 60;
-return `${hours}.${mins.toString().padStart(2, '0')}`;
+// Время на каждой остановке. Счёт тот же, что в calculate(): от времени прибытия
+// отнимаем весь путь, участники без имени в расчёт не входят.
+_stopClocks() {
+const arr = this.machineStop.arrivalTime;
+if (!arr) return null;
+const [h, mm] = arr.split(':').map(Number);
+if (!isFinite(h) || !isFinite(mm)) return null;
+const fmt = (t) => { t = ((t % 1440) + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, '0') + ':' + String(t % 60).padStart(2, '0'); };
+const total = this.participants.filter(p => p.name).reduce((s, p) => s + (p.time || 0), 0) + (this.machineStop.time || 0);
+let t = h * 60 + mm - total;
+const start = fmt(t);
+const stops = this.participants.map(p => { if (!p.name) return null; t += (p.time || 0); return fmt(t); });
+return { start, stops };
+}
+// Обновить колонку времени и примеры на переключателях сообщения. Вызывается из
+// calculate(), поэтому часы верны и там, где список не перерисовывается.
+_updateClocks() {
+const c = this._stopClocks();
+const EMPTY = '––:––';
+const put = (el, v) => { el.textContent = v || EMPTY; el.classList.toggle('is-empty', !v); };
+const startEl = document.getElementById('startClock');
+if (startEl) put(startEl, c && c.start);
+this.elements.participantsContainer.querySelectorAll('.fp-clock[data-stop]').forEach(el => put(el, c && c.stops[+el.dataset.stop]));
+const first = c ? (c.stops.find(Boolean) || c.start) : '';
+const sup = (hhmm) => hhmm.slice(0, 2) + hhmm.slice(3).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
+const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+set('exUhrBei', first ? `um ${first} Uhr bei` : 'um … Uhr bei');
+set('exSuperscript', sup(first || '12:30'));
+set('exDestName', `(${this.machineStop.stationName || 'Ort'})`);
 }
 getTravelTime(fromName, toName) {
 if (fromName === toName) return { val: 0, fallback: false };
@@ -1934,18 +1889,25 @@ document.getElementById('startPoint').addEventListener('click', () => {
   }, this.startPoint);
 });
 this.elements.startPointCoordsButton.addEventListener('click', () => this.openCoordsModal(null, false, false, true));
-const addStartPassengerBtn = document.getElementById('addStartPassengerBtn');
-if (addStartPassengerBtn) {
-  addStartPassengerBtn.addEventListener('touchstart', () => {
-    addStartPassengerBtn.style.transition = 'transform 0.1s';
-    addStartPassengerBtn.style.transform = 'translate(5px, -5px) scale(0.82)';
-  }, { passive: true });
-  addStartPassengerBtn.addEventListener('touchend', () => {
-    addStartPassengerBtn.style.transform = 'translate(5px, -5px) scale(1)';
-    setTimeout(() => { addStartPassengerBtn.style.transition = ''; }, 250);
-  }, { passive: true });
-  addStartPassengerBtn.addEventListener('click', () => this.openStartPassengerModal());
-}
+// Tap-анимация этой кнопки — общая, через делегирование (.add-sub-btn)
+document.getElementById('addStartPassengerBtn').addEventListener('click', () => this.openStartPassengerModal());
+// Карточка сообщения: прощание и три переключателя написания времени.
+// Разметка статичная, поэтому обработчики вешаются один раз, а не при каждой перерисовке.
+document.getElementById('farewellTrigger').addEventListener('click', () => {
+  const items = [
+    ...this.farewells.map(f => ({ label: f, value: f })),
+    { label: '➕ Hinzufügen…', value: '__add_new_farewell__', addNew: true }
+  ];
+  this.showPicker('Abschied wählen', items, (val) => {
+    if (val === '__add_new_farewell__') { this.openFarewellModal(true); }
+    else { this.farewell = val; document.getElementById('farewellLabel').textContent = val; this.saveData(); this.calculate(); }
+  }, this.farewell);
+});
+document.getElementById('editFarewellBtn').addEventListener('click', () => this.openFarewellModal());
+[['useUhrBei', 'useUhrBei'], ['useSuperscriptTime', 'useSuperscriptTime'], ['showDestName', 'showDestName']].forEach(([id, prop]) => {
+  const cb = document.getElementById(id);
+  cb.addEventListener('change', () => { this[prop] = cb.checked; this.saveData(); this.calculate(); });
+});
 this.elements.addButton.addEventListener('click', () => { this.addParticipant(); });
 this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
 this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
@@ -2083,11 +2045,18 @@ const container = this.elements.participantsContainer;
 container.innerHTML = '';
 document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
 document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
-const noCoordsSvg  = Icons.get('pin', { size: 22, color: 'rgb(209,43,47)' });  // красная — координат нет
-const hasCoordsSvg = Icons.get('pin', { size: 22, color: 'rgb(68,178,229)' }); // синяя — координаты есть
-const coloredMapSvg = Icons.get('gmap',      { size: 28 }); // цветной — рассчитано через API
-const grayMapSvg    = Icons.get('gmap-gray', { size: 28 }); // серый — введено вручную
-this.elements.startPointCoordsButton.innerHTML = (this.startPointCoords.lat && this.startPointCoords.lng) ? hasCoordsSvg : noCoordsSvg;
+// Значки строки одного цвета; цвет несёт только состояние (классы is-missing / is-on):
+// красный пин — координат нет, синий «маршрут» — время посчитано через Google.
+const pinSvg    = Icons.get('pin');
+const legSvg    = Icons.get('path');
+const personSvg = Icons.get('person-plus');
+const moveSvg   = Icons.get('move');
+const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const nameLabel = (name) => `<span class="cp-label${name ? '' : ' is-placeholder'}">${esc(name) || 'Name wählen'}</span><span class="cp-arrow">▼</span>`;
+const hasStartCoords = !!(this.startPointCoords.lat && this.startPointCoords.lng);
+this.elements.startPointCoordsButton.innerHTML = pinSvg;
+this.elements.startPointCoordsButton.classList.toggle('is-missing', !hasStartCoords);
+document.getElementById('startPointLabel').classList.toggle('is-placeholder', !this.startPoint);
 
 // Рендерим субучастников начальной точки (попутчики)
 const startPassengersContainer = document.getElementById('startPassengersContainer');
@@ -2095,13 +2064,12 @@ if (startPassengersContainer) {
   startPassengersContainer.innerHTML = '';
   (this.startPointPassengers || []).forEach((passengerName, idx) => {
     const subDiv = document.createElement('div');
-    subDiv.className = 'sub-participant';
+    subDiv.className = 'sub-participant fp-row';
     subDiv.innerHTML = `
-      <span class="drag-handle-sub">⋮⋮</span>
       <div class="cp-trigger" data-sp-index="${idx}" data-type="sp-name" role="button" tabindex="0">
-        <span class="cp-label">${passengerName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+        ${nameLabel(passengerName)}
       </div>
-      <button class="remove-sub-btn" data-sp-index="${idx}" aria-label="Löschen"></button>
+      <button class="remove-sub-btn" data-sp-index="${idx}" aria-label="Mitfahrer löschen"></button>
     `;
     subDiv.querySelector('[data-type="sp-name"]').addEventListener('click', () => {
       const usedNames = this.getAllUsedNames(passengerName);
@@ -2149,94 +2117,44 @@ groupDiv.setAttribute('data-index', i);
 
 // Основной участник
 const div = document.createElement('div');
-div.className = 'participant main-participant' + (p.isTreffpunkt ? ' has-treffpunkt' : '');
+div.className = 'participant main-participant fp-row' + (p.isTreffpunkt ? ' has-treffpunkt' : '');
 div.setAttribute('data-index', i);
 
-if (p.isTreffpunkt) {
-// ===== Рендер Treffpunkt-участника =====
-const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
+// Одна разметка для обычной остановки и для Treffpunkt: отличаются только
+// узлом на линии (CSS .has-treffpunkt) и тем, кого добавляет кнопка «человек +».
+const isEstimate = p.isFallback && !p.timeManuallyEdited;
+const legState = (p.routeCalculated ? ' route-calculated' : '') + (isEstimate ? ' is-fallback' : '') + (p.hasTraffic ? ' has-traffic' : '');
+const legTitle = isEstimate ? 'Fahrzeit nicht bekannt – Schätzwert!'
+  : p.hasTraffic ? `🚦 +${p.trafficDeltaMin || '?'} Min. durch Stau` : 'Fahrzeit – tippen zum Ändern';
 div.innerHTML = `
+<div class="time-display fp-time${legState}" data-index="${i}" data-type="participant-time-display" role="button" tabindex="0" title="${legTitle}">
+<span class="fp-clock is-empty" data-stop="${i}">––:––</span><span class="fp-leg">${isEstimate ? '⚠ ' + this._legLabel(p.time).slice(1) : this._legLabel(p.time)}</span>
+</div>
 <div class="cp-trigger" data-index="${i}" data-type="participant-name" role="button" tabindex="0">
-  <span class="cp-label">📍 ${p.name}</span><span class="cp-arrow">▼</span>
+  ${nameLabel(p.name)}
 </div>
-<button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Redaktieren">${coordsSvg}</button>
-<div class="time-display" data-index="${i}" data-type="participant-time-display" title="Tippen zum Ändern">
-${this.formatMinutes(p.time)}
-</div>
-<button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
-  ${p.routeCalculated ? coloredMapSvg : grayMapSvg}
-</button>
-<button class="add-sub-btn" data-index="${i}" title="Person hinzufügen" style="background:#28a745;">+</button>
-<div class="right-section">
-<span class="material-symbols-outlined" aria-label="Verschieben">
-${Icons.get('move', { size: 28 })}
-</span>
-<button class="remove-btn" data-index="${i}" aria-label="Löschen"></button>
-</div>
+<button class="coords-icon fp-tool${(p.lat && p.lng) ? '' : ' is-missing'}" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
+<button class="calc-route-icon fp-tool${p.routeCalculated ? ' is-on' : ''}" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Halt berechnen">${legSvg}</button>
+<button class="add-sub-btn fp-tool" data-index="${i}" aria-label="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}" title="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}">${personSvg}</button>
+<span class="drag-handle fp-tool" aria-label="Halt verschieben" title="Halt verschieben">${moveSvg}</span>
+<button class="remove-btn" data-index="${i}" aria-label="Halt löschen"></button>
 `;
 groupDiv.appendChild(div);
-
-// Показываем людей на Treffpunkt как субучастников
-if (p.treffpunktPersons && p.treffpunktPersons.length > 0) {
-p.treffpunktPersons.forEach((personName, personIdx) => {
+// Люди на Treffpunkt и попутчики обычной остановки — строки под именем остановки
+const subs = p.isTreffpunkt ? (p.treffpunktPersons || []) : (p.subParticipants || []);
+subs.forEach((subName, subIdx) => {
 const subDiv = document.createElement('div');
-subDiv.className = 'sub-participant';
-subDiv.setAttribute('data-main-index', i);
-subDiv.setAttribute('data-sub-index', personIdx);
-
-subDiv.innerHTML = `
-<span class="drag-handle-sub">⋮⋮</span>
-<div class="cp-trigger" data-main-index="${i}" data-sub-index="${personIdx}" data-type="treff-person-name" role="button" tabindex="0">
-  <span class="cp-label">${personName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
-</div>
-<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${personIdx}" aria-label="Löschen"></button>
-`;
-groupDiv.appendChild(subDiv);
-});
-}
-
-} else {
-// ===== Рендер обычного участника (оригинальный код) =====
-const coordsSvg = (p.lat && p.lng) ? hasCoordsSvg : noCoordsSvg;
-const participantCalcIcon = p.routeCalculated ? coloredMapSvg : grayMapSvg;
-div.innerHTML = `
-<div class="cp-trigger" data-index="${i}" data-type="participant-name" role="button" tabindex="0">
-  <span class="cp-label">${p.name || 'Name wählen'}</span><span class="cp-arrow">▼</span>
-</div>
-<button class="coords-icon" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten">${coordsSvg}</button>
-<div class="time-display ${p.routeCalculated ? 'route-calculated' : ''}${p.isFallback && !p.timeManuallyEdited ? ' is-fallback' : ''}${p.hasTraffic ? ' has-traffic' : ''}" data-index="${i}" data-type="participant-time-display" title="${p.isFallback && !p.timeManuallyEdited ? 'Fahrzeit nicht bekannt – Schätzwert!' : p.hasTraffic ? `🚦 +${p.trafficDeltaMin || '?'} Min. durch Stau` : 'Tippen zum Ändern'}">
-${this.formatMinutes(p.time)}${p.isFallback && !p.timeManuallyEdited ? ' ⚠' : ''}
-</div>
-<button class="calc-route-icon" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Teilnehmer">
-  ${participantCalcIcon}
-</button>
-<button class="add-sub-btn" data-index="${i}" title="Mitfahrer hinzufügen">+</button>
-<div class="right-section">
-<span class="material-symbols-outlined" aria-label="Teilnehmer verschieben">
-${Icons.get('move', { size: 28 })}
-</span>
-<button class="remove-btn" data-index="${i}" aria-label="Teilnehmer löschen"></button>
-</div>
-`;
-groupDiv.appendChild(div);
-// Дополнительные участники (subParticipants)
-if (p.subParticipants && p.subParticipants.length > 0) {
-p.subParticipants.forEach((subName, subIdx) => {
-const subDiv = document.createElement('div');
-subDiv.className = 'sub-participant';
+subDiv.className = 'sub-participant fp-row';
 subDiv.setAttribute('data-main-index', i);
 subDiv.setAttribute('data-sub-index', subIdx);
 subDiv.innerHTML = `
-<span class="drag-handle-sub">⋮⋮</span>
-<div class="cp-trigger" data-main-index="${i}" data-sub-index="${subIdx}" data-type="sub-name" role="button" tabindex="0">
-  <span class="cp-label">${subName || 'Name wählen'}</span><span class="cp-arrow">▼</span>
+<div class="cp-trigger" data-main-index="${i}" data-sub-index="${subIdx}" data-type="${p.isTreffpunkt ? 'treff-person-name' : 'sub-name'}" role="button" tabindex="0">
+  ${nameLabel(subName)}
 </div>
-<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Löschen"></button>
+<button class="remove-sub-btn" data-main-index="${i}" data-sub-index="${subIdx}" aria-label="Mitfahrer löschen"></button>
 `;
 groupDiv.appendChild(subDiv);
 });
-}
-}
 
 container.appendChild(groupDiv);
 // Event listeners для основного участника
@@ -2264,9 +2182,8 @@ div.querySelector('[data-type="participant-name"]').addEventListener('click', ()
   }
 });
 const timeDisplay = div.querySelector('[data-type="participant-time-display"]');
-if (timeDisplay) {
 timeDisplay.addEventListener('click', () => this.editParticipantTime(i, timeDisplay));
-}
+timeDisplay.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.editParticipantTime(i, timeDisplay); } });
 div.querySelector('[data-type="participant-coords"]').addEventListener('click', () => this.openCoordsModal(i));
 const calcRouteBtn = div.querySelector('[data-type="calc-route-participant"]');
 if (calcRouteBtn) calcRouteBtn.addEventListener('click', () => this.calculateTravelTimeForParticipant(i));
@@ -2280,7 +2197,7 @@ groupDiv.querySelectorAll('[data-type="sub-name"]').forEach(trigger => {
 trigger.addEventListener('click', () => {
 const mainIdx = parseInt(trigger.dataset.mainIndex);
 const subIdx = parseInt(trigger.dataset.subIndex);
-const currentName = trigger.querySelector('.cp-label').textContent;
+const currentName = this.participants[mainIdx].subParticipants[subIdx] || '';
 const usedInSub = this.getAllUsedNames(currentName);
 const names = Object.keys(this.nameToCoordinates)
   .filter(n => n !== this.startPoint && (!usedInSub.has(n) || n === currentName))
@@ -2303,7 +2220,7 @@ groupDiv.querySelectorAll('[data-type="treff-person-name"]').forEach(trigger => 
 trigger.addEventListener('click', () => {
 const mainIdx = parseInt(trigger.dataset.mainIndex);
 const personIdx = parseInt(trigger.dataset.subIndex);
-const currentName = trigger.querySelector('.cp-label').textContent;
+const currentName = this.participants[mainIdx].treffpunktPersons[personIdx] || '';
 const usedInTreff = this.getAllUsedNames(currentName);
 const names = Object.keys(this.nameToCoordinates)
   .filter(n => !usedInTreff.has(n) || n === currentName)
@@ -2327,27 +2244,24 @@ this.removeSubParticipant(mainIdx, subIdx);
 });
 });
 const machineDiv = document.createElement('div');
-machineDiv.className = 'participant machine';
-const machineCoordsSvg = (this.machineStop.lat && this.machineStop.lng) ? hasCoordsSvg : noCoordsSvg;
-// SVG иконки для расчета времени в пути
-const calcIcon = this.machineStop.autoCalculated ? coloredMapSvg : grayMapSvg;
+machineDiv.className = 'participant machine fp-row fp-dest';
+const hasMachineCoords = !!(this.machineStop.lat && this.machineStop.lng);
+const arrival = this.machineStop.arrivalTime;
+// Название места показываем под именем цели — по тому же правилу, что и скобки в тексте
+const isMachineDest = this.machineStop.name === ((this.machineDestinations[0] || {}).name || 'an der Maschine');
+const stationLine = (isMachineDest && this.machineStop.stationName) ? `<small class="fp-station">${esc(this.machineStop.stationName)}</small>` : '';
+// Время прибытия — единственная залитая кнопка листа: с него начинается весь расчёт.
+// Удаление времени — в самом окне выбора (кнопка «Löschen»).
 machineDiv.innerHTML = `
+<div class="fp-time">
+<div class="arrival-time${arrival ? '' : ' is-empty'}" tabindex="0" role="button" aria-label="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}" title="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}">${arrival || '––:––'}</div>
+<div class="time-display${this.machineStop.autoCalculated ? ' auto-calculated' : ''}" data-type="machine-time-display" role="button" tabindex="0" title="Fahrzeit – tippen zum Ändern"><span class="fp-leg">${this._legLabel(this.machineStop.time)}</span></div>
+</div>
 <div class="cp-trigger" data-type="machine-name" role="button" tabindex="0">
-  <span class="cp-label">${this.machineStop.name || 'Ziel wählen'}</span><span class="cp-arrow">▼</span>
+  <span class="cp-label fp-name2${this.machineStop.name ? '' : ' is-placeholder'}"><span>${esc(this.machineStop.name) || 'Ziel wählen'}</span>${stationLine}</span><span class="cp-arrow">▼</span>
 </div>
-<button class="coords-icon" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten">${machineCoordsSvg}</button>
-<div class="time-display ${this.machineStop.autoCalculated ? 'auto-calculated' : ''}" data-type="machine-time-display" title="Tippen zum Ändern">
-${this.formatMinutes(this.machineStop.time)}
-</div>
-<button class="calc-route-icon" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Teilnehmer">
-  ${calcIcon}
-</button>
-<div class="right-section">
-${this.machineStop.arrivalTime
-? `<div class="arrival-time" tabindex="0" role="button" aria-label="Ankunftszeit ändern">${this.machineStop.arrivalTime}</div><button class="time-remove" aria-label="Ankunftszeit löschen"></button>`
-: '<button class="time-icon" aria-label="Ankunftszeit festlegen">🕒</button>'
-}
-</div>
+<button class="coords-icon fp-tool${hasMachineCoords ? '' : ' is-missing'}" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
+<button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${legSvg}</button>
 `;
 container.appendChild(machineDiv);
 
@@ -2395,69 +2309,16 @@ machineNameTrigger.addEventListener('click', () => {
 });
 
 const machineTimeDisplay = machineDiv.querySelector('[data-type="machine-time-display"]');
-if (machineTimeDisplay) {
 machineTimeDisplay.addEventListener('click', () => this.editMachineTime(machineTimeDisplay));
-}
+machineTimeDisplay.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.editMachineTime(machineTimeDisplay); } });
 machineDiv.querySelector('[data-type="machine-coords"]').addEventListener('click', () => this.openCoordsModal(null, true));
 machineDiv.querySelector('[data-type="calc-route"]').addEventListener('click', () => this.calculateTravelTimeToMachine());
-// Карточка прощания с select и чекбоксами
-const farewellDiv = document.createElement('div');
-farewellDiv.className = 'participant machine';
-farewellDiv.style.cssText = 'display:flex;align-items:center;gap:var(--spacing-unit, 10px);flex-wrap:nowrap;';
-farewellDiv.innerHTML = `
-<div id="farewellTrigger" class="cp-trigger" role="button" tabindex="0"><span id="farewellLabel">${this.farewell}</span><span class="cp-arrow">▼</span></div>
-<button id="editFarewellBtn" title="Abschied bearbeiten" style="flex-shrink:0;width:24px;height:24px;background:transparent;border:none;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transform:translateY(-5px);color:var(--text);">
-  ${Icons.get('pencil', { size: 18 })}
-</button>
-<div style="margin-left:auto;display:flex;align-items:center;gap:4px;flex-shrink:0;padding-right:4px;font-size:0.8em;">
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
-    <input type="checkbox" id="useUhrBei" ${this.useUhrBei ? 'checked' : ''}> um...Uhr bei
-  </label>
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
-    <input type="checkbox" id="useSuperscriptTime" ${this.useSuperscriptTime ? 'checked' : ''}> X²
-  </label>
-  <label style="white-space:nowrap;display:flex;align-items:center;gap:2px;">
-    <input type="checkbox" id="showDestName" ${this.showDestName ? 'checked' : ''}> (...)
-  </label>
-
-</div>
-`;
-container.appendChild(farewellDiv);
-// Кастомный picker для прощания
-const farewellTrigger = farewellDiv.querySelector('#farewellTrigger');
-farewellTrigger.addEventListener('click', () => {
-  const items = [
-    ...this.farewells.map(f => ({ label: f, value: f })),
-    { label: '➕ Hinzufügen…', value: '__add_new_farewell__', addNew: true }
-  ];
-  this.showPicker('Abschied wählen', items, (val) => {
-    if (val === '__add_new_farewell__') { this.openFarewellModal(true); }
-    else { this.farewell = val; farewellDiv.querySelector('#farewellLabel').textContent = val; this.saveData(); this.calculate(); }
-  }, this.farewell);
-});
-// Карандаш — открывает модалку редактирования как у приветствия
-const editFarewellBtn = farewellDiv.querySelector('#editFarewellBtn');
-editFarewellBtn.addEventListener('click', () => this.openFarewellModal());
-// Обработчики чекбоксов
-const uhrBeiCheckbox = farewellDiv.querySelector('#useUhrBei');
-uhrBeiCheckbox.addEventListener('change', () => {
-  this.useUhrBei = uhrBeiCheckbox.checked;
-  this.saveData();
-  this.calculate();
-});
-const superscriptCheckbox = farewellDiv.querySelector('#useSuperscriptTime');
-superscriptCheckbox.addEventListener('change', () => {
-  this.useSuperscriptTime = superscriptCheckbox.checked;
-  this.saveData();
-  this.calculate();
-});
-const showDestNameCb = farewellDiv.querySelector('#showDestName');
-showDestNameCb.addEventListener('change', () => {
-  this.showDestName = showDestNameCb.checked;
-  this.saveData();
-  this.calculate();
-});
-const timeControl = machineDiv.querySelector('.time-icon') || machineDiv.querySelector('.arrival-time');
+// Карточка сообщения статичная — здесь только приводим её в соответствие с данными
+document.getElementById('farewellLabel').textContent = this.farewell || '';
+document.getElementById('useUhrBei').checked = !!this.useUhrBei;
+document.getElementById('useSuperscriptTime').checked = !!this.useSuperscriptTime;
+document.getElementById('showDestName').checked = !!this.showDestName;
+const timeControl = machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
 timeControl.addEventListener('keydown', (e) => {
 if (e.key === 'Enter' || e.key === ' ') {
@@ -2465,10 +2326,8 @@ e.preventDefault();
 this.startTimeEdit();
 }
 });
-const timeRemoveBtn = machineDiv.querySelector('.time-remove');
-if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
 this.saveData();
-if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this.updateHints(); }
+if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this._updateClocks(); this.updateHints(); }
 this.initSwipeDelete();
 }
 async parseCoordinates(raw) {
@@ -3636,13 +3495,17 @@ const input = document.createElement('input');
 input.type = 'text';
 input.inputMode = 'decimal';
 input.value = current;
-input.className = 'time-display';
-input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+input.className = 'time-edit';
+input.setAttribute('aria-label', 'Fahrzeit in Minuten');
 displayEl.replaceWith(input);
 input.focus();
 input.select();
 
+// Escape перерисовывает список, поле при этом теряет фокус и раньше всё равно
+// сохраняло введённое — отмена не работала. Флаг это пресекает.
+let cancelled = false;
 const save = () => {
+  if (cancelled) return;
   const val = this.parseTimeInput(input.value);
   if (!isNaN(val) && val > 0) {
     this.participants[index].time = val;
@@ -3655,7 +3518,7 @@ const save = () => {
 input.addEventListener('blur', save);
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter') { input.blur(); }
-  if (e.key === 'Escape') { this.renderParticipants(); }
+  if (e.key === 'Escape') { cancelled = true; this.renderParticipants(); }
 });
 }
 editMachineTime(displayEl) {
@@ -3664,13 +3527,17 @@ const input = document.createElement('input');
 input.type = 'text';
 input.inputMode = 'decimal';
 input.value = current;
-input.className = 'time-display';
-input.style.cssText = 'min-width:50px;max-width:50px;text-align:center;font-size:0.95em;';
+input.className = 'time-edit';
+input.setAttribute('aria-label', 'Fahrzeit in Minuten');
 displayEl.replaceWith(input);
 input.focus();
 input.select();
 
+// Escape перерисовывает список, поле при этом теряет фокус и раньше всё равно
+// сохраняло введённое — отмена не работала. Флаг это пресекает.
+let cancelled = false;
 const save = () => {
+  if (cancelled) return;
   const val = this.parseTimeInput(input.value);
   if (!isNaN(val) && val > 0) {
     this.machineStop.time = val;
@@ -3682,15 +3549,8 @@ const save = () => {
 input.addEventListener('blur', save);
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter') { input.blur(); }
-  if (e.key === 'Escape') { this.renderParticipants(); }
+  if (e.key === 'Escape') { cancelled = true; this.renderParticipants(); }
 });
-}
-clearArrivalTime() {
-this.machineStop.arrivalTime = "";
-this.saveData();
-this.elements.output.innerHTML = '';
-this.renderParticipants();
-this.updateHints();
 }
 startTimeEdit() {
 const existing = document.getElementById('customTimePicker');
@@ -3928,7 +3788,8 @@ overlay.addEventListener('click', e => { if (e.target === overlay) closePicker()
 initSortable() {
 if (this.sortable) this.sortable.destroy();
 this.sortable = new Sortable(this.elements.participantsContainer, {
-handle: '.material-symbols-outlined',
+handle: '.drag-handle',
+draggable: '.participant-group',   // строка цели в том же контейнере — её двигать и обходить нельзя
 animation: 150,
 onEnd: async evt => {
 if (evt.oldIndex !== evt.newIndex) {
@@ -3981,6 +3842,7 @@ return `${hours}${superscriptMinutes}`;
 return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 calculate(){
+this._updateClocks();
 if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';this.updateHints();return}
 let out=`${this.greeting},
 `;
@@ -4859,7 +4721,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 07.10.26 01.15 · Format ' + app.routeFormat);
+console.log('[app] build 07.10.26 19.10 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
@@ -4870,18 +4732,14 @@ app.initSwipeDelete();
 document.addEventListener('touchstart', (e) => {
   const btn = e.target.closest('.add, .add-sub-btn');
   if (!btn) return;
-  const isSubBtn = btn.classList.contains('add-sub-btn');
-  const baseTransform = isSubBtn ? 'translateY(-5px)' : '';
   btn.style.transition = 'transform 0.08s ease';
-  btn.style.transform = baseTransform + ' scale(0.82)';
+  btn.style.transform = 'scale(0.82)';
 }, { passive: true });
 document.addEventListener('touchend', (e) => {
   const btn = e.target.closest('.add, .add-sub-btn');
   if (!btn) return;
-  const isSubBtn = btn.classList.contains('add-sub-btn');
-  const baseTransform = isSubBtn ? 'translateY(-5px)' : '';
   btn.style.transition = 'transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)';
-  btn.style.transform = baseTransform + ' scale(1)';
+  btn.style.transform = 'scale(1)';
   setTimeout(() => { btn.style.transition = ''; btn.style.transform = ''; }, 300);
 }, { passive: true });
 
@@ -4899,7 +4757,7 @@ document.addEventListener('touchstart', function wakeVibrate() {
 // а closest есть только у элементов — без проверки здесь падал TypeError
 const hapticTarget = (e) =>
   (e.target && typeof e.target.closest === 'function')
-    ? e.target.closest('button, .cp-trigger, .theme-toggle')
+    ? e.target.closest('button, .cp-trigger, .theme-toggle, [role="button"], .fp-opts label')
     : null;
 document.addEventListener('touchstart', (e) => {
   const el = hapticTarget(e);
