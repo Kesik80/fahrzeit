@@ -986,7 +986,8 @@ cursor: pointer;
 .drag-handle { cursor: grab; }
 /* Löschen: rot, oben rechts in der Ecke der Zeile */
 .remove-btn,
-.remove-sub-btn {
+.remove-sub-btn,
+.time-remove {
 position: absolute;
 top: 3px;
 right: 4px;
@@ -1006,7 +1007,8 @@ justify-content: center;
 cursor: pointer;
 }
 .remove-btn::before,
-.remove-sub-btn::before { content: "✖"; }
+.remove-sub-btn::before,
+.time-remove::before { content: "✖"; }
 /* Mitfahrer: unter dem Namen ihres Halts, ohne eigenen Knoten */
 .sub-participant.fp-row {
 min-height: 40px;
@@ -2278,7 +2280,7 @@ const arrival = this.machineStop.arrivalTime;
 const isMachineDest = this.machineStop.name === ((this.machineDestinations[0] || {}).name || 'an der Maschine');
 const stationLine = (isMachineDest && this.machineStop.stationName) ? `<small class="fp-station">${esc(this.machineStop.stationName)}</small>` : '';
 // Время прибытия — единственная залитая кнопка листа: с него начинается весь расчёт.
-// Удаление времени — в самом окне выбора (кнопка «Löschen»).
+// Сбросить его можно крестиком в углу строки или кнопкой «Löschen» в окне выбора.
 machineDiv.innerHTML = `
 <div class="fp-time">
 <div class="arrival-time${arrival ? '' : ' is-empty'}" tabindex="0" role="button" aria-label="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}" title="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}">${arrival || '––:––'}</div>
@@ -2289,6 +2291,7 @@ machineDiv.innerHTML = `
 </div>
 <button class="coords-icon fp-tool${hasMachineCoords ? '' : ' is-missing'}" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
 <button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${legSvg}</button>
+${arrival ? '<button class="time-remove" aria-label="Ankunftszeit löschen" title="Ankunftszeit löschen"></button>' : ''}
 `;
 container.appendChild(machineDiv);
 
@@ -2345,6 +2348,8 @@ document.getElementById('farewellLabel').textContent = this.farewell || '';
 document.getElementById('useUhrBei').checked = !!this.useUhrBei;
 document.getElementById('useSuperscriptTime').checked = !!this.useSuperscriptTime;
 document.getElementById('showDestName').checked = !!this.showDestName;
+const timeRemoveBtn = machineDiv.querySelector('.time-remove');
+if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
 const timeControl = machineDiv.querySelector('.arrival-time');
 timeControl.addEventListener('click', () => this.startTimeEdit());
 timeControl.addEventListener('keydown', (e) => {
@@ -2354,7 +2359,7 @@ this.startTimeEdit();
 }
 });
 this.saveData();
-if (this.machineStop.arrivalTime) this.calculate(); else { this.elements.output.innerHTML = ''; this._updateClocks(); this.updateHints(); }
+this.calculate();   // без времени прибытия сам очистит текст, часы и спрячет кнопки под ним
 this.initSwipeDelete();
 }
 async parseCoordinates(raw) {
@@ -3601,6 +3606,12 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Escape') { cancelled = true; this.renderParticipants(); }
 });
 }
+// Сброс времени прибытия: крестик в строке цели и «Löschen» в окне выбора
+clearArrivalTime() {
+this.machineStop.arrivalTime = '';
+this.saveData();
+this.renderParticipants();
+}
 startTimeEdit() {
 const existing = document.getElementById('customTimePicker');
 if (existing) existing.remove();
@@ -3823,14 +3834,10 @@ overlay.querySelector('#tpSave').onclick = () => {
   this.calculate();
 };
 overlay.querySelector('#tpClear').onclick = () => {
-  this.machineStop.arrivalTime = '';
   overlay.style.animation = 'overlayOut 0.2s ease forwards';
   overlay.querySelector('div').style.animation = 'modalOut 0.18s ease forwards';
   setTimeout(closePicker, 200);
-  this.saveData();
-  this.elements.output.innerHTML = '';
-  this.renderParticipants();
-  this.updateHints();
+  this.clearArrivalTime();
 };
 overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
 }
@@ -3892,7 +3899,7 @@ return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 }
 calculate(){
 this._updateClocks();
-if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';this.updateHints();return}
+if(!this.machineStop.arrivalTime){this.elements.output.innerHTML='';this._setShareButtons(false);this.updateHints();return}
 let out=`${this.greeting},
 `;
 const valid=this.participants.filter(p=>p.name);
@@ -4737,7 +4744,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 07.10.26 20.35 · Format ' + app.routeFormat);
+console.log('[app] build 07.10.26 23.10 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
