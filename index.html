@@ -601,16 +601,15 @@ background: var(--surface) !important;
 color: var(--text) !important;
 border-color: var(--text) !important;
 }
+/* Список станций в окне координат цели. Это кнопка, открывающая общий picker:
+   нативный <select> на Android рисует своё окно в теме системы, а не приложения,
+   и в тёмной теме список выходил белым. */
 #stationSelect {
 width: 100%;
 padding: 8px;
 margin: 8px 0;
 border: 1px solid #b0c4de;
 border-radius: 4px;
-font-size: 1em;
-box-sizing: border-box;
-background: var(--surface);
-color: var(--text);
 }
 /* кнопки сохраняют цвет, но текст перекрашиваем/* обязательно покрасить сами кнопки */
 button.calculate { background: var(--primary-color) !important; }
@@ -797,7 +796,7 @@ background: var(--surface);
 color: var(--text);
 border-top: 1px solid var(--hair);
 }
-.start-row { border-top: 0; }
+.start-row { border-top: 0; flex-wrap: wrap; }
 /* Linie */
 .fp-row::before {
 content: '';
@@ -808,7 +807,7 @@ bottom: 0;
 width: 2px;
 background: var(--rail);
 }
-.start-row::before { top: 50%; }
+.start-row::before { top: 28px; }
 .fp-dest::before { bottom: 50%; }
 /* Knoten: Ring = Start, Punkt = Halt, Quadrat = Treffpunkt, gelbes Quadrat = Ziel */
 .fp-row::after {
@@ -824,7 +823,28 @@ border-radius: 50%;
 background: var(--text);
 box-shadow: 0 0 0 3px var(--surface);
 }
-.start-row::after { background: var(--surface); border: 2.5px solid var(--text); }
+.start-row::after { top: 28px; background: var(--surface); border: 2.5px solid var(--text); }
+/* Приветствие — вторая строка карточки старта, под именем водителя */
+.fp-greet {
+flex: 1 0 100%;
+box-sizing: border-box;
+display: flex;
+align-items: center;
+gap: 6px;
+padding-left: 64px;
+margin-top: 2px;
+}
+.fp-row .fp-greet .cp-trigger {
+flex: 0 1 auto;
+min-width: 0;
+padding: 6px 9px;
+border: 1px solid var(--border);
+border-radius: 10px;
+font-weight: 400;
+font-size: .94em;
+white-space: nowrap;
+}
+.fp-greet .cp-trigger > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .has-treffpunkt::after { border-radius: 3px; }
 .fp-dest::after {
 left: 13px;
@@ -987,7 +1007,7 @@ cursor: pointer;
 .remove-sub-btn::before { content: "✖"; }
 /* Mitfahrer: unter dem Namen ihres Halts, ohne eigenen Knoten */
 .sub-participant.fp-row {
-min-height: 34px;
+min-height: 40px;
 padding-top: 0;
 padding-bottom: 0;
 padding-left: 106px;
@@ -995,23 +1015,24 @@ border-top: 0;
 }
 .sub-participant.fp-row:last-child { padding-bottom: 6px; }
 .sub-participant .cp-trigger { font-weight: 400; font-size: .95em; padding: 4px 0; }
-.sub-participant .remove-sub-btn { top: 5px; }
-/* Nachricht: Gruß, Abschied und Schreibweise der Zeiten */
+/* как у остановок: крестик выше имени, в углу своей строки */
+.sub-participant .remove-sub-btn { top: -5px; }
+/* Abschied + drei Schalter für die Schreibweise der Zeiten — eine Zeile, wie früher */
 .fp-msg {
 background: var(--surface);
 color: var(--text);
 border-radius: 16px;
-padding: 12px;
+padding: 10px 12px;
 margin-bottom: var(--spacing-unit);
 display: flex;
 flex-wrap: wrap;
 align-items: center;
-gap: 6px;
+gap: 4px;
 }
 .fp-msg .cp-trigger {
-flex: 1 1 0;
+flex: 1 1 120px;
 min-width: 0;
-padding: 9px;
+padding: 8px;
 border-radius: 10px;
 font-size: .94em;
 }
@@ -1026,8 +1047,8 @@ border: 0;
 background: transparent;
 color: var(--muted);
 }
-.fp-opts { flex: 1 0 100%; display: flex; gap: 6px; font-size: .8em; }
-.fp-opts label { flex: 1 1 auto; min-width: 0; position: relative; display: block; cursor: pointer; }
+.fp-opts { flex: 0 0 auto; display: flex; gap: 4px; font-size: .8em; }
+.fp-opts label { flex: 0 0 auto; position: relative; display: block; cursor: pointer; }
 .fp-opts input {
 position: absolute;
 inset: 0;
@@ -1097,24 +1118,27 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 </div>
 <button class="start-point-coords fp-tool" title="Startpunkt-Koordinaten bearbeiten" aria-label="Startpunkt-Koordinaten bearbeiten"></button>
 <button class="add-sub-btn fp-tool" id="addStartPassengerBtn" title="Mitfahrer hinzufügen" aria-label="Mitfahrer hinzufügen" data-svg-icon="person-plus"></button>
-</div>
-<div id="startPassengersContainer"></div>
-<div id="participants"></div>
-</div>
-<!-- Nachricht: Gruß, Abschied, Schreibweise der Zeiten -->
-<div class="fp-msg">
+<!-- Gruß: zweite Zeile der Startkarte (neben dem Namen ist wegen der Zeitspalte kein Platz) -->
+<div class="fp-greet">
 <div id="greeting" class="cp-trigger" aria-label="Begrüßung wählen" role="button" tabindex="0">
   <span id="greetingTriggerLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
 </div>
 <button class="edit-greeting-btn fp-pen" title="Begrüßung bearbeiten" aria-label="Begrüßung bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
+</div>
+</div>
+<div id="startPassengersContainer"></div>
+<div id="participants"></div>
+</div>
+<!-- Abschied und Schreibweise der Zeiten -->
+<div class="fp-msg">
 <div id="farewellTrigger" class="cp-trigger" aria-label="Abschied wählen" role="button" tabindex="0">
   <span id="farewellLabel"></span><span class="cp-arrow">▼</span>
 </div>
 <button id="editFarewellBtn" class="fp-pen" title="Abschied bearbeiten" aria-label="Abschied bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
 <div class="fp-opts">
-  <label title="Zeiten ausschreiben"><input type="checkbox" id="useUhrBei"><span id="exUhrBei">um … Uhr bei</span></label>
+  <label title="Zeiten ausschreiben: um … Uhr bei"><input type="checkbox" id="useUhrBei"><span>um … Uhr bei</span></label>
   <label title="Minuten hochgestellt"><input type="checkbox" id="useSuperscriptTime"><span id="exSuperscript">12³⁰</span></label>
-  <label title="Ort hinter dem Ziel nennen"><input type="checkbox" id="showDestName"><span id="exDestName">(Ort)</span></label>
+  <label title="Ort hinter dem Ziel nennen"><input type="checkbox" id="showDestName"><span>(Ort)</span></label>
 </div>
 </div>
 <div class="button-container">
@@ -1227,9 +1251,9 @@ style="background: var(--modal-bg, #fff) !important; color: var(--modal-text, #0
 placeholder="51.452013,7.021455 oder https://maps.app.goo.gl/..." />
 <p id="coordsHelp" style="display:none;color:#d32f2f;font-weight:bold">Gekürzte Links werden
 einige Sekunden verarbeitet.</p>
-<select id="stationSelect" style="display:none;">
-<option value="">– Aus Liste wählen –</option>
-</select>
+<div id="stationSelect" class="cp-trigger" style="display:none;" role="button" tabindex="0" aria-label="Ort aus Liste wählen">
+  <span id="stationSelectLabel">– Aus Liste wählen –</span><span class="cp-arrow">▼</span>
+</div>
 <div id="mapBtnsRow" style="display:none;gap:10px;justify-content:center;margin-top:20px;margin-bottom:4px;">
 <button class="map-button" id="openMap" title="Karte öffnen" data-svg-icon="map" data-svg-size="28">
 
@@ -1500,7 +1524,7 @@ const start = fmt(t);
 const stops = this.participants.map(p => { if (!p.name) return null; t += (p.time || 0); return fmt(t); });
 return { start, stops };
 }
-// Обновить колонку времени и примеры на переключателях сообщения. Вызывается из
+// Обновить колонку времени и пример на переключателе «минуты вверху». Вызывается из
 // calculate(), поэтому часы верны и там, где список не перерисовывается.
 _updateClocks() {
 const c = this._stopClocks();
@@ -1511,10 +1535,8 @@ if (startEl) put(startEl, c && c.start);
 this.elements.participantsContainer.querySelectorAll('.fp-clock[data-stop]').forEach(el => put(el, c && c.stops[+el.dataset.stop]));
 const first = c ? (c.stops.find(Boolean) || c.start) : '';
 const sup = (hhmm) => hhmm.slice(0, 2) + hhmm.slice(3).replace(/\d/g, d => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]);
-const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
-set('exUhrBei', first ? `um ${first} Uhr bei` : 'um … Uhr bei');
-set('exSuperscript', sup(first || '12:30'));
-set('exDestName', `(${this.machineStop.stationName || 'Ort'})`);
+const supEl = document.getElementById('exSuperscript');
+if (supEl) supEl.textContent = sup(first || '12:30');
 }
 getTravelTime(fromName, toName) {
 if (fromName === toName) return { val: 0, fallback: false };
@@ -2407,29 +2429,34 @@ this.elements.mapBtnsRow.style.display = 'flex';
 // выбор станций
 const stSel = document.getElementById('stationSelect');
 if (isMachine) {
-stSel.style.display = 'block';
-stSel.innerHTML = '<option value="">– Aus Liste wählen –</option>' +
-Object.entries(this.stations)
-.map(([name,c]) => `<option value="${c.lat},${c.lng}">${name}</option>`)
-.join('') +
-'<option value="__add_new_station__">\u2795 Neuer Ort\u2026</option>';
-/* ➜ подсветить ранее сохранённую станцию */
+stSel.style.display = 'flex';
+const stLabel = document.getElementById('stationSelectLabel');
+const NO_STATION = '– Aus Liste wählen –';
+const coordsOf = (name) => { const c = this.stations[name]; return c ? `${c.lat},${c.lng}` : ''; };
+/* ➜ подсветить ранее сохранённую станцию и синхронизировать с ней stationName */
 const saved = this.machineStop.lat && this.machineStop.lng ? `${this.machineStop.lat},${this.machineStop.lng}` : '';
-stSel.value = saved && [...stSel.options].some(o => o.value === saved) ? saved : '';
-/* ➜ синхронизировать stationName с уже выбранной опцией при открытии модала */
-const currentSelOpt = stSel.options[stSel.selectedIndex];
-this.machineStop.stationName = (currentSelOpt && currentSelOpt.value && currentSelOpt.value !== '__add_new_station__') ? currentSelOpt.textContent.trim() : '';
-stSel.onchange = () => {
-if (stSel.value === '__add_new_station__') {
-  stSel.value = '';
-  this.closeModal();
-  this.openCoordsModal(null, false, false, false, true);
-  return;
-}
-this.elements.coordsInput.value = stSel.value;
-const selOpt = stSel.options[stSel.selectedIndex];
-this.machineStop.stationName = selOpt && selOpt.value ? selOpt.textContent.trim() : '';
+let chosen = (saved && Object.keys(this.stations).find(name => coordsOf(name) === saved)) || '';
+this.machineStop.stationName = chosen;
+stLabel.textContent = chosen || NO_STATION;
+stSel.onclick = () => {
+  const items = [
+    { label: NO_STATION, value: '' },
+    ...Object.keys(this.stations).map(name => ({ label: name, value: name })),
+    { label: '\u2795 Neuer Ort\u2026', value: '__add_new_station__', addNew: true }
+  ];
+  this.showPicker('Ort wählen', items, (val) => {
+    if (val === '__add_new_station__') {
+      this.closeModal();
+      this.openCoordsModal(null, false, false, false, true);
+      return;
+    }
+    chosen = val;
+    this.elements.coordsInput.value = coordsOf(val);
+    this.machineStop.stationName = val;
+    stLabel.textContent = val || NO_STATION;
+  }, chosen);
 };
+stSel.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); stSel.onclick(); } };
 } else {
 stSel.style.display = 'none';
 }
@@ -4721,7 +4748,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 07.10.26 19.10 · Format ' + app.routeFormat);
+console.log('[app] build 07.10.26 19.35 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
