@@ -114,9 +114,9 @@ transition: opacity .15s, transform .1s;
 .driver-btn { background: #1565c0; }
 .driver-btn.active { background: #34a853; }
 .google-all.active { background: #34a853; }
+.google-all.busy { opacity: .55; }
 .maps-btn      { background: #4285f4; }
 .maps-back-btn { background: #e67e00; }
-.traffic-btn       { background: #e65100; }
 .legs-btn          { background: #0f9d58; }
 .share-native-btn  { background: #607d8b; }
 #output .result-line {
@@ -1151,7 +1151,7 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 <button class="route-back" title="Route zurück" data-svg-icon="route-return" data-svg-size="28">
 
 </button>
-<button class="google-all" id="btnGoogleAll" title="Google-Zeit für alle / langer Tap = Runden auf 5 Min" data-svg-icon="clock-pin" data-svg-size="28">
+<button class="google-all" id="btnGoogleAll" title="Fahrzeiten und Verkehr prüfen / langer Tap = Runden auf 5 Min" data-svg-icon="clock-pin" data-svg-size="28">
 
 </button>
 <button class="clear" title="Zurücksetzen" data-svg-icon="reset" data-svg-size="28">
@@ -1190,9 +1190,6 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
     
   </button>
   <button id="btnMapsBack" class="share-btn maps-back-btn" title="Rückweg kopieren" data-svg-icon="route-back" data-svg-size="28">
-    
-  </button>
-  <button id="btnTraffic" class="share-btn traffic-btn" title="Verkehr nach Zeitplan prüfen" data-svg-icon="traffic" data-svg-size="28">
     
   </button>
   <button id="btnLegs" class="share-btn legs-btn" title="Halt für Halt navigieren" data-svg-icon="pin" data-svg-size="28">
@@ -1548,14 +1545,19 @@ if (this.trefftravelTimes[key] !== undefined) return { val: this.trefftravelTime
 if (this.trefftravelTimes[rev] !== undefined) return { val: this.trefftravelTimes[rev], fallback: false };
 return { val: 5, fallback: true };
 }
+// Времена из таблицы stations.js для отрезков, у которых нет своего значения.
+// Введённое вручную и посчитанное Google не трогаем. Раньше время от Google
+// затиралось табличным при любой перестановке, удалении и перезагрузке, а синяя
+// отметка «посчитано» при этом оставалась.
 updateParticipantTimes() {
+this._dropStaleGoogleLegs();
 let previousPoint = this.startPoint;
 this.participants.forEach(participant => {
-if (participant.name && !participant.timeManuallyEdited) {
+if (participant.name && !participant.timeManuallyEdited && !participant.routeCalculated) {
   const result = this.getTravelTime(previousPoint, participant.name);
   participant.time = result.val;
   participant.isFallback = result.fallback;
-} else if (participant.timeManuallyEdited) {
+} else if (participant.timeManuallyEdited || participant.routeCalculated) {
   participant.isFallback = false;
 }
 if (participant.name) previousPoint = participant.name;
@@ -1933,7 +1935,7 @@ document.getElementById('editFarewellBtn').addEventListener('click', () => this.
 this.elements.addButton.addEventListener('click', () => { this.addParticipant(); });
 this.elements.calculateButton.addEventListener('click', () => this.openGoogleMaps());
 this.elements.routeBackButton.addEventListener('click', () => this.openGoogleMaps(true));
-// Кнопка Google-все / округление
+// Кнопка с часами: короткое нажатие — проверка всех времён через Google, долгое — округление
 this.elements.googleAllButton = document.getElementById('btnGoogleAll');
 if (this.elements.googleAllButton) {
   let pressTimer = null;
@@ -1941,7 +1943,7 @@ if (this.elements.googleAllButton) {
     pressTimer = setTimeout(() => { pressTimer = null; this._roundAllTimes(); }, 700);
   });
   this.elements.googleAllButton.addEventListener('pointerup', () => {
-    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; this._toggleGoogleAll(); }
+    if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; this._checkAllTimes(); }
   });
   this.elements.googleAllButton.addEventListener('pointerleave', () => {
     if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
@@ -2063,6 +2065,9 @@ getAllUsedNames(optionalExclude = null) {
   return used;
 }
 renderParticipants() {
+// Отрезок сменил концы — его время от Google недействительно: берём табличное
+if (this._dropStaleGoogleLegs()) this.updateParticipantTimes();
+this._syncGoogleAllButton();
 const container = this.elements.participantsContainer;
 container.innerHTML = '';
 document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
@@ -2277,7 +2282,7 @@ const stationLine = (isMachineDest && this.machineStop.stationName) ? `<small cl
 machineDiv.innerHTML = `
 <div class="fp-time">
 <div class="arrival-time${arrival ? '' : ' is-empty'}" tabindex="0" role="button" aria-label="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}" title="${arrival ? 'Ankunftszeit ändern' : 'Ankunftszeit festlegen'}">${arrival || '––:––'}</div>
-<div class="time-display${this.machineStop.autoCalculated ? ' auto-calculated' : ''}" data-type="machine-time-display" role="button" tabindex="0" title="Fahrzeit – tippen zum Ändern"><span class="fp-leg">${this._legLabel(this.machineStop.time)}</span></div>
+<div class="time-display${this.machineStop.autoCalculated ? ' auto-calculated' : ''}${this.machineStop.hasTraffic ? ' has-traffic' : ''}" data-type="machine-time-display" role="button" tabindex="0" title="${this.machineStop.hasTraffic ? `🚦 +${this.machineStop.trafficDeltaMin || '?'} Min. durch Stau` : 'Fahrzeit – tippen zum Ändern'}"><span class="fp-leg">${this._legLabel(this.machineStop.time)}</span></div>
 </div>
 <div class="cp-trigger" data-type="machine-name" role="button" tabindex="0">
   <span class="cp-label fp-name2${this.machineStop.name ? '' : ' is-placeholder'}"><span>${esc(this.machineStop.name) || 'Ziel wählen'}</span>${stationLine}</span><span class="cp-arrow">▼</span>
@@ -3095,174 +3100,187 @@ this.renderParticipants();
 this.initSortable();
 this.calculate();
 }
-// Момент выезда К участнику index по текущему расписанию.
-// Логика та же, что в кнопке «Пробки»: от времени прибытия отнимаем весь путь,
-// получаем момент выезда из дома, дальше прибавляем длительность пройденных
-// отрезков. Без заданного времени прибытия считать не от чего — тогда 'now'.
-_scheduledDeparture(index) {
-  if (!this.machineStop.arrivalTime) return 'now';
-  const [hh, mm] = this.machineStop.arrivalTime.split(':').map(Number);
-  if (!isFinite(hh) || !isFinite(mm)) return 'now';
+// ══ Fahrzeiten über Google ══════════════════════════════════════════════
+// Одна логика и для кнопки «все времена», и для значков у отдельных строк.
+//
+// Момент выезда. Расписание привязано ко времени прибытия: если оно сегодня уже
+// прошло — считаем на завтра, иначе на сегодня. Отрезок, который по расписанию
+// уже должен был начаться (мы в пути), считается по пробкам «сейчас». Чем ближе
+// момент выезда, тем больше Google опирается на реальную обстановку на дороге.
 
-  const totalMin = this.participants.reduce((s, p) => s + (p.time || 0), 0)
-                 + (this.machineStop.time || 0);
-
+// Дата и время прибытия, к которым относится расчёт; null — время не задано
+_arrivalDate() {
+  const arr = this.machineStop.arrivalTime;
+  if (!arr) return null;
+  const [hh, mm] = arr.split(':').map(Number);
+  if (!isFinite(hh) || !isFinite(mm)) return null;
   const d = new Date();
   d.setHours(hh, mm, 0, 0);
-  d.setMinutes(d.getMinutes() - totalMin);
-  // Выезд уже в прошлом — значит расписание на завтра. setDate() корректно
-  // переживает переход на зимнее/летнее время, в отличие от +86400 секунд.
+  // setDate() корректно переживает переход на зимнее/летнее время, в отличие от +86400 секунд
   if (d <= new Date()) d.setDate(d.getDate() + 1);
-
-  let cum = 0;
-  for (let i = 0; i < index; i++) cum += this.participants[i].time || 0;
-  d.setMinutes(d.getMinutes() + cum);
-
-  return Math.floor(d.getTime() / 1000).toString();
+  return d;
 }
-async calculateTravelTimeForParticipant(index) {
+// Момент выезда на отрезок, который начинается за minutesBeforeArrival минут до
+// прибытия: Unix-время строкой либо 'now'
+_departureFor(minutesBeforeArrival) {
+  const arrival = this._arrivalDate();
+  if (!arrival) return 'now';
+  const ts = arrival.getTime() - minutesBeforeArrival * 60000;
+  // Запас в минуту: пока запрос дойдёт до Google, «почти сейчас» успеет стать прошлым
+  if (ts <= Date.now() + 60000) return 'now';
+  return Math.floor(ts / 1000).toString();
+}
+// «heute 21:27» / «morgen 05:10» / «jetzt» — для сообщений
+_whenLabel(dep) {
+  if (dep === 'now') return 'jetzt';
+  const d = dep instanceof Date ? dep : new Date(Number(dep) * 1000);
+  const day = d.toDateString() === new Date().toDateString() ? 'heute' : 'morgen';
+  return `${day} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+// Откуда едем к участнику index: предыдущий участник с именем, а если его нет — старт.
+// Строки без имени в расписание не входят (см. calculate), поэтому и здесь пропускаются.
+_legOrigin(index) {
+  for (let j = Math.min(index, this.participants.length) - 1; j >= 0; j--) {
+    if (this.participants[j].name) return this.participants[j];
+  }
+  return this.startPointCoords;
+}
+// Откуда едем к цели: последний участник с именем, без участников — прямо от старта
+_machineOrigin() { return this._legOrigin(this.participants.length); }
+// «Откуда>куда» в координатах. Хранится вместе с временем от Google: пока подпись
+// совпадает, время относится к тем же двум точкам и остаётся в силе.
+_legKey(from, to) {
+  const ok = (c) => c && c.lat && c.lng;
+  return ok(from) && ok(to) ? `${from.lat},${from.lng}>${to.lat},${to.lng}` : '';
+}
+// Минуты пути после участника index до прибытия (отрезок к нему самому не входит)
+_minutesAfter(index) {
+  let sum = this.machineStop.time || 0;
+  for (let j = index + 1; j < this.participants.length; j++) {
+    if (this.participants[j].name) sum += this.participants[j].time || 0;
+  }
+  return sum;
+}
+// Снять отметки Google с отрезков, у которых сменился любой из концов (перестановка,
+// удаление, другое имя, новые координаты). Возвращает true, если что-то снято.
+_dropStaleGoogleLegs() {
+  let dropped = false;
+  this.participants.forEach((p, i) => {
+    if (!p.routeCalculated) return;
+    if (p.legKey && p.legKey === this._legKey(this._legOrigin(i), p)) return;
+    p.routeCalculated = false; p.hasTraffic = false; p.trafficDeltaMin = 0; delete p.legKey;
+    dropped = true;
+  });
+  const m = this.machineStop;
+  if (m.autoCalculated && !(m.legKey && m.legKey === this._legKey(this._machineOrigin(), m))) {
+    m.autoCalculated = false; m.hasTraffic = false; m.trafficDeltaMin = 0; delete m.legKey;
+    dropped = true;
+  }
+  return dropped;
+}
+// Запрос к Google: время отрезка from→to с пробками на момент выезда.
+// assumedMinutes — нынешняя оценка самого отрезка, minutesAfter — путь после него
+// до прибытия. Момент выезда зависит от длительности отрезка, а её и спрашиваем,
+// поэтому при заметном расхождении (от 3 минут) один раз уточняем.
+async _askLeg(from, to, assumedMinutes, minutesAfter) {
+  const GERMAN = {
+    'Route not found': 'Keine Route zwischen den Punkten gefunden',
+    'Missing coordinates': 'Koordinaten fehlen',
+    'Google API Error': 'Google hat die Anfrage abgelehnt',
+    'Server configuration error': 'Server ist nicht eingerichtet'
+  };
+  const ask = async (dep) => {
+    let response;
+    try {
+      response = await fetch('/api/calculate-time', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originLat: from.lat, originLng: from.lng, destLat: to.lat, destLng: to.lng, departureTime: dep })
+      });
+    } catch (e) { throw new Error('Keine Verbindung'); }
+    let data = null;
+    try { data = await response.json(); } catch (e) { /* ответ не JSON — ниже это станет ошибкой */ }
+    if (!response.ok || !data || !data.success) {
+      throw new Error((data && GERMAN[data.error]) || `Anfrage fehlgeschlagen (${response.status})`);
+    }
+    return data;
+  };
+  let dep = this._departureFor(minutesAfter + assumedMinutes);
+  let data = await ask(dep);
+  if (Math.abs(data.duration.minutes - assumedMinutes) >= 3) {
+    const refinedDep = this._departureFor(minutesAfter + data.duration.minutes);
+    if (refinedDep !== dep) {
+      try { data = await ask(refinedDep); dep = refinedDep; } catch (e) { /* уточнение не вышло — остаёмся с первым ответом */ }
+    }
+  }
+  return { data, dep };
+}
+// Время отрезка к участнику index. batch = true — вызов из общей проверки:
+// без сообщений и перерисовки, их делает вызывающий. Возвращает 'ok' | 'skip' | 'fail'.
+async calculateTravelTimeForParticipant(index, batch = false) {
 const p = this.participants[index];
-if (!p) return;
-if (!p.lat || !p.lng) {
-  this.showToast('⚠️ Koordinaten des Teilnehmers fehlen');
-  return;
-}
-// Определяем предыдущую точку
-let prevLat, prevLng;
-if (index === 0) {
-  if (!this.startPointCoords.lat || !this.startPointCoords.lng) {
-    this.showToast('⚠️ Koordinaten des Startpunkts fehlen');
-    return;
-  }
-  prevLat = this.startPointCoords.lat;
-  prevLng = this.startPointCoords.lng;
-} else {
-  const prev = this.participants[index - 1];
-  if (!prev.lat || !prev.lng) {
-    this.showToast('⚠️ Koordinaten des vorherigen Teilnehmers fehlen');
-    return;
-  }
-  prevLat = prev.lat;
-  prevLng = prev.lng;
+if (!p) return 'skip';
+const skip = (msg) => { if (!batch) this.showToast(msg); return 'skip'; };
+if (!p.lat || !p.lng) return skip('⚠️ Koordinaten des Teilnehmers fehlen');
+const from = this._legOrigin(index);
+if (!from || !from.lat || !from.lng) {
+  return skip(from === this.startPointCoords ? '⚠️ Koordinaten des Startpunkts fehlen' : '⚠️ Koordinaten des vorherigen Teilnehmers fehlen');
 }
 try {
-  this.showToast('🔄 Fahrtzeit wird berechnet…');
-  const response = await fetch('/api/calculate-time', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      originLat: prevLat,
-      originLng: prevLng,
-      destLat: p.lat,
-      destLng: p.lng,
-      // Раньше здесь было 'now' — считались вечерние пробки вместо утренних
-      departureTime: this._scheduledDeparture(index)
-    })
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'API-Anfragefehler');
-  }
-  const data = await response.json();
-  if (data.success) {
-    p.time = data.duration.minutes;
-    p.routeCalculated = true;
-    p.hasTraffic = !!data.hasTraffic;
-    p.timeManuallyEdited = false;
+  if (!batch) this.showToast('🔄 Fahrtzeit wird berechnet…');
+  const { data, dep } = await this._askLeg(from, p, p.time || 5, this._minutesAfter(index));
+  p.time = data.duration.minutes;
+  p.routeCalculated = true;
+  p.legKey = this._legKey(from, p);
+  p.hasTraffic = !!data.hasTraffic;
+  p.trafficDeltaMin = data.trafficDeltaMin || 0;
+  p.timeManuallyEdited = false;
+  p.isFallback = false;
+  if (!batch) {
     this.saveData();
     this.renderParticipants();
     this.calculate();
-    const trafficIcon = data.hasTraffic ? ' 🚦' : '';
-    const när = this.machineStop.arrivalTime ? ` (${this.machineStop.arrivalTime} Uhr)` : ' (jetzt)';
-    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${trafficIcon}${när}`);
-  } else {
-    throw new Error('Fehler in der API-Antwort');
+    const jam = data.hasTraffic ? ` 🚦 +${p.trafficDeltaMin} Min.` : '';
+    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${jam} · Abfahrt ${this._whenLabel(dep)}`);
   }
+  return 'ok';
 } catch (error) {
-  this.showToast(`❌ Fehler: ${error.message}`);
+  console.error('[google] ' + (p.name || 'Halt ' + (index + 1)) + ': ' + error.message);
+  this._googleError = error.message;
+  if (!batch) this.showToast(`❌ Fehler: ${error.message}`);
+  return 'fail';
 }
 }
-async calculateTravelTimeToMachine() {
-// Находим последнего участника с координатами
-const validParticipants = this.participants.filter(p => p.name && p.lat && p.lng);
-if (validParticipants.length === 0) {
-this.showToast('⚠️ Keine Teilnehmer mit Koordinaten');
-return;
+// Время последнего отрезка — до цели. Параметр и результат как у calculateTravelTimeForParticipant.
+async calculateTravelTimeToMachine(batch = false) {
+const m = this.machineStop;
+const skip = (msg) => { if (!batch) this.showToast(msg); return 'skip'; };
+if (!m.lat || !m.lng) return skip('⚠️ Maschinenkoordinaten fehlen');
+const from = this._machineOrigin();
+if (!from || !from.lat || !from.lng) {
+  return skip(from === this.startPointCoords ? '⚠️ Koordinaten des Startpunkts fehlen' : '⚠️ Koordinaten des letzten Halts fehlen');
 }
-// Проверяем координаты машины
-if (!this.machineStop.lat || !this.machineStop.lng) {
-this.showToast('⚠️ Maschinenkoordinaten fehlen');
-return;
-}
-const lastParticipant = validParticipants[validParticipants.length - 1];
-
-// Время ОТПРАВЛЕНИЯ = время прибытия минус длительность отрезка.
-// Раньше сюда уходило само время прибытия, и Google считал пробки на 9:00,
-// хотя от последнего участника ты выезжаешь раньше — на длину этого отрезка.
-const buildDeparture = (legMinutes) => {
-  if (!this.machineStop.arrivalTime) return 'now';
-  const [hh, mm] = this.machineStop.arrivalTime.split(':').map(Number);
-  const d = new Date();
-  d.setHours(hh, mm, 0, 0);
-  d.setMinutes(d.getMinutes() - legMinutes);
-  // Момент уже прошёл — значит речь про завтра. setDate() корректно переживает
-  // переход на зимнее/летнее время, в отличие от прибавления 86400 секунд.
-  if (d <= new Date()) d.setDate(d.getDate() + 1);
-  return Math.floor(d.getTime() / 1000).toString();
-};
-
-const askGoogle = async (legMinutes) => {
-  const response = await fetch('/api/calculate-time', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      originLat: lastParticipant.lat,
-      originLng: lastParticipant.lng,
-      destLat: this.machineStop.lat,
-      destLng: this.machineStop.lng,
-      departureTime: buildDeparture(legMinutes)
-    })
-  });
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.message || 'API-Anfragefehler');
-  }
-  return response.json();
-};
-
 try {
-this.showToast('🔄 Fahrtzeit wird berechnet…');
-
-// Длительность отрезка нужна, чтобы узнать время выезда, но узнать её можно
-// только запросом. Берём текущую оценку, а если Google вернул заметно другое —
-// один раз уточняем: время выезда сдвинулось, а вместе с ним и пробки.
-const assumed = this.machineStop.time || 20;
-let data = await askGoogle(assumed);
-if (data.success && this.machineStop.arrivalTime &&
-    Math.abs(data.duration.minutes - assumed) >= 3) {
-  try {
-    const refined = await askGoogle(data.duration.minutes);
-    if (refined.success) data = refined;
-  } catch (e) { /* уточнение не вышло — остаёмся с первым результатом */ }
-}
-
-if (data.success) {
-// Обновляем время машины
-this.machineStop.time = data.duration.minutes;
-this.machineStop.autoCalculated = true;
-this.saveData();
-this.renderParticipants();
-this.calculate();
-
-const timeInfo = this.machineStop.arrivalTime ? ` um ${this.machineStop.arrivalTime} Uhr` : ' jetzt';
-const trafficInfo = data.hasTraffic ? ' (mit Verkehr)' : '';
-this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${timeInfo}${trafficInfo}`);
-} else {
-throw new Error('Fehler in der API-Antwort');
-}
+  if (!batch) this.showToast('🔄 Fahrtzeit wird berechnet…');
+  const { data, dep } = await this._askLeg(from, m, m.time || 20, 0);
+  m.time = data.duration.minutes;
+  m.autoCalculated = true;
+  m.legKey = this._legKey(from, m);
+  m.hasTraffic = !!data.hasTraffic;
+  m.trafficDeltaMin = data.trafficDeltaMin || 0;
+  if (!batch) {
+    this.saveData();
+    this.renderParticipants();
+    this.calculate();
+    const jam = data.hasTraffic ? ` 🚦 +${m.trafficDeltaMin} Min.` : '';
+    this.showToast(`✅ ${data.duration.minutes} Min. (${data.distance.km} km)${jam} · Abfahrt ${this._whenLabel(dep)}`);
+  }
+  return 'ok';
 } catch (error) {
-console.error('Ошибка расчета:', error);
-this.showToast(`❌ Fehler: ${error.message}`);
+  console.error('[google] ' + (m.name || 'Ziel') + ': ' + error.message);
+  this._googleError = error.message;
+  if (!batch) this.showToast(`❌ Fehler: ${error.message}`);
+  return 'fail';
 }
 }
 updateMachineName(value) {
@@ -3538,6 +3556,8 @@ const save = () => {
     this.participants[index].time = val;
     this.participants[index].timeManuallyEdited = true;
     this.participants[index].routeCalculated = false;
+    this.participants[index].hasTraffic = false;
+    this.participants[index].trafficDeltaMin = 0;
   }
   this.saveData(); this.renderParticipants(); this.calculate();
 };
@@ -3569,6 +3589,8 @@ const save = () => {
   if (!isNaN(val) && val > 0) {
     this.machineStop.time = val;
     this.machineStop.autoCalculated = false;
+    this.machineStop.hasTraffic = false;
+    this.machineStop.trafficDeltaMin = 0;
   }
   this.saveData(); this.renderParticipants(); this.calculate();
 };
@@ -3964,62 +3986,6 @@ if (summary && out.trim()) {
 }
 this.updateHints();
 }
-async checkTrafficForSchedule() {
-if (!this.machineStop.arrivalTime) {
-  this.showToast('⚠ Bitte zuerst die Ankunftszeit festlegen');
-  return;
-}
-// Вычисляем время отъезда
-const [h, m] = this.machineStop.arrivalTime.split(':').map(Number);
-const totalMin = this.participants.reduce((s, p) => s + (p.time || 0), 0) + (this.machineStop.time || 0);
-const startDate = new Date();
-startDate.setHours(h, m, 0, 0);
-// Если время уже прошло сегодня — берём завтра
-if (startDate <= new Date()) startDate.setDate(startDate.getDate() + 1);
-startDate.setMinutes(startDate.getMinutes() - totalMin);
-
-this.showToast('🔄 Verkehr wird geprüft…');
-let success = 0, fail = 0, withTraffic = 0;
-let cumMin = 0;
-
-for (let i = 0; i < this.participants.length; i++) {
-  const p = this.participants[i];
-  if (!p.name || !p.lat || !p.lng) continue;
-  const depTs = Math.floor((startDate.getTime() + cumMin * 60000) / 1000).toString();
-  let prevLat, prevLng;
-  if (i === 0) {
-    if (!this.startPointCoords.lat) continue;
-    prevLat = this.startPointCoords.lat; prevLng = this.startPointCoords.lng;
-  } else {
-    const prev = this.participants[i-1];
-    if (!prev.lat || !prev.lng) continue;
-    prevLat = prev.lat; prevLng = prev.lng;
-  }
-  try {
-    const r = await fetch('/api/calculate-time', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ originLat: prevLat, originLng: prevLng, destLat: p.lat, destLng: p.lng, departureTime: depTs })
-    });
-    const data = await r.json();
-    if (data.success) {
-      p.time = data.duration.minutes;
-      p.routeCalculated = true;
-      p.hasTraffic = !!data.hasTraffic;
-      p.trafficDeltaMin = data.trafficDeltaMin || 0;
-      p.timeManuallyEdited = false;
-      if (data.hasTraffic) withTraffic++;
-      success++;
-    } else fail++;
-  } catch(e) { fail++; }
-  cumMin += p.time || 0;
-}
-try { await this.calculateTravelTimeToMachine(); success++; } catch(e) { fail++; }
-this.saveData(); this.renderParticipants(); this.calculate();
-const totalDelay = this.participants.reduce((s, p) => s + (p.trafficDeltaMin || 0), 0);
-const jam = withTraffic > 0 ? ` 🚦 +${totalDelay} Min.` : ' ✅ Kein Stau';
-this.showToast(fail > 0 ? `⚠ ${fail} Fehler${jam}` : `✅ Fertig${jam}`);
-}
 shiftArrivalTime(delta) {
 if (!this.machineStop.arrivalTime) return;
 const [h, m] = this.machineStop.arrivalTime.split(':').map(Number);
@@ -4033,34 +3999,59 @@ this.saveData();
 this.renderParticipants();
 this.calculate();
 }
-_deactivateGoogleAll() {
-const btn = document.getElementById('btnGoogleAll');
-if (btn) btn.classList.remove('active');
-this.googleAllActive = false;
-// Сбрасываем флаги routeCalculated и autoCalculated → иконки снова серые
-this.participants.forEach(p => { p.routeCalculated = false; });
-this.machineStop.autoCalculated = false;
+// После округления времена уже не от Google — снимаем отметки (и синие, и «пробка»)
+_clearGoogleMarks() {
+this.participants.forEach(p => { p.routeCalculated = false; p.hasTraffic = false; p.trafficDeltaMin = 0; delete p.legKey; });
+const m = this.machineStop;
+m.autoCalculated = false; m.hasTraffic = false; m.trafficDeltaMin = 0; delete m.legKey;
 this.renderParticipants();
 }
-async _toggleGoogleAll() {
-const btn = document.getElementById('btnGoogleAll');
-const isActive = btn && btn.classList.contains('active');
-if (isActive) {
-  this._deactivateGoogleAll();
-  this.showToast('🔵 Google-Berechnung deaktiviert');
-  return;
+// Кнопка зелёная, пока все отрезки расписания посчитаны Google. Состояние выводится
+// из данных, поэтому переживает перезагрузку и гаснет само при ручной правке.
+_syncGoogleAllButton() {
+const btn = this.elements.googleAllButton;
+if (!btn) return;
+const named = this.participants.filter(p => p.name);
+btn.classList.toggle('active', !!this.machineStop.autoCalculated && named.every(p => p.routeCalculated));
 }
-if (btn) btn.classList.add('active');
-this.googleAllActive = true;
-this.showToast('🔄 Google berechnet alle Zeiten…');
-let success = 0, fail = 0;
-for (let i = 0; i < this.participants.length; i++) {
-  try { await this.calculateTravelTimeForParticipant(i); success++; }
-  catch(e) { fail++; }
+// Короткое нажатие кнопки с часами: Google пересчитывает все отрезки с пробками
+// на время по расписанию. Каждое нажатие — новая проверка.
+async _checkAllTimes() {
+if (this._googleBusy) { this.showToast('⏳ Prüfung läuft noch…'); return; }
+this._googleBusy = true;
+const btn = this.elements.googleAllButton;
+if (btn) btn.classList.add('busy');
+this.showToast('🔄 Google prüft Fahrzeiten und Verkehr…');
+this._googleError = '';
+let ok = 0, fail = 0, skipped = 0;
+const count = (r) => { if (r === 'ok') ok++; else if (r === 'fail') fail++; else skipped++; };
+try {
+  // С конца маршрута: момент выезда на отрезок зависит от длительности всех следующих,
+  // а они к этому шагу уже свежие
+  count(await this.calculateTravelTimeToMachine(true));
+  for (let i = this.participants.length - 1; i >= 0; i--) {
+    if (!this.participants[i].name) continue;
+    count(await this.calculateTravelTimeForParticipant(i, true));
+  }
+} finally {
+  this._googleBusy = false;
+  if (btn) btn.classList.remove('busy');
 }
-try { await this.calculateTravelTimeToMachine(); success++; }
-catch(e) { fail++; }
-this.showToast(fail > 0 ? `✅ ${success} berechnet, ⚠ ${fail} Fehler` : `✅ Alle ${success} Zeiten berechnet`);
+this.saveData();
+this.renderParticipants();
+this.calculate();
+const delay = this.participants.reduce((sum, p) => sum + (p.name && p.hasTraffic ? (p.trafficDeltaMin || 0) : 0), 0)
+            + (this.machineStop.hasTraffic ? (this.machineStop.trafficDeltaMin || 0) : 0);
+const jam = delay > 0 ? `🚦 +${delay} Min. durch Stau` : 'kein Stau';
+const arrival = this._arrivalDate();
+const when = arrival ? `Ankunft ${this._whenLabel(arrival)}` : 'Verkehr jetzt';
+const problems = [
+  fail > 0 ? `${fail} Fehler${this._googleError ? ` (${this._googleError})` : ''}` : '',
+  skipped > 0 ? `${skipped} ohne Koordinaten` : ''
+].filter(Boolean).join(', ');
+// Ничего не посчитано — про пробки сказать нечего, «kein Stau» здесь было бы неправдой
+if (ok === 0) this.showToast(`❌ Keine Zeit berechnet: ${problems || 'keine Strecke'}`);
+else this.showToast(problems ? `⚠ ${problems} · ${ok} berechnet · ${jam}` : `✅ ${when} · ${jam}`);
 }
 _roundAllTimes() {
 const round5 = (m) => {
@@ -4075,7 +4066,7 @@ this.participants.forEach(p => {
 if (this.machineStop.time) { const r = round5(this.machineStop.time); if (r !== this.machineStop.time) { this.machineStop.time = r; changed++; } }
 if (changed > 0) {
   this.saveData(); this.renderParticipants(); this.calculate();
-  this._deactivateGoogleAll();
+  this._clearGoogleMarks();
   this.showToast(`⏱ ${changed} Zeit${changed>1?'en':''} gerundet`);
 } else { this.showToast('⏱ Bereits gerundet'); }
 }
@@ -4505,8 +4496,6 @@ const slBitly = document.getElementById('shortenBitly');
 const slFhr = document.getElementById('shortenFhr');
 if (slBitly) slBitly.checked = this.shortenLinks && this.shortenMode === 'bitly';
 if (slFhr) slFhr.checked = this.shortenLinks && this.shortenMode === 'fhr';
-const btnTraffic = document.getElementById('btnTraffic');
-if (btnTraffic) btnTraffic.onclick = () => this.checkTrafficForSchedule();
 }
 _initLineLongPress() {
 const lines = this.elements.output.querySelectorAll('.result-line');
@@ -4748,7 +4737,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 07.10.26 20.00 · Format ' + app.routeFormat);
+console.log('[app] build 07.10.26 20.35 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
