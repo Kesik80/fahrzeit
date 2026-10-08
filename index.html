@@ -1196,18 +1196,15 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 <button id="copyOutputBtn" title="Ergebnis kopieren" data-nocopy="1" data-svg-icon="copy-small" data-svg-size="22">
   
 </button>
-<div id="tripSummaryRow" data-nocopy="1" style="display:none;align-items:center;justify-content:center;gap:10px;margin:8px 12px 4px;">
+<div id="tripSummaryRow" data-nocopy="1" style="display:none;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;margin:8px 12px 4px;">
   <div id="tripSummary" style="font-size:0.95em;color:#888;"></div>
   <button id="btnMinus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(-5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">−</button>
   <button id="btnPlus5" data-nocopy="1" onclick="window.app&&window.app.shiftArrivalTime(5)" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:#555;color:#fff;font-size:1.3em;padding:0;margin:0;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0;">+</button>
-  <label data-nocopy="1" title="Links kürzen" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.9em;color:#888;margin-left:2px;">
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85em;">
-      <input type="checkbox" id="shortenBitly" style="width:16px;height:16px;cursor:pointer;accent-color:#4285f4;"> bit.ly
-    </label>
-    <label style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:0.85em;">
-      <input type="checkbox" id="shortenFhr" style="width:16px;height:16px;cursor:pointer;accent-color:#00e5ff;"> fhr.pp.ua
-    </label>
-  </label>
+  <!-- Сокращение ссылок: такие же кнопки-переключатели, как «(Ort)» -->
+  <div class="fp-opts" data-nocopy="1" title="Links kürzen">
+    <label title="Links mit bit.ly kürzen"><input type="checkbox" id="shortenBitly"><span>bit.ly</span></label>
+    <label title="Links mit fhr.pp.ua kürzen"><input type="checkbox" id="shortenFhr"><span>fhr.pp.ua</span></label>
+  </div>
 </div>
 </div>
 <div id="shareButtons" style="display:none;flex-direction:row;gap:6px;margin-top:var(--spacing-unit);justify-content:center;">
@@ -4827,7 +4824,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 05.45 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 06.05 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
