@@ -1004,7 +1004,7 @@ cursor: pointer;
 .has-treffpunkt .add-sub-btn.fp-tool { color: var(--success-color); }
 .coords-icon.is-missing,
 .start-point-coords.is-missing { color: var(--danger-color); }
-.calc-route-icon.is-on { color: var(--accent); }
+.fp-tool.calc-route-icon svg { width: 24px; height: 24px; }   /* знак Google Maps выше, чем шире */
 .drag-handle { cursor: grab; }
 /* Löschen: rot, oben rechts in der Ecke der Zeile */
 .remove-btn,
@@ -2150,10 +2150,12 @@ const container = this.elements.participantsContainer;
 container.innerHTML = '';
 document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
 document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
-// Значки строки одного цвета; цвет несёт только состояние (классы is-missing / is-on):
-// красный пин — координат нет, синий «маршрут» — время посчитано через Google.
+// Цвет значков несёт состояние: красная булавка — нет координат (is-missing),
+// цветной знак Google Maps — время посчитано Google.
 const pinSvg    = Icons.get('pin');
-const legSvg    = Icons.get('path');
+// Значок расчёта — как в прежней версии: цветной знак Google Maps = посчитано Google, серый = нет
+const gmapOn  = Icons.get('gmap');
+const gmapOff = Icons.get('gmap-gray');
 const personSvg = Icons.get('person-plus');
 const moveSvg   = Icons.get('move');
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2239,7 +2241,7 @@ div.innerHTML = `
   ${nameLabel(p.name)}
 </div>
 <button class="coords-icon fp-tool${(p.lat && p.lng) ? '' : ' is-missing'}" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
-<button class="calc-route-icon fp-tool${p.routeCalculated ? ' is-on' : ''}" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Halt berechnen">${legSvg}</button>
+<button class="calc-route-icon fp-tool${p.routeCalculated ? ' is-on' : ''}" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Halt berechnen">${p.routeCalculated ? gmapOn : gmapOff}</button>
 <button class="add-sub-btn fp-tool" data-index="${i}" aria-label="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}" title="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}">${personSvg}</button>
 <span class="drag-handle fp-tool" aria-label="Halt verschieben" title="Halt verschieben">${moveSvg}</span>
 <button class="remove-btn" data-index="${i}" aria-label="Halt löschen"></button>
@@ -2366,7 +2368,7 @@ machineDiv.innerHTML = `
   <span class="cp-label fp-name2${this.machineStop.name ? '' : ' is-placeholder'}"><span>${esc(this.machineStop.name) || 'Ziel wählen'}</span>${stationLine}</span><span class="cp-arrow">▼</span>
 </div>
 <button class="coords-icon fp-tool${hasMachineCoords ? '' : ' is-missing'}" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
-<button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${legSvg}</button>
+<button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${this.machineStop.autoCalculated ? gmapOn : gmapOff}</button>
 ${arrival ? '<button class="time-remove" aria-label="Ankunftszeit löschen" title="Ankunftszeit löschen"></button>' : ''}
 `;
 container.appendChild(machineDiv);
@@ -4824,7 +4826,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 06.10 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 06.20 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
