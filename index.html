@@ -1004,7 +1004,10 @@ cursor: pointer;
 .has-treffpunkt .add-sub-btn.fp-tool { color: var(--success-color); }
 .coords-icon.is-missing,
 .start-point-coords.is-missing { color: var(--danger-color); }
-.fp-tool.calc-route-icon svg { width: 24px; height: 24px; }   /* знак Google Maps выше, чем шире */
+/* Значок расчёта — как раньше знак Google Maps: серый, пока время не от Google,
+   и в цветах Google, когда посчитано (градиент описан в <svg> в начале <body>) */
+.fp-tool.calc-route-icon { color: #9aa0a6; }
+.fp-tool.calc-route-icon.is-on svg { fill: url(#fzGoogleColors); }
 .drag-handle { cursor: grab; }
 /* Löschen: rot, oben rechts in der Ecke der Zeile */
 .remove-btn,
@@ -1123,6 +1126,14 @@ background: var(--accent-soft);
   <script src="auth.js"></script>
 </head>
 <body data-install="banner">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <linearGradient id="fzGoogleColors" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#4285f4"/><stop offset=".35" stop-color="#4285f4"/>
+    <stop offset=".35" stop-color="#ea4335"/><stop offset=".55" stop-color="#ea4335"/>
+    <stop offset=".55" stop-color="#fbbc04"/><stop offset=".72" stop-color="#fbbc04"/>
+    <stop offset=".72" stop-color="#34a853"/><stop offset="1" stop-color="#34a853"/>
+  </linearGradient>
+</defs></svg>
 <main>
 <h2>Fahrzeit Rechner</h2>
 <div id="fpStatus" class="fp-status" hidden><span></span></div>
@@ -2151,11 +2162,9 @@ container.innerHTML = '';
 document.getElementById('greetingTriggerLabel').textContent = this.greeting || this.greetings[0] || '';
 document.getElementById('startPointLabel').textContent = this.startPoint || 'Startpunkt wählen';
 // Цвет значков несёт состояние: красная булавка — нет координат (is-missing),
-// цветной знак Google Maps — время посчитано Google.
+// значок «маршрут» в цветах Google — время посчитано Google, серый — нет.
 const pinSvg    = Icons.get('pin');
-// Значок расчёта — как в прежней версии: цветной знак Google Maps = посчитано Google, серый = нет
-const gmapOn  = Icons.get('gmap');
-const gmapOff = Icons.get('gmap-gray');
+const legSvg    = Icons.get('path');
 const personSvg = Icons.get('person-plus');
 const moveSvg   = Icons.get('move');
 const esc = (t) => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2241,7 +2250,7 @@ div.innerHTML = `
   ${nameLabel(p.name)}
 </div>
 <button class="coords-icon fp-tool${(p.lat && p.lng) ? '' : ' is-missing'}" data-index="${i}" data-type="participant-coords" aria-label="Koordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
-<button class="calc-route-icon fp-tool${p.routeCalculated ? ' is-on' : ''}" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Halt berechnen">${p.routeCalculated ? gmapOn : gmapOff}</button>
+<button class="calc-route-icon fp-tool${p.routeCalculated ? ' is-on' : ''}" data-index="${i}" data-type="calc-route-participant" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom vorherigen Halt berechnen">${legSvg}</button>
 <button class="add-sub-btn fp-tool" data-index="${i}" aria-label="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}" title="${p.isTreffpunkt ? 'Person hinzufügen' : 'Mitfahrer hinzufügen'}">${personSvg}</button>
 <span class="drag-handle fp-tool" aria-label="Halt verschieben" title="Halt verschieben">${moveSvg}</span>
 <button class="remove-btn" data-index="${i}" aria-label="Halt löschen"></button>
@@ -2368,7 +2377,7 @@ machineDiv.innerHTML = `
   <span class="cp-label fp-name2${this.machineStop.name ? '' : ' is-placeholder'}"><span>${esc(this.machineStop.name) || 'Ziel wählen'}</span>${stationLine}</span><span class="cp-arrow">▼</span>
 </div>
 <button class="coords-icon fp-tool${hasMachineCoords ? '' : ' is-missing'}" data-type="machine-coords" aria-label="Maschinenkoordinaten bearbeiten" title="Koordinaten bearbeiten">${pinSvg}</button>
-<button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${this.machineStop.autoCalculated ? gmapOn : gmapOff}</button>
+<button class="calc-route-icon fp-tool${this.machineStop.autoCalculated ? ' is-on' : ''}" data-type="calc-route" aria-label="Fahrtzeit berechnen" title="Fahrtzeit vom letzten Halt berechnen">${legSvg}</button>
 ${arrival ? '<button class="time-remove" aria-label="Ankunftszeit löschen" title="Ankunftszeit löschen"></button>' : ''}
 `;
 container.appendChild(machineDiv);
@@ -4826,7 +4835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 06.20 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 09.10 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
