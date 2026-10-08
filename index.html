@@ -1088,7 +1088,7 @@ cursor: pointer;
 display: block;
 padding: 7px 6px;
 border: 1px solid var(--border);
-border-radius: 999px;
+border-radius: 10px;          /* как у поля «Bis später», а не «таблетка» */
 text-align: center;
 color: var(--muted);
 white-space: nowrap;
@@ -4824,7 +4824,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 06.05 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 06.10 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
