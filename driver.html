@@ -46,10 +46,10 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
 
 <div class="setup-panel" id="setupPanel">
   <div>
-    <label>Маршрут (ссылка из Fahrzeit Rechner)</label>
+    <label>Route (Link aus dem Fahrzeit-Rechner)</label>
     <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
   </div>
-  <button class="btn btn-start" id="btnStart">▶ Старт — начать трекинг</button>
+  <button class="btn btn-start" id="btnStart">▶ Start – Tracking beginnen</button>
 </div>
 
 <div id="map"></div>
@@ -63,8 +63,8 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
   </div>
   <div class="btn-row">
     <button class="btn btn-nav"   id="btnNav">🧭 Navigation</button>
-    <button class="btn btn-share" id="btnShare">📋 Ссылка</button>
-    <button class="btn btn-stop"  id="btnStop">■ Стоп</button>
+    <button class="btn btn-share" id="btnShare">📋 Link</button>
+    <button class="btn btn-stop"  id="btnStop">■ Stopp</button>
   </div>
 </div>
 
@@ -93,7 +93,8 @@ const mapEl       = document.getElementById('map');
 
 // Автовставка маршрута из URL параметра
 const rp = new URLSearchParams(location.search).get('route');
-if (rp) routeInput.value = decodeURIComponent(rp);
+// URLSearchParams уже раскодирует значение — второй decodeURIComponent ломал ссылки с «%»
+if (rp) routeInput.value = rp;
 
 function haversine(lat1,lng1,lat2,lng2) {
   const R=6371, dLat=(lat2-lat1)*Math.PI/180, dLng=(lng2-lng1)*Math.PI/180;
@@ -141,7 +142,7 @@ function checkReroute(lat, lng) {
   if (rerouteTimer) return;
   rerouteTimer = setTimeout(async () => {
     rerouteTimer = null;
-    if (!lastRouteUrl) return;
+    if (!lastRouteUrl || !sessionId) return;
     const url = new URL(lastRouteUrl);
     const dest = decodeURIComponent(url.searchParams.get('destination')||'');
     const wps = url.searchParams.get('waypoints')||'';
@@ -166,6 +167,8 @@ function checkReroute(lat, lng) {
 }
 
 async function writeLocation(lat, lng) {
+  // После «Stopp» ещё может прийти запоздалый ответ GPS — его не пишем
+  if (!sessionId || !map) return;
   try {
     await set(ref(db,'sessions/'+sessionId), {
       lat, lng, ts:Date.now(), route:routeInput.value.trim(), active:true
@@ -196,22 +199,33 @@ document.getElementById('btnStart').addEventListener('click', async () => {
   const routeUrl = routeInput.value.trim();
   if (!routeUrl) { alert('Bitte Routenlink einfügen'); return; }
   if (!navigator.geolocation) { alert('Geolocation nicht verfügbar'); return; }
+  const startBtn = document.getElementById('btnStart');
+  if (startBtn.disabled) return;          // двойное нажатие запускало две сессии
+  startBtn.disabled = true;
+  try { await startTracking(routeUrl); } finally { startBtn.disabled = false; }
+});
+
+async function startTracking(routeUrl) {
   sessionId = Math.random().toString(36).substr(2,6).toUpperCase();
   lastRouteUrl = routeUrl;
   updateCount = 0; trackPath = [];
   setStatus('Verbinde...', false);
   onDisconnect(ref(db,'sessions/'+sessionId)).update({active:false});
 
-  let apiKey;
-  try { apiKey=(await(await fetch('https://fahrzeit.vercel.app/api/maps-key')).json()).key; }
-  catch(e) { alert('Maps API Fehler'); return; }
-
-  await new Promise(resolve=>{
-    window.__driverMapCb=resolve;
-    const s=document.createElement('script');
-    s.src=`https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__driverMapCb&language=de`;
-    document.head.appendChild(s);
-  });
+  // Скрипт Google Maps грузим один раз: после «Stopp → Start» он уже есть
+  if (!(window.google && google.maps)) {
+    let apiKey;
+    try { apiKey=(await(await fetch('https://fahrzeit.vercel.app/api/maps-key')).json()).key; }
+    catch(e) { alert('Maps API Fehler'); sessionId=null; setStatus('Bereit',false); return; }
+    const loaded = await new Promise(resolve=>{
+      window.__driverMapCb=()=>resolve(true);
+      const s=document.createElement('script');
+      s.src=`https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=__driverMapCb&language=de`;
+      s.onerror=()=>{ s.remove(); resolve(false); };
+      document.head.appendChild(s);
+    });
+    if (!loaded) { alert('Karte konnte nicht geladen werden'); sessionId=null; setStatus('Bereit',false); return; }
+  }
 
   setupPanel.style.display='none';
   mapEl.style.display='block';
@@ -274,10 +288,13 @@ document.getElementById('btnStart').addEventListener('click', async () => {
     e=>setStatus('GPS Fehler',false),
     {enableHighAccuracy:true,maximumAge:5000,timeout:10000}
   );
-});
+}
 
 document.getElementById('btnStop').addEventListener('click', async()=>{
   if(watchId!==null) navigator.geolocation.clearWatch(watchId);
+  watchId=null;
+  clearTimeout(rerouteTimer); rerouteTimer=null;   // иначе через 30 с таймер писал в остановленную сессию
+  document.getElementById('rerouteBadge').style.display='none';
   if(sessionId) await set(ref(db,'sessions/'+sessionId+'/active'),false);
   setStatus('Beendet',false);
   mapEl.style.display='none'; bottomPanel.style.display='none'; setupPanel.style.display='flex';
@@ -289,10 +306,11 @@ document.getElementById('btnShare').addEventListener('click',()=>{
   const url=location.origin+'/tracker.html?session='+sessionId;
   navigator.clipboard?navigator.clipboard.writeText(url).then(()=>{
     const b=document.getElementById('btnShare');
-    b.textContent='✅ Скопировано!';
-    setTimeout(()=>b.textContent='📋 Ссылка',2000);
-  }):prompt('Ссылка:',url);
+    b.textContent='✅ Kopiert!';
+    setTimeout(()=>b.textContent='📋 Link',2000);
+  }):prompt('Link:',url);
 });
 </script>
+<script src="console.js"></script>
 </body>
 </html>

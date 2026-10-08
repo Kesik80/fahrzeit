@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
 <meta name="theme-color" content="#1a1a1a" id="themeColorMeta">
 <title>Stations Editor</title>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="lib/sortable.min.js"></script>
 <style>
 /* ══════════════════════════════════════
    CSS-ПЕРЕМЕННЫЕ (дизайн-токены)
@@ -1868,13 +1868,19 @@ async function recalcOneTreff(key, btnEl) {
 async function autoCalcPair(key, isTreff) {
   try {
     const [a, b] = splitPairKey(key, isTreff);
+    // Пока ждём Google, пользователь мог уже вписать время руками — его не затираем
+    const obj = () => isTreff ? trefftravelTimes : travelTimes;
+    const before = obj()[key];
+    let mins = null;
     if (isTreff) {
       const cT = treffpunkt[a], cP = getCoordsFor(b);
-      if (cT && cP) { trefftravelTimes[key] = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng); setAutoFlag(key, true, true); }
+      if (cT && cP) mins = await fetchTravelTime(cT.lat, cT.lng, cP.lat, cP.lng);
     } else {
       const cA = getCoordsFor(a), cB = getCoordsFor(b);
-      if (cA && cB) { travelTimes[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng); setAutoFlag(key, false, true); }
+      if (cA && cB) mins = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
     }
+    if (mins === null || obj()[key] !== before) return;
+    obj()[key] = mins; setAutoFlag(key, isTreff, true);
     render(); showMsg(`✅ Время рассчитано: ${key}`);
   } catch(e) {
     console.warn('autoCalc:', key, e.message);
@@ -1998,6 +2004,7 @@ function undo() {
   startPassengers = o.startPassengers; autoCalcFlags = o.autoCalcFlags;
   entryMeta = o.entryMeta || { defaultCoords: {}, stations: {}, treffpunkt: {} };
   updateUndoBtn(); updateHeaderSub(); updateTabCounts(); render();
+  markDirty();   // отмена — тоже изменение относительно сохранённого файла
   showMsg(`↩ Отменено: ${s.label}`);
 }
 function updateUndoBtn() {
@@ -2466,13 +2473,16 @@ function renderCoordGroup(box, grp) {
     const nm = mkNameEl(name, newName => {
       if (src[newName]) { showMsg('Уже существует'); return false; }
       snapshot('переименование');
+      // Сначала ключи пар — пока старое имя ещё в списке. splitPairKey режет
+      // «OLGA-Park-Anna» по известным именам; после удаления старого он резал
+      // по первому дефису и получал «OLGA» + «Park-Anna» — пары портились.
+      if (grp === 'treffpunkt') renameTreffEverywhere(name, newName);
+      else renamePersonEverywhere(name, newName);
       // Переносим значение, сохраняя позицию в объекте
       const keys = Object.keys(src).map(k => k === name ? newName : k);
       src[newName] = src[name]; delete src[name];
       reorderObj(grp, keys);
       renameMeta(grp, name, newName);
-      if (grp === 'treffpunkt') renameTreffEverywhere(name, newName);
-      else renamePersonEverywhere(name, newName);
       render(); markDirty(); showMsg('Переименовано'); return true;
     });
     nm.title = metaHint(grp, name) + '\nНажмите для переименования';
@@ -2919,7 +2929,7 @@ function renderOrders(box) {
     });
 
     if (listBox._sortable) listBox._sortable.destroy();
-    listBox._sortable = new Sortable(listBox, {
+    if (typeof Sortable !== 'undefined') listBox._sortable = new Sortable(listBox, {
       animation: 150,
       handle: '.drag-handle',
       filter: '.group-indent',
@@ -3142,6 +3152,7 @@ function collectIssues() {
 // ═══════════════════════════════════════
 function makeSortable(listEl, onDone) {
   if (!listEl || !listEl.children.length) return;
+  if (typeof Sortable === 'undefined') return;   // без библиотеки редактор работает, просто без перетаскивания
   if (listEl._sortable) listEl._sortable.destroy();
   // Во время поиска часть карточек скрыта — перетаскивание дало бы неверный порядок
   const filtering = !!searchInput.value.trim();
@@ -4086,8 +4097,16 @@ document.getElementById('fileInput').addEventListener('change', e => {
   e.target.value = '';
 });
 
+// Проверка собранного stations.js перед выдачей: только компиляция, без выполнения.
+// Битый файл ломает загрузку станций в приложении у всех водителей.
+function exportOk(text) {
+  try { new Function(text); return true; }
+  catch (e) { showMsg('❌ stations.js fehlerhaft: ' + e.message, 5000); console.error('[export]', e); return false; }
+}
+
 document.getElementById('saveBtn').onclick = () => {
   const text = buildExportText();
+  if (!exportOk(text)) return;
   const blob = new Blob([text], { type: 'application/javascript;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = 'stations.js'; a.click();
@@ -4221,7 +4240,9 @@ document.getElementById('recalcStart').onclick = async () => {
       const cA = isTreff ? treffpunkt[a] : getCoordsFor(a);
       const cB = getCoordsFor(b);
       if (!coordValid(cA) || !coordValid(cB)) throw new Error(`нет координат: ${!coordValid(cA) ? a : b}`);
-      src[key] = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
+      const mins = await fetchTravelTime(cA.lat, cA.lng, cB.lat, cB.lng);
+      // Пишем в текущий объект: «Отменить» во время пересчёта подменяет travelTimes целиком
+      (isTreff ? trefftravelTimes : travelTimes)[key] = mins;
       setAutoFlag(key, isTreff, true);
       done++;
     } catch(e) {
@@ -4340,6 +4361,7 @@ if (!window.Auth) {
     password()  { try { return localStorage.getItem('fz.auth.password'); } catch { return null; } },
     remembered(){ return !!window.Auth.password(); },
     forget()    { try { localStorage.removeItem('fz.auth.password'); } catch {} },
+    forgetPassword() { try { localStorage.removeItem('fz.auth.password'); } catch {} },
     async available() { return false; },
     enrolled()  { return false; },
     async enroll() { return false; },
@@ -4416,6 +4438,7 @@ document.getElementById('ghSendStationsBtn').onclick = async () => {
 };
 
 async function uploadStationsViaServer(password) {
+  if (!exportOk(buildExportText())) return;
   const btn = document.getElementById('ghSendStationsBtn');
   btn.disabled = true;
   showMsg('Загрузка на GitHub…', 5000);

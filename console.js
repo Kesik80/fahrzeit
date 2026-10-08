@@ -569,6 +569,8 @@
       } else {
         keys.forEach(k => {
           let v = localStorage.getItem(k);
+          // Пароли/токены не показываем: лог хранится и может уйти на скриншоте
+          if (v && /pass|token|secret|cred|key$/i.test(k) && !/^fahrzeitRechner/.test(k)) v = '••••••';
           if (v && v.length > 80) v = v.slice(0, 80) + '…';
           addLine('ls', '  ', `${k} = ${v}`);
         });

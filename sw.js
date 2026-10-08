@@ -17,7 +17,7 @@
    жить. Обычные правки html/js подхватываются сами, поднимать не нужно.
 */
 
-const CACHE = 'fahrzeit-v2';   // поднято: в CORE добавлены icons.js, auth.js, redaktor.html
+const CACHE = 'fahrzeit-v3';   // поднято: в CORE добавлен lib/sortable.min.js (раньше Sortable шёл с CDN — офлайн приложение не стартовало)
 
 const CORE = [
   '/',
@@ -28,6 +28,7 @@ const CORE = [
   '/auth.js',
   '/console.js',
   '/install.js',
+  '/lib/sortable.min.js',
   '/pwa-check.html',
   '/icons/manifest.json',
   '/icons/icon-192.png',
@@ -77,14 +78,22 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Всё остальное: сначала сеть, офлайн — из кэша
+  // Всё остальное: сначала сеть, офлайн — из кэша.
+  // Ключ кэша — без ?query: иначе каждая ссылка вида /?route=… или /tracker.html?session=…
+  // ложилась бы отдельной копией страницы и кэш рос бы бесконечно.
+  const key = url.origin + url.pathname;
   e.respondWith(
     fetch(req).then(r => {
-      if (r.ok) {
+      if (r.ok && r.type === 'basic') {
         const copy = r.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
+        caches.open(CACHE).then(c => c.put(key, copy));
       }
       return r;
-    }).catch(() => caches.match(req).then(hit => hit || caches.match('/index.html')))
+    }).catch(() => caches.match(key).then(hit => {
+      if (hit) return hit;
+      // index.html подставляем только для переходов по страницам —
+      // скрипту или JSON вместо них HTML не нужен
+      return req.mode === 'navigate' ? caches.match('/index.html') : Response.error();
+    }))
   );
 });

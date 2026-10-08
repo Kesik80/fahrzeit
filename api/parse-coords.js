@@ -76,7 +76,7 @@ function pairsFromBody(body) {
 // ── Загрузка страницы с ручной обработкой редиректов ──────────────────────
 function fetchUrl(url, redirectCount = 0, chain = []) {
   return new Promise((resolve, reject) => {
-    if (redirectCount > 10) return reject(new Error('Слишком много редиректов'));
+    if (redirectCount > 10) return reject(new Error('Zu viele Weiterleitungen'));
     const mod = url.startsWith('https') ? https : http;
     const req = mod.get(url, {
       headers: {
@@ -186,12 +186,14 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Cache-Control', 'no-store');
 
-  const input = (
-    req.method === 'POST' ? (await getBody(req)).input : req.query.input
-  )?.trim();
+  // String(): ?input=a&input=b даёт массив, POST — что угодно; раньше .trim() падал с 500
+  const rawInput = req.method === 'POST' ? (await getBody(req) || {}).input : req.query.input;
+  const input = (Array.isArray(rawInput) ? rawInput[0] : rawInput) == null
+    ? ''
+    : String(Array.isArray(rawInput) ? rawInput[0] : rawInput).trim().slice(0, 2000);
 
   if (!input) {
-    return res.status(400).json({ success: false, error: 'Параметр input обязателен' });
+    return res.status(400).json({ success: false, error: 'Parameter „input“ fehlt' });
   }
 
   const reply = c => res.json({
@@ -208,7 +210,7 @@ module.exports = async (req, res) => {
     if (!/^(https?:\/\/|geo:)/i.test(input)) {
       const coords = parseText(input);
       if (coords) return reply(coords);
-      return res.status(422).json({ success: false, error: 'Координаты не распознаны' });
+      return res.status(422).json({ success: false, error: 'Koordinaten nicht erkannt.' });
     }
 
     // 2. geo: обрабатывается без сети
@@ -243,7 +245,7 @@ module.exports = async (req, res) => {
     const fromGeo = await geocodeFromUrl(result.finalUrl);
     if (fromGeo) return reply({ ...fromGeo, source: 'geocode', approx: true });
 
-    return res.status(422).json({ success: false, error: 'Координаты не найдены в ссылке' });
+    return res.status(422).json({ success: false, error: 'Keine Koordinaten im Link gefunden.' });
 
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });

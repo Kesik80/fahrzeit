@@ -26,15 +26,16 @@ export default async function handler(req, res) {
     if (bad(originLat) || bad(originLng) || bad(destLat) || bad(destLng)) {
       return res.status(400).json({
         error: 'Missing coordinates',
-        message: 'Требуются все координаты: originLat, originLng, destLat, destLng'
+        message: 'Alle Koordinaten erforderlich: originLat, originLng, destLat, destLng'
       });
     }
 
-    const apiKey = process.env.GOOGLE_API_KEY;
+    // Тот же набор имён, что и в maps-key.js / place-id.js
+    const apiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       return res.status(500).json({
         error: 'Server configuration error',
-        message: 'API ключ не настроен на сервере'
+        message: 'API-Schlüssel auf dem Server nicht konfiguriert'
       });
     }
 
@@ -46,10 +47,14 @@ export default async function handler(req, res) {
     let depTime = 'now';
     if (departureTime && departureTime !== 'now') {
       // Google требует Unix timestamp в будущем
-      const ts = parseInt(departureTime);
+      const ts = parseInt(departureTime, 10);
       const now = Math.floor(Date.now() / 1000);
-      // Если время в прошлом — сдвигаем на следующий день
-      depTime = ts > now ? ts : ts + 86400;
+      // Мусор (NaN) раньше уходил в Google как departure_time=NaN → INVALID_REQUEST
+      if (Number.isFinite(ts)) {
+        // Если время в прошлом — сдвигаем на следующий день; если и так в прошлом — 'now'
+        const t = ts > now ? ts : ts + 86400;
+        depTime = t > now ? t : 'now';
+      }
     }
 
     const url = `https://maps.googleapis.com/maps/api/distancematrix/json` +
@@ -68,7 +73,7 @@ export default async function handler(req, res) {
       return res.status(500).json({
         error: 'Google API Error',
         status: data.status,
-        message: data.error_message || 'Ошибка Google API'
+        message: data.error_message || 'Google-API-Fehler'
       });
     }
 
@@ -77,7 +82,7 @@ export default async function handler(req, res) {
       return res.status(400).json({
         error: 'Route not found',
         status: element?.status,
-        message: 'Маршрут не найден между указанными точками'
+        message: 'Keine Route zwischen den Punkten gefunden'
       });
     }
 

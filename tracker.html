@@ -123,7 +123,7 @@ async function initTracker() {
   let isFollowing = true;
   let lastRoute = null;
   let notifiedArrival = false;
-  let lastLat = null, lastLng = null;
+  let notified2km = false;   // раньше переменная не была объявлена — в module-скрипте это ReferenceError на подходе к цели
 
   // Кнопка слежения
   const btnFollow = document.getElementById('btnFollow');
@@ -232,21 +232,13 @@ async function initTracker() {
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Fahrzeit Tracker', { body: 'Fahrer ist fast am Ziel!' });
           }
-        } else if (dist < 2 && !lastNotif2km) {
-          window.lastNotif2km = true;
+        } else if (dist < 2 && !notified2km) {
+          notified2km = true;
           showNotif('🚗 Fahrer nähert sich dem Ziel (~2km)', 6000);
         }
       }
     }
 
-    // Автопересчёт маршрута при отклонении > 300м
-    if (route && lastLat !== null) {
-      const offRoute = await checkOffRoute(lat, lng, route);
-      if (offRoute) {
-        await renderRouteFromCurrent(map, directionsRenderer, lat, lng, route);
-      }
-    }
-    lastLat = lat; lastLng = lng;
 
     // Инфо-бар
     updateCount++;
@@ -284,38 +276,6 @@ async function renderRoute(map, dr, routeUrl, currentPos) {
         }
       });
   } catch(e) { console.warn('Route error:', e); }
-}
-
-// Перестраиваем маршрут от текущей позиции
-async function renderRouteFromCurrent(map, dr, lat, lng, routeUrl) {
-  try {
-    const url = new URL(routeUrl);
-    const destination = decodeURIComponent(url.searchParams.get('destination') || '');
-    if (!destination) return;
-    const ds = new google.maps.DirectionsService();
-    ds.route({
-      origin: { lat, lng },
-      destination,
-      travelMode: 'DRIVING',
-    }, (result, status) => {
-      if (status === 'OK') dr.setDirections(result);
-    });
-  } catch(e) {}
-}
-
-// Проверяем отклонение от маршрута (> 300м от прямой origin-destination)
-async function checkOffRoute(lat, lng, routeUrl) {
-  try {
-    const url = new URL(routeUrl);
-    const destination = decodeURIComponent(url.searchParams.get('destination') || '');
-    if (!destination) return false;
-    const destParts = destination.split(',');
-    if (destParts.length < 2) return false;
-    const dLat = parseFloat(destParts[0]), dLng = parseFloat(destParts[1]);
-    // Простая проверка: если расстояние до прямой > 0.3 км — считаем отклонением
-    // Используем DistanceService для точности
-    return false; // базовая версия — не пересчитываем автоматически чтобы не перегружать API
-  } catch(e) { return false; }
 }
 
 // ETA до следующей точки маршрута
@@ -367,5 +327,6 @@ function haversine(lat1, lng1, lat2, lng2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 </script>
+<script src="console.js"></script>
 </body>
 </html>

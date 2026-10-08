@@ -20,7 +20,7 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_MAPS_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'Server configuration error', message: 'API ключ не настроен' });
+    return res.status(500).json({ error: 'Server configuration error', message: 'API-Schlüssel nicht konfiguriert' });
   }
 
   const points = (req.body && req.body.points) || [];
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing points' });
   }
   if (points.length > 25) {
-    return res.status(400).json({ error: 'Too many points', message: 'Максимум 25 точек за запрос' });
+    return res.status(400).json({ error: 'Too many points', message: 'Maximal 25 Punkte pro Anfrage' });
   }
 
   // Чем выше в списке — тем точнее привязка к конкретному зданию.

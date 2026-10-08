@@ -8,7 +8,23 @@
 //   GH_REPO          — напр. "fahrzeit"
 //   GH_FILE          — напр. "stations.js"
 
+const crypto = require('crypto');
+const same = (a, b) => {
+  const h = s => crypto.createHash('sha256').update(String(s), 'utf8').digest();
+  return crypto.timingSafeEqual(h(a), h(b));
+};
+const MAX_SIZE = 2 * 1024 * 1024;   // stations.js сейчас ~десятки КБ — 2 МБ с запасом
+
 module.exports = async function handler(req, res) {
+  try {
+    return await handle(req, res);
+  } catch (e) {
+    // Раньше сетевой сбой к GitHub давал необработанное исключение (502 без текста)
+    return res.status(500).json({ error: 'Upload fehlgeschlagen: ' + (e && e.message || e) });
+  }
+};
+
+async function handle(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -26,8 +42,8 @@ module.exports = async function handler(req, res) {
   if (!UPLOAD_PASSWORD) {
     return res.status(500).json({ error: 'UPLOAD_PASSWORD not configured' });
   }
-  if (!password || password !== UPLOAD_PASSWORD) {
-    return res.status(401).json({ error: 'Неверный пароль' });
+  if (typeof password !== 'string' || !password || !same(password, UPLOAD_PASSWORD)) {
+    return res.status(401).json({ error: 'Falsches Passwort' });
   }
 
   // 2. Читаем GitHub credentials из env
@@ -39,9 +55,15 @@ module.exports = async function handler(req, res) {
   if (!GH_TOKEN || !GH_OWNER || !GH_REPO) {
     return res.status(500).json({ error: 'GitHub credentials not configured' });
   }
-  if (!content) {
+  if (typeof content !== 'string' || !content.trim()) {
     return res.status(400).json({ error: 'content is required' });
   }
+  if (Buffer.byteLength(content, 'utf8') > MAX_SIZE) {
+    return res.status(413).json({ error: 'Datei zu groß' });
+  }
+  // Битый stations.js ломает главную страницу у всех — только компилируем, не выполняем
+  try { new Function(content); }
+  catch (e) { return res.status(400).json({ error: 'stations.js fehlerhaft: ' + e.message }); }
 
   const apiUrl = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${GH_FILE}`;
   const ghHeaders = {
@@ -83,4 +105,4 @@ module.exports = async function handler(req, res) {
     try { errMsg = (await putResp.json()).message || errMsg; } catch {}
     return res.status(putResp.status).json({ error: errMsg });
   }
-};
+}

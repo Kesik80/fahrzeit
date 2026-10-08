@@ -35,8 +35,9 @@ window.addEventListener('appinstalled', function () {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="color-scheme" content="dark light" id="color-scheme-meta">
 <title>Fahrzeit Rechner</title>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/latlon-geohash@2.0.0/latlon-geohash.min.js"></script>
+<!-- Sortable лежит в проекте (lib/), а не на CDN: service worker кэширует только свой домен,
+     и без сети приложение с CDN-версией не запускалось вовсе -->
+<script src="lib/sortable.min.js"></script>
 <style>
 :root {
 --primary-color: #007bff;
@@ -166,6 +167,7 @@ body.dark #copyOutputBtn { color: #aaa; }
 #output .result-line:active {
 background: rgba(0,123,255,0.12);
 }
+#output.copy-flash-all .result-line,
 #output .result-line.copy-flash {
 background: rgba(40,167,69,0.25);
 transition: background 0s;
@@ -1436,29 +1438,23 @@ try {
   const stM   = text.match(/this\.stations\s*=\s*({[\s\S]*?});/);
   const tmM   = text.match(/this\.travelTimes\s*=\s*({[\s\S]*?});/);
   // Блоки с вложенными {} — используем счётчик скобок
-  function extractBlock(str, keyword) {
-    const idx = str.indexOf(keyword);
-    if (idx === -1) return null;
-    const start = str.indexOf('{', idx);
-    if (start === -1) return null;
-    let depth = 0;
-    for (let i = start; i < str.length; i++) {
-      if (str[i] === '{') depth++;
-      else if (str[i] === '}') { depth--; if (depth === 0) return str.slice(start, i + 1); }
-    }
-    return null;
-  }
-  const trfBlock = extractBlock(text, 'this.treffpunkt');
-  const trtBlock = extractBlock(text, 'this.trefftravelTimes');
-  const ordBlock = extractBlock(text, 'this.participantOrders');
+  const trfBlock = this._extractBlock(text, 'this.treffpunkt');
+  const trtBlock = this._extractBlock(text, 'this.trefftravelTimes');
+  const ordBlock = this._extractBlock(text, 'this.participantOrders');
   if (defM)  {
     const coords = Function('"use strict";return (' + defM[1] + ')')();
     this.defaultCoordinates = coords;
-    this.nameToCoordinates  = { ...coords };
+    // Раньше реестр заменялся целиком, и имена, добавленные на телефоне, пропадали
+    // из всех списков после перезапуска. Теперь stations.js + свои добавленные.
+    this.nameToCoordinates  = { ...this._localOnly(this.nameToCoordinates, coords, 'namesBase'), ...coords };
   }
   if (stM)  this.stations          = Function('"use strict";return (' + stM[1]  + ')')();
   if (tmM)  this.travelTimes       = Function('"use strict";return (' + tmM[1]  + ')')();
-  if (trfBlock) this.treffpunkt        = Function('"use strict";return (' + trfBlock + ')')();
+  if (trfBlock) {
+    const treff = Function('"use strict";return (' + trfBlock + ')')();
+    this._serverTreff = treff;
+    this.treffpunkt = { ...this._localOnly(this._savedTreffpunkte(), treff, 'treffBase'), ...treff };
+  }
   if (trtBlock) this.trefftravelTimes  = Function('"use strict";return (' + trtBlock + ')')();
   if (ordBlock) {
     const rawOrders = Function('"use strict";return (' + ordBlock + ')')();
@@ -1512,7 +1508,7 @@ try {
   }
   // Снимок прочитанного stations.js — с ним сверяются все сохранённые координаты
   this._src = JSON.parse(JSON.stringify({
-    people: this.defaultCoordinates || {}, treff: this.treffpunkt || {},
+    people: this.defaultCoordinates || {}, treff: this._serverTreff || {},
     stations: this.stations || {}, dests: this._srcDests || []
   }));
   this._coordsFetchedAt = Date.now();
@@ -1732,7 +1728,7 @@ async _refreshStationCoords() {
       }
     });
     if (coords)   { merge(this.nameToCoordinates, S.people, coords); this.defaultCoordinates = coords; S.people = clone(coords); }
-    if (treff)    { merge(this.treffpunkt, S.treff, treff); S.treff = clone(treff); }
+    if (treff)    { merge(this.treffpunkt, S.treff, treff); S.treff = clone(treff); this._serverTreff = treff; }
     if (stations) { this.stations = stations; S.stations = clone(stations); }
     this._coordsFetchedAt = Date.now();
 
@@ -1771,8 +1767,11 @@ localStorage.setItem(k('useUhrBei'), this.useUhrBei);
 localStorage.setItem(k('startPassengers'), JSON.stringify(this.startPointPassengers));
 localStorage.setItem(k('farewell'), this.farewell);
 localStorage.setItem(k('farewells'), JSON.stringify(this.farewells));
-// С чем из stations.js эти списки были сведены — см. _mergeServerList
+localStorage.setItem(k('treffpunkt'), JSON.stringify(this.treffpunkt || {}));
+// С чем из stations.js эти списки были сведены — см. _mergeServerList и _localOnly
 if (this._serverListsLoaded) {
+  localStorage.setItem(k('namesBase'), JSON.stringify(Object.keys(this.defaultCoordinates || {})));
+  localStorage.setItem(k('treffBase'), JSON.stringify(Object.keys(this._serverTreff || {})));
   localStorage.setItem(k('greetingsBase'), JSON.stringify(this.defaultGreetings));
   localStorage.setItem(k('farewellsBase'), JSON.stringify(this.defaultFarewells));
 }
@@ -1790,6 +1789,19 @@ localStorage.setItem(k('shortenMode'), this.shortenMode || 'bitly');
       : '⚠️ Daten konnten nicht gespeichert werden');
   } catch (e2) {}
 }
+}
+// Записи, добавленные на этом телефоне: есть в сохранённом, нет в stations.js и не было
+// в нём при прошлом сохранении (иначе это удалённое в редакторе, и возвращать его нельзя).
+_localOnly(saved, server, baseKey) {
+const out = {};
+let base = null;
+try { base = JSON.parse(localStorage.getItem(this.profileKey(baseKey))); } catch (e) { base = null; }
+const known = new Set([...Object.keys(server || {}), ...(Array.isArray(base) ? base : [])]);
+Object.entries(saved || {}).forEach(([name, c]) => { if (name && !known.has(name)) out[name] = c; });
+return out;
+}
+_savedTreffpunkte() {
+try { return JSON.parse(localStorage.getItem(this.profileKey('treffpunkt'))) || {}; } catch (e) { return {}; }
 }
 // Список в приложении = список из stations.js + то, что добавлено на этом телефоне.
 // base — список из stations.js на момент прошлого сохранения: что было в нём и
@@ -1819,6 +1831,7 @@ this.startPoint = '';
 this.startPointCoords = { lat: null, lng: null };
 this.participants = [];
 this.nameToCoordinates = { ...this.defaultCoordinates };
+if (this._serverTreff) this.treffpunkt = { ...this._serverTreff };
 this.machineStop = { name: (this.machineDestinations[0] || {}).name || "an der Maschine", time: 20, arrivalTime: "", lat: null, lng: null };
 // НЕ сбрасываем machineDestinations — список загружен из stations.js
 this.useUhrBei = false;
@@ -1829,26 +1842,15 @@ this.farewell = this.defaultFarewellText || 'Tschüss 👋';
 this.saveData();
 }
 clearLocalStorage() {
-// Сохраняем снапшот для undo
-this._undoSnapshot = {
-  greeting: localStorage.getItem(this.profileKey('greeting')),
-  greetings: localStorage.getItem(this.profileKey('greetings')),
-  participants: localStorage.getItem(this.profileKey('participants')),
-  machineStop: localStorage.getItem(this.profileKey('machineStop')),
-  machineDestinations: localStorage.getItem(this.profileKey('machineDestinations')),
-  nameToCoordinates: localStorage.getItem(this.profileKey('nameToCoordinates')),
-  startPoint: localStorage.getItem(this.profileKey('startPoint')),
-  useUhrBei: localStorage.getItem(this.profileKey('useUhrBei')),
-  useSuperscript: localStorage.getItem(this.profileKey('useSuperscript')),
-  showDestName: localStorage.getItem(this.profileKey('showDestName')),
-  startPassengers: localStorage.getItem(this.profileKey('startPassengers')),
-  farewell: localStorage.getItem(this.profileKey('farewell')),
-  farewells: localStorage.getItem(this.profileKey('farewells')),
-  _profileKey: this.startPoint,
-};
-['greeting','greetings','participants','machineStop','machineDestinations',
-'nameToCoordinates','startPoint','useUhrBei','useSuperscript','showDestName','shortenLinks','shortenMode','startPassengers','farewell','farewells','greetingsBase','farewellsBase']
-.forEach(k => localStorage.removeItem(this.profileKey(k)));
+// Один список ключей для снапшота и для удаления — раньше в снапшоте не было
+// shortenLinks/shortenMode/…Base, и «Rückgängig» их не возвращал
+const KEYS = ['greeting','greetings','participants','machineStop','machineDestinations',
+  'nameToCoordinates','treffpunkt','startPoint','useUhrBei','useSuperscript','showDestName',
+  'shortenLinks','shortenMode','startPassengers','farewell','farewells',
+  'greetingsBase','farewellsBase','namesBase','treffBase'];
+this._undoSnapshot = { _profileKey: this.startPoint };
+KEYS.forEach(k => { this._undoSnapshot[k] = localStorage.getItem(this.profileKey(k)); });
+KEYS.forEach(k => localStorage.removeItem(this.profileKey(k)));
 this.resetToDefaults();
 this.elements.output.innerHTML = '';
 this.renderParticipants();
@@ -1894,7 +1896,6 @@ this._undoInterval = setInterval(() => {
 }
 _restoreSnapshot() {
 if (!this._undoSnapshot) return;
-clearTimeout(this._undoTimer);
 clearInterval(this._undoInterval);
 const snap = this._undoSnapshot;
 // Восстанавливаем startPoint сначала для правильного profileKey
@@ -1951,6 +1952,7 @@ if (saved.machineDestinations) try {
   this.machineDestinations = [...currentDefaults, ...userDefined];
 } catch { /* use default */ }
 if (saved.nameToCoordinates) try { this.nameToCoordinates = JSON.parse(saved.nameToCoordinates); } catch { /* use default */ }
+this.treffpunkt = { ...this._savedTreffpunkte(), ...this.treffpunkt };
 if (saved.startPoint) {
 this.startPoint = saved.startPoint;
 const startCoords = this.nameToCoordinates[this.startPoint];
@@ -1994,7 +1996,7 @@ document.getElementById('startPoint').addEventListener('click', () => {
     { label: '➕ Neuen Namen hinzufügen', value: 'add-new', addNew: true }
   ];
   this.showPicker('Startpunkt wählen', items, (val) => {
-    if (val === 'add-new') { this.openCoordsModal(null, false, false, true); }
+    if (val === 'add-new') { this.openCoordsModal(null, false, true, true); }
     else { this.updateStartPoint(val); document.getElementById('startPointLabel').textContent = val || 'Startpunkt wählen'; }
   }, this.startPoint);
 });
@@ -2288,8 +2290,8 @@ div.querySelector('[data-type="participant-name"]').addEventListener('click', ()
     ];
     this.showPicker('Teilnehmer wählen', items, (val) => {
       if (val === 'add-new') {
-        this.currentMainParticipantIndex = i;
-        this.openCoordsModal(null, false, false, false, false, true);
+        // Новое имя — для ЭТОЙ строки (ветка isAddingNewName переименовывает currentEditIndex)
+        this.openCoordsModal(i, false, true);
       } else { this.updateName(i, val); }
     }, p.name);
   }
@@ -2464,7 +2466,12 @@ if (/^https?:\/\//i.test(s)) {
 try {
 this.showToast("🔄 Koordinaten werden ermittelt…");
 const resp = await fetch('/api/parse-coords?input=' + encodeURIComponent(s));
-if (!resp.ok) { this.showToast("Server nicht verfügbar – bitte direkte Koordinaten eingeben."); return null; }
+if (!resp.ok) {
+  // 4xx — сервер ответил, но ссылку не понял; «недоступен» только при 5xx
+  let msg = resp.status >= 500 ? "Server nicht verfügbar – bitte direkte Koordinaten eingeben." : "Koordinaten nicht erkannt.";
+  try { const e = await resp.json(); if (resp.status < 500 && e && e.error) msg = e.error; } catch (_) {}
+  this.showToast(msg); return null;
+}
 const d = await resp.json();
 if (d.success) return { lat: parseFloat(d.lat.toFixed(6)), lng: parseFloat(d.lng.toFixed(6)) };
 this.showToast(d.error || "Koordinaten nicht erkannt.");
@@ -2567,7 +2574,7 @@ coordsInput.value = this.machineStop.lat && this.machineStop.lng ? `${this.machi
 const participant = this.participants[index];
 coordsInput.value = participant.lat && participant.lng ? `${parseFloat(participant.lat.toFixed(6))},${parseFloat(participant.lng.toFixed(6))}` : '';
 }
-modal.style.display = 'flex'; modal.classList.add('active');
+modal.classList.remove('closing'); modal.style.display = 'flex'; modal.classList.add('active');
 // Авто-подсказка: если вставлена сокращённая ссылка — показываем hint
 // При нажатии ✅ parseCoordinates обработает её автоматически
 {
@@ -2601,6 +2608,8 @@ const modal = this.elements.coordsModal;
 const modalContent = this.elements.modalContent;
 modalContent.classList.remove('add-new-name');
 this.elements.modalTitle.textContent = isAddingNewGreeting ? 'Neue Begrüßung hinzufügen' : 'Begrüßung bearbeiten';
+this.elements.greetingLabel.textContent = 'Begrüßung:';
+this.elements.greetingInput.placeholder = 'Begrüßung eingeben';
 ['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
 document.getElementById('stationSelect').style.display = 'none';
 this.elements.greetingLabel.style.display = 'block';
@@ -2608,7 +2617,7 @@ this.elements.greetingInput.style.display = 'block';
 this.elements.greetingInput.value = isAddingNewGreeting ? '' : this.greeting;
 this.elements.deleteGreetingButton.style.display = this.defaultGreetings.includes(this.greeting) ? 'none' : 'inline-block';
 this.elements.greetingBtnsRow.style.display = 'flex';
-modal.style.display = 'flex'; modal.classList.add('active');
+modal.classList.remove('closing'); modal.style.display = 'flex'; modal.classList.add('active');
 this.elements.greetingInput.focus();
 }
 openFarewellModal(isAdding = false) {
@@ -2622,7 +2631,9 @@ this.isEditingStartPoint = false;
 const modal = this.elements.coordsModal;
 const modalContent = this.elements.modalContent;
 modalContent.classList.remove('add-new-name');
-this.elements.modalTitle.textContent = isAdding ? 'Neues Abschied hinzufügen' : 'Abschied bearbeiten';
+this.elements.modalTitle.textContent = isAdding ? 'Neuer Abschied hinzufügen' : 'Abschied bearbeiten';
+this.elements.greetingLabel.textContent = 'Abschied:';
+this.elements.greetingInput.placeholder = 'Abschied eingeben';
 ['coordsLabel', 'coordsHelp', 'coordsInput', 'mapBtnsRow', 'nameLabel', 'nameInput'].forEach(el => this.elements[el].style.display = 'none');
 document.getElementById('stationSelect').style.display = 'none';
 this.elements.greetingLabel.style.display = 'block';
@@ -2631,7 +2642,7 @@ this.elements.greetingInput.value = isAdding ? '' : this.farewell;
 // Прощания из stations.js удаляются только в редакторе — здесь они вернулись бы при следующей загрузке
 this.elements.deleteGreetingButton.style.display = (!isAdding && this.farewells.length > 1 && !this.defaultFarewells.includes(this.farewell)) ? 'inline-block' : 'none';
 this.elements.greetingBtnsRow.style.display = 'flex';
-modal.style.display = 'flex'; modal.classList.add('active');
+modal.classList.remove('closing'); modal.style.display = 'flex'; modal.classList.add('active');
 this.elements.greetingInput.focus();
 }
 async saveCoordinates() {
@@ -2714,6 +2725,9 @@ this.machineStop.name = name;
 this.machineStop.lat  = coords ? coords.lat : null;
 this.machineStop.lng  = coords ? coords.lng : null;
 this.machineStop.autoCalculated = false;
+// Иначе syncCoordinates() по старому stationName переносил новую цель на прежнюю станцию
+this.machineStop.stationName = '';
+delete this.machineStop.coordsBase;
 this.closeModal(); this.saveData(); this.renderParticipants(); this.calculate();
 return;
 }
@@ -2840,11 +2854,13 @@ closeModal() {
 const cm = this.elements.coordsModal;
 cm.classList.remove('active');
 cm.classList.add('closing');
-setTimeout(() => { cm.style.display = 'none'; cm.classList.remove('closing'); }, 220);
+// Если за эти 220 мс окно открыли снова («Neuer Ort…» из списка станций), прятать его нельзя
+setTimeout(() => { cm.classList.remove('closing'); if (!cm.classList.contains('active')) cm.style.display = 'none'; }, 220);
 this.isAddingNewName = this.isEditingMachine = this.isAddingNewGreeting = this.isEditingGreeting = this.isEditingStartPoint = this.isAddingNewDestination = this.isAddingNewKollege = this.isAddingNewSubPerson = this.isAddingNewTreffpunkt = this.isEditingFarewell = this.isAddingNewFarewell = false;
-this.isAddingNewKollege = false;
-this.isAddingNewSubPerson = false;
-this.isAddingNewTreffpunkt = false;
+// Флаги «новое имя для попутчика» тоже сбрасываем: иначе после отмены следующее
+// новое имя (например, водителя) попадало в попутчики
+this.isAddingSubName = false;
+this.currentSubParticipantIndex = null;
 this.currentEditIndex = null;
 }
 openMapForSelection() {
@@ -2866,7 +2882,7 @@ async openMapPicker() {
   const coordsSpan = document.getElementById('mapPickerCoords');
   const confirmBtn = document.getElementById('mapPickerConfirm');
 
-  modal.style.display = 'flex'; modal.classList.add('active');
+  modal.classList.remove('closing'); modal.style.display = 'flex'; modal.classList.add('active');
   modal.style.cssText += 'display:flex;align-items:center;justify-content:center;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);';
 
   let pickedLat = null, pickedLng = null;
@@ -2890,6 +2906,15 @@ async openMapPicker() {
   if (m) { initLat = +m[1]; initLng = +m[2]; initZoom = 15; }
 
   // Загружаем Google Maps JS API если ещё не загружен
+  // Окно могло быть закрыто в полноэкранном виде — открываем всегда в обычном
+  {
+    const sh = document.getElementById('mapPickerSheet');
+    sh.style.cssText = 'max-width:95vw;width:600px;padding:0;background:var(--modal-bg,#fff) !important;border-radius:12px;overflow:hidden;transition:all .2s ease;';
+    container.style.height = '55vh';
+    container.style.flex = '';
+    const fb = document.getElementById('mapFullscreenBtn');
+    fb.textContent = '⛶'; fb.title = 'Vollbild';
+  }
   const initMap = () => {
     const map = new google.maps.Map(container, {
       center: { lat: initLat, lng: initLng },
@@ -3008,11 +3033,20 @@ async openMapPicker() {
     initMap();
   } else {
     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;">⏳ Karte wird geladen…</div>';
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__mapPickerInit`;
-    script.async = true;
-    window.__mapPickerInit = () => { container.innerHTML = ''; initMap(); };
-    document.head.appendChild(script);
+    // Колбэк всегда указывает на текущее окно; скрипт добавляем только один раз
+    window.__mapPickerInit = () => { window.__mapsLoading = false; container.innerHTML = ''; initMap(); };
+    if (!window.__mapsLoading) {
+      window.__mapsLoading = true;
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&language=de&region=DE&callback=__mapPickerInit`;
+      script.async = true;
+      script.onerror = () => {
+        window.__mapsLoading = false;
+        script.remove();
+        container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#888;text-align:center;padding:16px;">Karte konnte nicht geladen werden.<br>Bitte Verbindung prüfen.</div>';
+      };
+      document.head.appendChild(script);
+    }
   }
 
   // Подтвердить
@@ -3035,6 +3069,7 @@ const items = Object.keys(this.nameToCoordinates)
 this.bsOpen({
   title: `Mitfahrer ab ${this.startPoint}`,
   mode: 'kollege',
+  listLabel: 'Mitfahrer wählen',
   items,
   onSelect: (name) => {
     if (!this.startPointPassengers) this.startPointPassengers = [];
@@ -3141,6 +3176,7 @@ const pName = this.participants[mainIndex]?.name || '';
 this.bsOpen({
   title: `Hinzufügen zu ${pName}`,
   mode: 'kollege',
+  listLabel: 'Person wählen',
   items,
   onSelect: (name) => {
     if (!this.participants[mainIndex].subParticipants) this.participants[mainIndex].subParticipants = [];
@@ -3163,6 +3199,7 @@ const pName = this.participants[mainIndex]?.name || '';
 this.bsOpen({
   title: `Hinzufügen zu ${pName}`,
   mode: 'kollege',
+  listLabel: 'Person wählen',
   items,
   onSelect: (name) => {
     if (!this.participants[mainIndex].treffpunktPersons) this.participants[mainIndex].treffpunktPersons = [];
@@ -3417,7 +3454,11 @@ showPicker(title, items, onSelect, currentValue) {
 
     const btn = document.createElement('button');
     btn.className = 'cp-item' + (isAddNew ? ' add-new' : '') + (isSelected ? ' selected' : '');
-    btn.innerHTML = `<span>${label}</span>${isSelected ? '<span class="cp-check">✓</span>' : ''}`;
+    // Подпись — только как текст: имена приходят из stations.js и с клавиатуры
+    const lab = document.createElement('span');
+    lab.textContent = label;
+    btn.appendChild(lab);
+    if (isSelected) { const chk = document.createElement('span'); chk.className = 'cp-check'; chk.textContent = '✓'; btn.appendChild(chk); }
     btn.addEventListener('click', () => {
       overlay.classList.add('closing');
       setTimeout(() => { overlay.remove(); onSelect(val); }, 180);
@@ -3506,7 +3547,7 @@ bsOpen(config) {
   const label = document.createElement('div');
   label.id = 'bsListLabel';
   label.style.cssText = `font-size:0.68em;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;opacity:0.35;padding:10px 20px 4px;flex-shrink:0;`;
-  label.textContent = this._bsActiveTab === 'treff' ? 'TREFFPUNKT WÄHLEN' : 'TEILNEHMER WÄHLEN';
+  label.textContent = this._bsActiveTab === 'treff' ? 'Treffpunkt wählen' : (this._bsConfig.listLabel || 'Teilnehmer wählen');
 
   // Список
   const list = document.createElement('div');
@@ -3563,12 +3604,12 @@ bsRenderList() {
   const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color').trim() || '#007bff';
 
   const isKollege = this._bsActiveTab === 'kollege';
-  if (label) label.textContent = isKollege ? 'TEILNEHMER WÄHLEN' : 'TREFFPUNKT WÄHLEN';
+  if (label) label.textContent = isKollege ? (cfg.listLabel || 'Teilnehmer wählen') : 'Treffpunkt wählen';
   const items = isKollege ? (cfg.items || []) : (cfg.treffItems || []);
 
   items.forEach((name, i) => {
     const btn = document.createElement('button');
-    const isLast = i === items.length - 1 && !cfg.showAddNew;
+    const isLast = i === items.length - 1;
     btn.style.cssText = `width:100%;padding:15px 24px;border:none;border-bottom:${isLast ? 'none' : '1px solid ' + bord};background:transparent;font-size:1em;text-align:left;cursor:pointer;color:${txt};display:block;box-sizing:border-box;`;
     btn.textContent = name;
     btn.onclick = () => { this.bsClose(); cfg.onSelect(name, this._bsActiveTab); };
@@ -3930,6 +3971,8 @@ overlay.querySelector('#tpClear').onclick = () => {
 overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
 }
 initSortable() {
+// Без библиотеки (не загрузилась) приложение работает дальше, только без перетаскивания
+if (typeof Sortable === 'undefined') return;
 if (this.sortable) this.sortable.destroy();
 this.sortable = new Sortable(this.elements.participantsContainer, {
 handle: '.drag-handle',
@@ -4056,13 +4099,16 @@ out += line;
 // Время прибытия к машине
 const machineTime=new Date(`2025-07-25T${this.machineStop.arrivalTime}:00`);
 out+='\n'+(this.useUhrBei
-? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}${this._destLabel()}`
-: `${this.formatTime(machineTime)}  ${this.machineStop.name}${this._destLabel()}`);
+? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}\u0001`
+: `${this.formatTime(machineTime)}  ${this.machineStop.name}\u0001`);
 if (this.farewell) out += '\n' + this.farewell;
 // Оборачиваем каждую строку в span для long-press копирования
 const lines = out.split('\n').filter(l => l.trim() !== '');
+// Имена, приветствие и прощание — пользовательский текст: экранируем,
+// HTML-метку пункта назначения подставляем уже после экранирования
+const destHtml = this._destLabel();
 this.elements.output.innerHTML = lines
-  .map(l => `<span class="result-line">${l}</span>`)
+  .map(l => `<span class="result-line">${this._esc(l).replace('\u0001', destHtml)}</span>`)
   .join('\n');
 this._initLineLongPress();
 // Показываем кнопки шаринга
@@ -4283,7 +4329,9 @@ this.showToast(ok ? successMsg : '⚠ Kopieren fehlgeschlagen');
 //
 // mode: 'flat' (по умолчанию) | 'api' — для driver.html, он парсит query-параметры.
 _buildRouteUrl(reverse, gpsCoords, mode) {
-  const pts = this._routePoints(reverse, gpsCoords);
+  // Без GPS (обратный путь, позиция не определилась) маршрут начинается с первой
+  // остановки — раньше в этом случае всегда было «Nicht genug Koordinaten»
+  const pts = this._routePoints(reverse, gpsCoords, !!gpsCoords);
   if (!pts || pts.length < 2) return null;
 
   const fmt = (pt) => `${pt.lat},${pt.lng}`;
@@ -4684,6 +4732,9 @@ openGoogleMaps(returnTrip = false) {
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 10000 }
   );
 }
+_esc(v) {
+return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
 _destLabel() {
 const stationName = this.machineStop.stationName || '';
 if (!stationName) return '';
@@ -4691,9 +4742,9 @@ if (!stationName) return '';
 const machineName = (this.machineDestinations[0] || {}).name || 'an der Maschine';
 if (this.machineStop.name !== machineName) return '';
 if (this.showDestName) {
-return ` <span class="dest-label">(${stationName})</span>`;
+return ` <span class="dest-label">(${this._esc(stationName)})</span>`;
 } else {
-return ` <span class="dest-label dest-label--muted" data-nocopy="1">(${stationName})</span>`;
+return ` <span class="dest-label dest-label--muted" data-nocopy="1">(${this._esc(stationName)})</span>`;
 }
 }
 copyResult() {
@@ -4802,7 +4853,6 @@ initSwipeDelete() {
   };
 
   const onTouchStart = e => {
-    if (navigator.vibrate) navigator.vibrate(0);
     onStart(e.touches[0].clientX, e.touches[0].clientY, e.target);
   };
   const onTouchMove  = e => { if (activeGroup && isHoriz) e.preventDefault(); onMove(e.touches[0].clientX, e.touches[0].clientY); };
@@ -4832,7 +4882,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 15.35 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 23.55 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
@@ -5075,6 +5125,7 @@ if (!window.Auth) {
     password()  { try { return localStorage.getItem('fz.auth.password'); } catch { return null; } },
     remembered(){ return !!window.Auth.password(); },
     forget()    { try { localStorage.removeItem('fz.auth.password'); } catch {} },
+    forgetPassword() { try { localStorage.removeItem('fz.auth.password'); } catch {} },
     async available() { return false; },
     enrolled()  { return false; },
     async enroll() { return false; },
@@ -5206,7 +5257,7 @@ const checkPassword = async () => {
 };
 
 submitBtn.addEventListener('click', checkPassword);
-input.addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
+input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); checkPassword(); } });
 input.addEventListener('input', () => { input.classList.remove('error'); });
 });
 </script>
