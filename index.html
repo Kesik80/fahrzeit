@@ -1367,7 +1367,7 @@ this.machineStop = { name: "an der Maschine", time: 20, arrivalTime: "", lat: nu
 this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; // загружается из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
-this.showDestName = false;
+this.showDestName = true;    // «(Ort)» по умолчанию включён
 this.shortenLinks = true;
 this.shortenMode = "fhr";
 // Формат ссылки для Google Maps: 'native' (как пишет сам Google) | 'placeid' | 'api'
@@ -1826,7 +1826,7 @@ this.machineStop = { name: (this.machineDestinations[0] || {}).name || "an der M
 // НЕ сбрасываем machineDestinations — список загружен из stations.js
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
-this.showDestName = false;
+this.showDestName = true;
 this.startPointPassengers = [];
 this.farewell = this.defaultFarewellText || 'Tschüss 👋';
 this.saveData();
@@ -4835,7 +4835,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 09.10 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 09.35 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
