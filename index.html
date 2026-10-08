@@ -811,8 +811,7 @@ background: var(--surface);
 color: var(--text);
 border-top: 1px solid var(--hair);
 }
-/* У старта нет ✖, поэтому правая полоса под него не нужна — место уходит приветствию */
-.start-row { border-top: 0; padding-right: 6px; }
+.start-row { border-top: 1px solid var(--hair); }
 /* Linie */
 .fp-row::before {
 content: '';
@@ -840,28 +839,25 @@ background: var(--text);
 box-shadow: 0 0 0 3px var(--surface);
 }
 .start-row::after { background: var(--surface); border: 2.5px solid var(--text); }
-/* Строка старта, как раньше: имя · булавка · приветствие · карандаш · «человек +».
-   Имя занимает ровно свою ширину, остальное достаётся приветствию. */
-.start-row #startPoint { flex: 0 0 auto; max-width: 45%; gap: 4px; }
-.start-row .fp-tool { flex-basis: 28px; width: 28px; }
-.start-row .add-sub-btn { flex-basis: 30px; width: 30px; }
-.start-row .fp-pen { flex-basis: 24px; width: 24px; }
-.fp-row .cp-trigger.fp-greet {
-flex: 1 1 auto;
+/* Приветствие — первая строка листа, над стартом: с него начинается и сообщение */
+.fp-greet-row {
+display: flex;
+align-items: center;
+gap: 6px;
+padding: 8px 12px 8px 36px;
+}
+.fp-greet-row .cp-trigger.fp-greet {
+flex: 0 1 auto;
 min-width: 0;
-margin-left: 2px;
-padding: 6px 7px;
+padding: 6px 9px;
 border: 1px solid var(--border);
 border-radius: 10px;
 font-weight: 400;
-font-size: .88em;
+font-size: .94em;
 white-space: nowrap;
-justify-content: space-between;
-gap: 3px;
+gap: 6px;
 }
-.fp-greet > span:first-child { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-/* Если места не хватает, первой сжимается стрелка, и только потом обрезается текст */
-.fp-greet .cp-arrow { flex: 0 1000 auto; min-width: 0; overflow: hidden; }
+.fp-greet > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .has-treffpunkt::after { border-radius: 3px; }
 .fp-dest::after {
 left: 9px;
@@ -1107,7 +1103,6 @@ background: var(--accent-soft);
 /* Узкие экраны: значки плотнее, чтобы имени хватало места */
 @media (max-width: 380px) {
 .fp-row { padding-right: 24px; }
-.start-row { padding-right: 6px; }
 .fp-tool { flex-basis: 28px; width: 28px; }
 .fp-tool svg { width: 20px; height: 20px; }
 .sub-participant.fp-row { padding-left: 100px; }
@@ -1150,16 +1145,18 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 </a>
 <!-- Fahrplan: Start → Halte → Ziel als ein Blatt -->
 <div class="fp-sheet">
+<div class="fp-greet-row">
+<div id="greeting" class="cp-trigger fp-greet" aria-label="Begrüßung wählen" role="button" tabindex="0">
+  <span id="greetingTriggerLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
+</div>
+<button class="edit-greeting-btn fp-pen" title="Begrüßung bearbeiten" aria-label="Begrüßung bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
+</div>
 <div class="start-row fp-row">
 <div class="fp-time"><span class="fp-clock is-empty" id="startClock">––:––</span><span class="fp-leg">Abfahrt</span></div>
 <div id="startPoint" class="cp-trigger" aria-label="Startpunkt wählen" role="button" tabindex="0">
   <span id="startPointLabel" class="cp-label">Startpunkt wählen</span><span class="cp-arrow">▼</span>
 </div>
 <button class="start-point-coords fp-tool" title="Startpunkt-Koordinaten bearbeiten" aria-label="Startpunkt-Koordinaten bearbeiten"></button>
-<div id="greeting" class="cp-trigger fp-greet" aria-label="Begrüßung wählen" role="button" tabindex="0">
-  <span id="greetingTriggerLabel">Moin zusammen</span><span class="cp-arrow">▼</span>
-</div>
-<button class="edit-greeting-btn fp-pen" title="Begrüßung bearbeiten" aria-label="Begrüßung bearbeiten" data-svg-icon="pencil" data-svg-size="18"></button>
 <button class="add-sub-btn fp-tool" id="addStartPassengerBtn" title="Mitfahrer hinzufügen" aria-label="Mitfahrer hinzufügen" data-svg-icon="person-plus"></button>
 </div>
 <div id="startPassengersContainer"></div>
@@ -4835,7 +4832,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 09.35 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 15.35 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
