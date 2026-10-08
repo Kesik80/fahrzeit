@@ -63,6 +63,19 @@ color: var(--text) !important;
 h2 {
 text-align: center
 }
+/* Заголовок поменьше, под ним — что дальше по расписанию */
+main > h2 { font-size: 1.35em; margin: 6px 0 2px; }
+.fp-status { text-align: center; margin: 0 0 12px; }
+.fp-status[hidden] { display: none; }
+.fp-status span {
+display: inline-block;
+padding: 5px 12px;
+border-radius: 999px;
+background: var(--surface);
+color: var(--text);
+font-size: .86em;
+}
+.fp-status b { color: var(--clock); font-variant-numeric: tabular-nums; }
 button {
 padding: var(--spacing-unit);
 margin-top: var(--spacing-unit);
@@ -768,6 +781,7 @@ body.dark .cp-cancel { border-color: rgba(255,255,255,0.15) !important; color: #
 --accent-soft: rgba(31, 111, 235, .1);
 --on-accent: #ffffff;
 --warn: #b45f00;
+--clock: #0f7468;            /* время на остановках — бирюзовый */
 --dest: #f2b600;
 }
 body.dark {
@@ -778,6 +792,7 @@ body.dark {
 --accent-soft: rgba(90, 162, 255, .14);
 --on-accent: #0b1b33;
 --warn: #ffa733;
+--clock: #6fd0c2;
 }
 .fp-sheet {
 background: var(--surface);
@@ -877,6 +892,7 @@ font-size: 1.08em;
 font-variant-numeric: tabular-nums;
 white-space: nowrap;
 }
+.fp-clock { color: var(--clock); }
 .fp-clock.is-empty { color: var(--rail); }
 .fp-leg {
 display: block;
@@ -980,6 +996,12 @@ cursor: pointer;
 }
 .fp-tool svg { width: 22px; height: 22px; }
 .fp-tool:active { background: var(--hair); }
+/* Цвета значков как в прежней версии: голубая булавка (без координат — красная),
+   синий «добавить попутчика», зелёный «добавить человека» у Treffpunkt */
+.coords-icon,
+.start-point-coords { color: rgb(68, 178, 229); }
+.add-sub-btn.fp-tool { color: var(--primary-color); }
+.has-treffpunkt .add-sub-btn.fp-tool { color: var(--success-color); }
 .coords-icon.is-missing,
 .start-point-coords.is-missing { color: var(--danger-color); }
 .calc-route-icon.is-on { color: var(--accent); }
@@ -1103,6 +1125,7 @@ background: var(--accent-soft);
 <body data-install="banner">
 <main>
 <h2>Fahrzeit Rechner</h2>
+<div id="fpStatus" class="fp-status" hidden><span></span></div>
 <!-- переключатель темы (уже есть) -->
 <label class="theme-toggle">
 <input type="checkbox" id="themeSwitch">
@@ -1531,7 +1554,31 @@ return { start, stops };
 }
 // Обновить колонку времени и пример на переключателе «минуты вверху». Вызывается из
 // calculate(), поэтому часы верны и там, где список не перерисовывается.
+// Строка под заголовком: «Do, 08.10. · Abfahrt 21:20 · in 16 Std. 19 Min.»,
+// в пути — «unterwegs · Ankunft 22:45 · in 25 Min.». Без времени прибытия скрыта.
+_updateStatus() {
+const box = document.getElementById('fpStatus');
+if (!box) return;
+const arrival = this._arrivalDate();
+if (!arrival) { box.hidden = true; return; }
+const total = this.participants.filter(p => p.name).reduce((s, p) => s + (p.time || 0), 0) + (this.machineStop.time || 0);
+const departure = new Date(arrival.getTime() - total * 60000);
+const now = Date.now();
+const hhmm = (d) => String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+const until = (d) => {
+  const m = Math.ceil((d.getTime() - now) / 60000);
+  if (m <= 0) return 'jetzt';
+  return m < 60 ? `in ${m} Min.` : `in ${Math.floor(m / 60)} Std. ${m % 60} Min.`;
+};
+const DAYS = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+const day = (d) => `${DAYS[d.getDay()]}, ${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.`;
+box.querySelector('span').innerHTML = departure.getTime() > now
+  ? `${day(departure)} · Abfahrt <b>${hhmm(departure)}</b> · ${until(departure)}`
+  : `unterwegs · Ankunft <b>${hhmm(arrival)}</b> · ${until(arrival)}`;
+box.hidden = false;
+}
 _updateClocks() {
+this._updateStatus();
 const c = this._stopClocks();
 const EMPTY = '––:––';
 const put = (el, v) => { el.textContent = v || EMPTY; el.classList.toggle('is-empty', !v); };
@@ -4780,9 +4827,12 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 00.25 · Format ' + app.routeFormat);
+console.log('[app] build 08.10.26 05.45 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
+// Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
+setInterval(() => app._updateStatus(), 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) app._updateStatus(); });
 // Инициализируем swipe сразу при запуске (до первого renderParticipants)
 app.initSwipeDelete();
 
