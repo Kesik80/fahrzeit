@@ -184,7 +184,13 @@ this.trefftravelTimes = {
   "P&R A42-René": 15,
   "P&R A42-Vasyl": 15,
   "OLGA-Park-Aleks": 5,
-  "P&R A42-Aleks": 15
+  "P&R A42-Aleks": 15,
+  "Golf Parkplatz-Phil": 5,
+  "Lirich P&R Parkplatz-Phil": 15,
+  "OLGA-Park-Phil": 5,
+  "P&R A42-Phil": 20,
+  "P&R Herten A2-Phil": 20,
+  "Rathaus Osterfeld-Phil": 10
 };
 
 // Приоритетные списки остановок и попутчики
@@ -301,6 +307,7 @@ const defaultEntryMetaData = {
     }
   },
   "times": {
-    "tt:Phil-Anatolii": 1
+    "tt:Phil-Anatolii": 1,
+    "treff:P&R A42-Phil": 1
   }
 };
