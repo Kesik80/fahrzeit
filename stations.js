@@ -47,6 +47,7 @@ this.stations = {
   "Troisdorf": {lat: 50.814186, lng: 7.146110},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wanne-Eickel 2": {lat: 51.534819, lng: 7.181459},
+  "Witten": {lat: 51.437504, lng: 7.326606},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
   "Wuppertal-Steinbeck": {lat: 51.245710, lng: 7.130845},
   "Wuppertal-Vohwinkel": {lat: 51.233474, lng: 7.072435}
@@ -290,6 +291,10 @@ const defaultEntryMetaData = {
     "Wanne-Eickel 2": {
       "c": "2026-09-19T10:08:36.730Z",
       "u": "2026-09-19T10:08:36.730Z"
+    },
+    "Witten": {
+      "c": "2026-10-10T14:16:58.042Z",
+      "u": "2026-10-10T14:16:58.042Z"
     }
   },
   "treffpunkt": {
