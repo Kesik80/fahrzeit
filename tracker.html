@@ -173,6 +173,27 @@ async function initTracker() {
   });
   const db = getDatabase(app);
 
+  // Статус по свежести данных: раньше значок горел «LIVE», даже когда
+  // телефон водителя давно перестал присылать позицию (страница в фоне)
+  let lastTs = 0, lastPaused = false, lastActive = true;
+  const paintStatus = () => {
+    const badge = document.getElementById('statusBadge');
+    if (!lastTs) return;
+    if (lastActive === false) { badge.className = 'badge badge-end'; badge.textContent = '🏁 Fahrt beendet'; return; }
+    const min = Math.floor((Date.now() - lastTs) / 60000);
+    if (lastPaused) {
+      badge.className = 'badge badge-wait';
+      badge.textContent = min >= 1 ? `⏸ Pausiert · vor ${min} Min.` : '⏸ Pausiert';
+    } else if (Date.now() - lastTs > 90000) {
+      badge.className = 'badge badge-wait';
+      badge.textContent = `⚠ Kein Signal seit ${min} Min.`;
+    } else {
+      badge.className = 'badge badge-live';
+      badge.textContent = '● LIVE';
+    }
+  };
+  setInterval(paintStatus, 15000);
+
   onValue(ref(db, `sessions/${sessionId}`), async (snapshot) => {
     const data = snapshot.val();
     const badge = document.getElementById('statusBadge');
@@ -183,15 +204,11 @@ async function initTracker() {
       return;
     }
 
-    const { lat, lng, ts, route, active } = data;
-
-    if (active === false) {
-      badge.className = 'badge badge-end';
-      badge.textContent = '🏁 Fahrt beendet';
-    } else {
-      badge.className = 'badge badge-live';
-      badge.textContent = '● LIVE';
-    }
+    const { lat, lng, ts, route, active, paused } = data;
+    lastTs = ts || Date.now(); lastPaused = !!paused; lastActive = active;
+    paintStatus();
+    // Пауза пишет только флаг — позиция та же, перерисовывать нечего
+    if (typeof lat !== 'number' || typeof lng !== 'number') return;
 
     const pos = { lat, lng };
 

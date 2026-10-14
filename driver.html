@@ -33,6 +33,9 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
 .info-bar b { color:var(--text); }
 .dot { width:8px; height:8px; border-radius:50%; background:#555; display:inline-block; margin-right:4px; }
 .dot.active { background:var(--success); animation:pulse 1.5s infinite; }
+.hint { font-size:0.78em; color:var(--muted); line-height:1.35; }
+.hint b { color:var(--text); }
+.warn { font-size:0.8em; background:#f9ab00; color:#000; border-radius:8px; padding:6px 10px; display:none; }
 .reroute-badge { font-size:0.7em; background:#f9ab00; color:#000; border-radius:8px; padding:1px 7px; display:none; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
 </style>
@@ -50,11 +53,18 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
     <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
   </div>
   <button class="btn btn-start" id="btnStart">▶ Start – Tracking beginnen</button>
+  <div class="hint">
+    So funktioniert's: Navigation über <b>Android Auto</b> im Auto starten, dann <b>diese Seite auf dem Handy offen lassen</b>.
+    Der Bildschirm bleibt an. Sobald eine andere App im Vordergrund ist oder das Handy gesperrt wird,
+    stoppt der Browser das GPS – die Mitfahrer sehen dann die letzte Position.
+  </div>
 </div>
 
 <div id="map"></div>
 
 <div class="bottom-panel" id="bottomPanel" style="display:none;">
+  <div class="warn" id="pauseWarn"></div>
+  <div class="hint" id="keepHint">📱 Seite offen lassen – Navigation läuft auf dem Autodisplay.</div>
   <div class="info-bar">
     <span><span class="dot" id="dot"></span>GPS: <b id="infoCoords">—</b></span>
     <span>🔄 <b id="infoCount">0</b></span>
@@ -70,7 +80,7 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js';
-import { getDatabase, ref, set, onDisconnect } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js';
+import { getDatabase, ref, set, update, onDisconnect } from 'https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js';
 
 const app = initializeApp({
   apiKey: "AIzaSyDPD_dheNbYyskB9JwgnoNCBCnY-yWWOYg",
@@ -86,6 +96,65 @@ const db = getDatabase(app);
 let sessionId=null, watchId=null, updateCount=0;
 let map=null, driverMarker=null, trackPolyline=null, trackPath=[];
 let directionsRenderer=null, lastRouteUrl=null;
+let wakeLock=null, hiddenAt=null;
+
+// Постоянный номер сессии на этом телефоне: ссылка для пассажиров не меняется
+// от поездки к поездке — её можно один раз закрепить в группе.
+function stableSessionId() {
+  const K = 'fz.driver.session';
+  let id = null;
+  try { id = localStorage.getItem(K); } catch {}
+  if (!id || !/^[A-Z0-9]{8}$/.test(id)) {
+    const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const r = crypto.getRandomValues(new Uint8Array(8));
+    id = Array.from(r, x => abc[x % abc.length]).join('');
+    try { localStorage.setItem(K, id); } catch {}
+  }
+  return id;
+}
+
+// Экран не гаснет, пока страница на виду. В фоне браузер всё равно
+// останавливает GPS — это ограничение Android/Chrome, обойти его со страницы нельзя.
+async function keepScreenOn() {
+  if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) { console.warn('[driver] wakeLock', e.message); }
+}
+
+function startWatch() {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = navigator.geolocation.watchPosition(
+    p=>writeLocation(p.coords.latitude,p.coords.longitude),
+    e=>setStatus('GPS Fehler',false),
+    {enableHighAccuracy:true,maximumAge:5000,timeout:20000}
+  );
+}
+
+document.addEventListener('visibilitychange', async () => {
+  if (!sessionId) return;
+  if (document.visibilityState === 'hidden') {
+    hiddenAt = Date.now();
+    // Успеваем отметить паузу, пока браузер ещё не заморозил страницу
+    try { await update(ref(db,'sessions/'+sessionId), { paused:true, pausedAt:Date.now() }); } catch {}
+  } else {
+    const mins = hiddenAt ? Math.round((Date.now() - hiddenAt) / 60000) : 0;
+    hiddenAt = null;
+    await keepScreenOn();
+    // После фона watchPosition на части телефонов «засыпает» — перезапускаем
+    startWatch();
+    navigator.geolocation.getCurrentPosition(
+      p=>writeLocation(p.coords.latitude,p.coords.longitude), ()=>{},
+      {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+    const w = document.getElementById('pauseWarn');
+    if (mins >= 1) {
+      w.textContent = `⚠ Tracking war ${mins} Min. pausiert (Seite im Hintergrund).`;
+      w.style.display = 'block';
+      setTimeout(() => { w.style.display = 'none'; }, 8000);
+    }
+  }
+});
 const routeInput  = document.getElementById('routeUrl');
 const setupPanel  = document.getElementById('setupPanel');
 const bottomPanel = document.getElementById('bottomPanel');
@@ -171,7 +240,7 @@ async function writeLocation(lat, lng) {
   if (!sessionId || !map) return;
   try {
     await set(ref(db,'sessions/'+sessionId), {
-      lat, lng, ts:Date.now(), route:routeInput.value.trim(), active:true
+      lat, lng, ts:Date.now(), route:lastRouteUrl || routeInput.value.trim(), active:true, paused:false
     });
     updateCount++;
     document.getElementById('infoCoords').textContent = lat.toFixed(4)+', '+lng.toFixed(4);
@@ -206,11 +275,14 @@ document.getElementById('btnStart').addEventListener('click', async () => {
 });
 
 async function startTracking(routeUrl) {
-  sessionId = Math.random().toString(36).substr(2,6).toUpperCase();
+  sessionId = stableSessionId();
   lastRouteUrl = routeUrl;
   updateCount = 0; trackPath = [];
   setStatus('Verbinde...', false);
-  onDisconnect(ref(db,'sessions/'+sessionId)).update({active:false});
+  // Закрытие вкладки/потеря связи → «beendet» не ставим (часто это просто фон),
+  // а помечаем паузу; «Fahrt beendet» — только по кнопке «Stopp»
+  onDisconnect(ref(db,'sessions/'+sessionId)).update({paused:true});
+  keepScreenOn();
 
   // Скрипт Google Maps грузим один раз: после «Stopp → Start» он уже есть
   if (!(window.google && google.maps)) {
@@ -283,11 +355,7 @@ async function startTracking(routeUrl) {
     e=>setStatus('GPS: '+e.message,false),
     {enableHighAccuracy:true,timeout:15000}
   );
-  watchId=navigator.geolocation.watchPosition(
-    p=>writeLocation(p.coords.latitude,p.coords.longitude),
-    e=>setStatus('GPS Fehler',false),
-    {enableHighAccuracy:true,maximumAge:5000,timeout:10000}
-  );
+  startWatch();
 }
 
 document.getElementById('btnStop').addEventListener('click', async()=>{
@@ -295,21 +363,33 @@ document.getElementById('btnStop').addEventListener('click', async()=>{
   watchId=null;
   clearTimeout(rerouteTimer); rerouteTimer=null;   // иначе через 30 с таймер писал в остановленную сессию
   document.getElementById('rerouteBadge').style.display='none';
-  if(sessionId) await set(ref(db,'sessions/'+sessionId+'/active'),false);
+  if (wakeLock) { try { await wakeLock.release(); } catch {} wakeLock=null; }
+  if(sessionId) await update(ref(db,'sessions/'+sessionId),{active:false, paused:false});
   setStatus('Beendet',false);
   mapEl.style.display='none'; bottomPanel.style.display='none'; setupPanel.style.display='flex';
   map=null; driverMarker=null; trackPolyline=null; trackPath=[]; sessionId=null;
 });
 
-document.getElementById('btnShare').addEventListener('click',()=>{
+document.getElementById('btnShare').addEventListener('click', async ()=>{
   if(!sessionId) return;
   const url=location.origin+'/tracker.html?session='+sessionId;
-  navigator.clipboard?navigator.clipboard.writeText(url).then(()=>{
-    const b=document.getElementById('btnShare');
+  const b=document.getElementById('btnShare');
+  // Сначала системное «Teilen» (WhatsApp и т. п.), иначе — в буфер
+  if (navigator.share) {
+    try { await navigator.share({ title:'Fahrzeit Live', text:'📍 Live-Position:', url }); return; }
+    catch(e) { if (e.name === 'AbortError') return; }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
     b.textContent='✅ Kopiert!';
     setTimeout(()=>b.textContent='📋 Link',2000);
-  }):prompt('Link:',url);
+  } catch { prompt('Link:',url); }
 });
+
+// Открыто из приложения кнопкой 🚗 с готовым маршрутом — стартуем сразу
+if (rp && new URLSearchParams(location.search).get('auto') === '1') {
+  document.getElementById('btnStart').click();
+}
 </script>
 <script src="console.js"></script>
 </body>

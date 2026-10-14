@@ -391,9 +391,9 @@ flex-wrap: nowrap
 .button-container button {
 flex: 1;
 margin-top: 0;
-padding: var(--small-spacing) 8px;
+padding: var(--small-spacing) 4px;
 font-size: .8em;
-min-width: 60px
+min-width: 0   /* шесть кнопок должны влезать и на 360 px */
 }
 .button-container .add {
 grid-column: span 2
@@ -1192,14 +1192,10 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 <button class="clear" title="Zurücksetzen" data-svg-icon="reset" data-svg-size="28">
 
 </button>
-<!--
-  КНОПКА btnGoDriver — временно отключена (Live Tracking / водительский режим).
-  Раскомментировать когда функция window._openDriver() будет готова к использованию.
-
-<button class="driver-btn" id="btnGoDriver" title="Live Tracking starten" onclick="window._openDriver()" data-svg-icon="rocket" data-svg-size="28">
+<!-- Режим водителя: driver.html шлёт позицию в Firebase, пассажиры смотрят tracker.html -->
+<button class="driver-btn" id="btnGoDriver" title="Live-Tracking starten" onclick="window._openDriver()" data-svg-icon="rocket" data-svg-size="28">
 
 </button>
--->
 </div>
 <div id="outputWrapper">
 <pre id="output"></pre>
@@ -4882,7 +4878,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 08.10.26 23.55 · Format ' + app.routeFormat);
+console.log('[app] build 09.10.26 20.00 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
@@ -4999,9 +4995,12 @@ window._openDriver = function() {
   const app = window.app;
   if (!app || !app._buildRouteUrl) return;
   const go = (gps) => {
-    // driver.html разбирает ссылку через searchParams — ему нужен формат api=1
-    const url = gps ? app._buildRouteUrl(false, gps, 'api') : null;
-    window.location.href = '/driver.html' + (url ? '?route=' + encodeURIComponent(url) : '');
+    // driver.html разбирает ссылку через searchParams — ему нужен формат api=1.
+    // Без GPS маршрут строится от первой остановки (раньше уходил пустым).
+    let url = null;
+    try { url = app._buildRouteUrl(false, gps || null, 'api'); } catch (e) { url = null; }
+    if (!url) { app.showToast('Bitte zuerst Route berechnen.'); return; }
+    window.location.href = '/driver.html?auto=1&route=' + encodeURIComponent(url);
   };
   if (!navigator.geolocation) { go(null); return; }
   navigator.geolocation.getCurrentPosition(
