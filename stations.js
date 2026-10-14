@@ -10,8 +10,7 @@ const defaultCoords = {
   "René": {lat: 51.476281, lng: 6.861856},
   "Sergii": {lat: 51.530133, lng: 6.850858},
   "Sergio": {lat: 51.519965, lng: 6.887640},
-  "Vasyl": {lat: 51.515352, lng: 6.893390},
-  "Wesel": {lat: 51.660269, lng: 6.629993}
+  "Vasyl": {lat: 51.515352, lng: 6.893390}
 };
 
 // реестр станций
@@ -49,6 +48,7 @@ this.stations = {
   "Troisdorf SW": {lat: 50.814186, lng: 7.146110},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
   "Wanne-Eickel 2": {lat: 51.534819, lng: 7.181459},
+  "Wesel": {lat: 51.660269, lng: 6.629993},
   "Witten": {lat: 51.437504, lng: 7.326606},
   "Wuppertal-Langerfeld": {lat: 51.278872, lng: 7.244835},
   "Wuppertal-Steinbeck": {lat: 51.245710, lng: 7.130845},
@@ -113,18 +113,7 @@ this.travelTimes = {
   "Phil-Dima": 20,
   "Phil-Andrii": 5,
   "Phil-Marvin": 20,
-  "Phil-Maikel": 20,
-  "Wesel-Sergii": 1,
-  "Wesel-Anatolii": 1,
-  "Wesel-Aleks": 1,
-  "Wesel-Sergio": 1,
-  "Wesel-Vasyl": 1,
-  "Wesel-René": 1,
-  "Wesel-Dima": 1,
-  "Wesel-Andrii": 1,
-  "Wesel-Marvin": 1,
-  "Wesel-Maikel": 1,
-  "Wesel-Phil": 1
+  "Phil-Maikel": 20
 };
 
 // Пункты встречи (Treffpunkt)
@@ -262,10 +251,6 @@ const defaultEntryMetaData = {
     "Vasyl": {
       "c": "2026-09-12T17:44:21.275Z",
       "u": "2026-09-21T00:16:35.852Z"
-    },
-    "Wesel": {
-      "c": "2026-10-14T16:38:42.424Z",
-      "u": "2026-10-14T16:39:00.359Z"
     }
   },
   "stations": {
@@ -312,6 +297,10 @@ const defaultEntryMetaData = {
     "Wanne-Eickel 2": {
       "c": "2026-09-19T10:08:36.730Z",
       "u": "2026-09-19T10:08:36.730Z"
+    },
+    "Wesel": {
+      "c": "2026-10-14T16:40:50.226Z",
+      "u": "2026-10-14T16:41:00.423Z"
     },
     "Witten": {
       "c": "2026-10-10T14:16:58.042Z",
