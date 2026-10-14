@@ -1,16 +1,17 @@
 // реестр имен
 const defaultCoords = {
-  "Sergii": {lat: 51.530133, lng: 6.850858},
-  "Anatolii": {lat: 51.522697, lng: 6.859275},
   "Aleks": {lat: 51.511287, lng: 6.878713},
+  "Anatolii": {lat: 51.522697, lng: 6.859275},
+  "Andrii": {lat: 51.534558, lng: 6.861061},
+  "Dima": {lat: 51.551753, lng: 7.102285},
+  "Maikel": {lat: 51.556472, lng: 6.731424},
+  "Marvin": {lat: 51.556472, lng: 6.731424},
+  "Phil": {lat: 51.518532, lng: 6.877118},
+  "René": {lat: 51.476281, lng: 6.861856},
+  "Sergii": {lat: 51.530133, lng: 6.850858},
   "Sergio": {lat: 51.519965, lng: 6.887640},
   "Vasyl": {lat: 51.515352, lng: 6.893390},
-  "René": {lat: 51.476281, lng: 6.861856},
-  "Dima": {lat: 51.551753, lng: 7.102285},
-  "Andrii": {lat: 51.534558, lng: 6.861061},
-  "Marvin": {lat: 51.556472, lng: 6.731424},
-  "Maikel": {lat: 51.556472, lng: 6.731424},
-  "Phil": {lat: 51.518532, lng: 6.877118}
+  "Wesel": {lat: 51.660269, lng: 6.629993}
 };
 
 // реестр станций
@@ -112,7 +113,18 @@ this.travelTimes = {
   "Phil-Dima": 20,
   "Phil-Andrii": 5,
   "Phil-Marvin": 20,
-  "Phil-Maikel": 20
+  "Phil-Maikel": 20,
+  "Wesel-Sergii": 1,
+  "Wesel-Anatolii": 1,
+  "Wesel-Aleks": 1,
+  "Wesel-Sergio": 1,
+  "Wesel-Vasyl": 1,
+  "Wesel-René": 1,
+  "Wesel-Dima": 1,
+  "Wesel-Andrii": 1,
+  "Wesel-Marvin": 1,
+  "Wesel-Maikel": 1,
+  "Wesel-Phil": 1
 };
 
 // Пункты встречи (Treffpunkt)
@@ -239,10 +251,6 @@ const defaultMachineDestinationsData = [
 // Главная страница его не читает — нужен только для сортировки «по дате».
 const defaultEntryMetaData = {
   "defaultCoords": {
-    "Vasyl": {
-      "c": "2026-09-12T17:44:21.275Z",
-      "u": "2026-09-21T00:16:35.852Z"
-    },
     "Maikel": {
       "c": "2026-09-05T02:52:32.861Z",
       "u": "2026-09-05T02:52:32.861Z"
@@ -250,6 +258,14 @@ const defaultEntryMetaData = {
     "Phil": {
       "c": "2026-09-27T15:05:42.257Z",
       "u": "2026-09-27T15:05:42.257Z"
+    },
+    "Vasyl": {
+      "c": "2026-09-12T17:44:21.275Z",
+      "u": "2026-09-21T00:16:35.852Z"
+    },
+    "Wesel": {
+      "c": "2026-10-14T16:38:42.424Z",
+      "u": "2026-10-14T16:39:00.359Z"
     }
   },
   "stations": {
