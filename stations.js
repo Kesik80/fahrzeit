@@ -75,7 +75,7 @@ this.travelTimes = {
   "Marvin-Dima": 30,
   "Maikel-Sergii": 20,
   "Maikel-Andrii": 20,
-  "Maikel-Anatolii": 15,
+  "Maikel-Anatolii": 20,
   "Maikel-Sergio": 20,
   "Maikel-Dima": 30,
   "Maikel-Marvin": 5,
@@ -327,6 +327,7 @@ const defaultEntryMetaData = {
     }
   },
   "times": {
+    "tt:Maikel-Anatolii": 1,
     "tt:Phil-Anatolii": 1,
     "treff:P&R A42-Phil": 1
   }
