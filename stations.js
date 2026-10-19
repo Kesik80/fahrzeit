@@ -15,6 +15,7 @@ const defaultCoords = {
 
 // реестр станций
 this.stations = {
+  "Aachen": {lat: 50.773630, lng: 6.123612},
   "Dortmund Obereving": {lat: 51.540635, lng: 7.478439},
   "Dortmund-Lütgendortmund": {lat: 51.497711, lng: 7.366530},
   "Duisburg Hochfeld": {lat: 51.409617, lng: 6.764010},
@@ -254,6 +255,10 @@ const defaultEntryMetaData = {
     }
   },
   "stations": {
+    "Aachen": {
+      "c": "2026-10-19T12:55:44.371Z",
+      "u": "2026-10-19T12:55:44.371Z"
+    },
     "Duisburg Hochfeld": {
       "c": "2026-09-03T22:51:42.865Z",
       "u": "2026-09-03T22:51:42.865Z"
