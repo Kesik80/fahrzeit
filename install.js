@@ -36,7 +36,11 @@
   // Уже установлено — ничего не показываем
   var standalone = window.matchMedia('(display-mode: standalone)').matches
     || window.matchMedia('(display-mode: fullscreen)').matches
-    || window.navigator.standalone === true;
+    || window.navigator.standalone === true
+    // APK из Web2APK: его early.js подменяет display-mode, но вставляется позже,
+    // чем выполняется этот файл. Мост W2A и метка в user agent есть с самого начала.
+    || !!window.W2A
+    || / Web2APK\b/.test(navigator.userAgent);
   if (standalone && !DEBUG) {
     log('уже запущено как приложение — баннер не нужен.',
         'Если хочешь увидеть его всё равно: localStorage.setItem("fahrzeit.installDebug","1")');

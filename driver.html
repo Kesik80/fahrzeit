@@ -53,7 +53,7 @@ textarea { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3
     <textarea id="routeUrl" placeholder="https://www.google.com/maps/dir/?api=1&origin=..."></textarea>
   </div>
   <button class="btn btn-start" id="btnStart">▶ Start – Tracking beginnen</button>
-  <div class="hint">
+  <div class="hint" id="howHint">
     So funktioniert's: Navigation über <b>Android Auto</b> im Auto starten, dann <b>diese Seite auf dem Handy offen lassen</b>.
     Der Bildschirm bleibt an. Sobald eine andere App im Vordergrund ist oder das Handy gesperrt wird,
     stoppt der Browser das GPS – die Mitfahrer sehen dann die letzte Position.
@@ -96,7 +96,28 @@ const db = getDatabase(app);
 let sessionId=null, watchId=null, updateCount=0;
 let map=null, driverMarker=null, trackPolyline=null, trackPath=[];
 let directionsRenderer=null, lastRouteUrl=null;
-let wakeLock=null, hiddenAt=null;
+let wakeLock=null, hiddenAt=null, nativeStarted=false;
+
+// Внутри APK из Web2APK (шаблон 1.7+) есть нативная служба геолокации:
+// она шлёт позицию в Firebase сама, даже с выключенным экраном.
+// В обычном браузере W2A нет — работает как раньше, только с открытой страницей.
+const DB_URL = 'https://fahrzeit-tracker-22f33-default-rtdb.europe-west1.firebasedatabase.app';
+const NATIVE = !!(window.W2A && typeof W2A.bgLocationStart === 'function');
+const nativeRunning = () => { try { return NATIVE && W2A.bgLocationRunning(); } catch { return false; } };
+function startNative() {
+  if (!NATIVE || !sessionId) return;
+  try {
+    W2A.bgLocationStart(JSON.stringify({
+      url: `${DB_URL}/sessions/${sessionId}.json`,
+      extra: { active: true, paused: false },
+      stop:  { active: false, paused: false },
+      intervalMs: 5000,
+      title: 'Fahrzeit · Live-Tracking',
+      text: 'Mitfahrer sehen deine Position'
+    }));
+  } catch (e) { console.warn('[driver] native', e); }
+}
+function stopNative() { if (NATIVE) { try { W2A.bgLocationStop(); } catch {} } }
 
 // Постоянный номер сессии на этом телефоне: ссылка для пассажиров не меняется
 // от поездки к поездке — её можно один раз закрепить в группе.
@@ -136,10 +157,14 @@ document.addEventListener('visibilitychange', async () => {
   if (!sessionId) return;
   if (document.visibilityState === 'hidden') {
     hiddenAt = Date.now();
+    if (nativeRunning()) return;   // позицию дальше шлёт служба приложения — это не пауза
     // Успеваем отметить паузу, пока браузер ещё не заморозил страницу
     try { await update(ref(db,'sessions/'+sessionId), { paused:true, pausedAt:Date.now() }); } catch {}
   } else {
-    const mins = hiddenAt ? Math.round((Date.now() - hiddenAt) / 60000) : 0;
+    // Трекинг остановили кнопкой «Beenden» в уведомлении — синхронизируем страницу
+    if (NATIVE && !nativeRunning() && nativeStarted) { nativeStarted = false; document.getElementById('btnStop').click(); return; }
+    const wasNative = nativeRunning();
+    const mins = hiddenAt && !wasNative ? Math.round((Date.now() - hiddenAt) / 60000) : 0;
     hiddenAt = null;
     await keepScreenOn();
     // После фона watchPosition на части телефонов «засыпает» — перезапускаем
@@ -281,8 +306,14 @@ async function startTracking(routeUrl) {
   setStatus('Verbinde...', false);
   // Закрытие вкладки/потеря связи → «beendet» не ставим (часто это просто фон),
   // а помечаем паузу; «Fahrt beendet» — только по кнопке «Stopp»
-  onDisconnect(ref(db,'sessions/'+sessionId)).update({paused:true});
-  keepScreenOn();
+  if (NATIVE) {
+    // Связь страницы с Firebase при выключенном экране рвётся — это не пауза, служба продолжает слать
+    startNative(); nativeStarted = true;
+    document.getElementById('keepHint').textContent = '📱 Hintergrund-GPS aktiv – Bildschirm darf aus sein.';
+  } else {
+    onDisconnect(ref(db,'sessions/'+sessionId)).update({paused:true});
+    keepScreenOn();
+  }
 
   // Скрипт Google Maps грузим один раз: после «Stopp → Start» он уже есть
   if (!(window.google && google.maps)) {
@@ -364,6 +395,7 @@ document.getElementById('btnStop').addEventListener('click', async()=>{
   clearTimeout(rerouteTimer); rerouteTimer=null;   // иначе через 30 с таймер писал в остановленную сессию
   document.getElementById('rerouteBadge').style.display='none';
   if (wakeLock) { try { await wakeLock.release(); } catch {} wakeLock=null; }
+  stopNative(); nativeStarted = false;
   if(sessionId) await update(ref(db,'sessions/'+sessionId),{active:false, paused:false});
   setStatus('Beendet',false);
   mapEl.style.display='none'; bottomPanel.style.display='none'; setupPanel.style.display='flex';
@@ -385,6 +417,9 @@ document.getElementById('btnShare').addEventListener('click', async ()=>{
     setTimeout(()=>b.textContent='📋 Link',2000);
   } catch { prompt('Link:',url); }
 });
+
+if (NATIVE) document.getElementById('howHint').innerHTML =
+  'In der App läuft das GPS auch bei ausgeschaltetem Bildschirm weiter. Beim ersten Start: Standort und Benachrichtigungen erlauben, Akku auf <b>„Keine Einschränkungen“</b> stellen.';
 
 // Открыто из приложения кнопкой 🚗 с готовым маршрутом — стартуем сразу
 if (rp && new URLSearchParams(location.search).get('auto') === '1') {

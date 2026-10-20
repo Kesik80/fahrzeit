@@ -125,7 +125,7 @@ transition: opacity .15s, transform .1s;
 .share-btn { color: #fff; }   /* иконки внутри рисуются currentColor */
 .share-btn:active { opacity: .75; transform: scale(.97); }
 .google-all { background: #607d8b; }
-.driver-btn { background: #1565c0; }
+.driver-btn { background: #455a64; }   /* графит: не путать с синей кнопкой маршрута */
 .driver-btn.active { background: #34a853; }
 .google-all.active { background: #34a853; }
 .google-all.busy { opacity: .55; }
@@ -1192,10 +1192,7 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
 <button class="clear" title="Zurücksetzen" data-svg-icon="reset" data-svg-size="28">
 
 </button>
-<!-- Режим водителя: driver.html шлёт позицию в Firebase, пассажиры смотрят tracker.html -->
-<button class="driver-btn" id="btnGoDriver" title="Live-Tracking starten" onclick="window._openDriver()" data-svg-icon="rocket" data-svg-size="28">
 
-</button>
 </div>
 <div id="outputWrapper">
 <pre id="output"></pre>
@@ -1221,6 +1218,11 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
     
   </button>
   <button id="btnLegs" class="share-btn legs-btn" title="Halt für Halt navigieren" data-svg-icon="pin" data-svg-size="28">
+    
+  </button>
+  <!-- Режим водителя: driver.html шлёт позицию в Firebase, пассажиры смотрят tracker.html.
+       Внизу, рядом с маршрутами: кнопка появляется только когда маршрут посчитан. -->
+  <button id="btnGoDriver" class="share-btn driver-btn" title="Live-Tracking starten" onclick="window._openDriver()" data-svg-icon="rocket" data-svg-size="28">
     
   </button>
 
@@ -4878,7 +4880,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 09.10.26 20.00 · Format ' + app.routeFormat);
+console.log('[app] build 20.10.26 18.00 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
@@ -5003,9 +5005,15 @@ window._openDriver = function() {
     window.location.href = '/driver.html?auto=1&route=' + encodeURIComponent(url);
   };
   if (!navigator.geolocation) { go(null); return; }
+  // timeout у getCurrentPosition не тикает, пока висит запрос разрешения —
+  // поэтому свой страховочный таймер: без ответа за 9 с идём без GPS
+  let done = false;
+  const once = (gps) => { if (done) return; done = true; clearTimeout(t); go(gps); };
+  const t = setTimeout(() => once(null), 9000);
+  app.showToast('📍 Standort wird ermittelt…');
   navigator.geolocation.getCurrentPosition(
-    p => go({ lat: p.coords.latitude, lng: p.coords.longitude }),
-    () => go(null),
+    p => once({ lat: p.coords.latitude, lng: p.coords.longitude }),
+    () => once(null),
     { enableHighAccuracy: true, timeout: 8000, maximumAge: 10000 }
   );
 };
