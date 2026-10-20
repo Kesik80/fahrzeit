@@ -207,6 +207,18 @@ async function initTracker() {
     const { lat, lng, ts, route, active, paused } = data;
     lastTs = ts || Date.now(); lastPaused = !!paused; lastActive = active;
     paintStatus();
+    // Поездка закончена — убираем маршрут, машину и след, чтобы не висела старая картина.
+    // Следующий старт водителя всё нарисует заново.
+    if (active === false) {
+      if (driverMarker) { driverMarker.setMap(null); driverMarker = null; }
+      trackPath = []; trackPolyline.setPath([]);
+      directionsRenderer.setMap(null);
+      lastRoute = null; notifiedArrival = false; notified2km = false;
+      document.getElementById('etaBox').style.display = 'none';
+      document.getElementById('infoBar').style.display = 'none';
+      return;
+    }
+    if (!directionsRenderer.getMap()) directionsRenderer.setMap(map);
     // Пауза пишет только флаг — позиция та же, перерисовывать нечего
     if (typeof lat !== 'number' || typeof lng !== 'number') return;
 

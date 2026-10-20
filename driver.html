@@ -110,7 +110,7 @@ function startNative() {
     W2A.bgLocationStart(JSON.stringify({
       url: `${DB_URL}/sessions/${sessionId}.json`,
       extra: { active: true, paused: false },
-      stop:  { active: false, paused: false },
+      stop:  { active: false, paused: false, route: null, lat: null, lng: null },
       intervalMs: 5000,
       title: 'Fahrzeit · Live-Tracking',
       text: 'Mitfahrer sehen deine Position'
@@ -396,7 +396,8 @@ document.getElementById('btnStop').addEventListener('click', async()=>{
   document.getElementById('rerouteBadge').style.display='none';
   if (wakeLock) { try { await wakeLock.release(); } catch {} wakeLock=null; }
   stopNative(); nativeStarted = false;
-  if(sessionId) await update(ref(db,'sessions/'+sessionId),{active:false, paused:false});
+  // Позицию и маршрут стираем: после «Stopp» пассажирам нечего показывать (null удаляет поле)
+  if(sessionId) await update(ref(db,'sessions/'+sessionId),{active:false, paused:false, route:null, lat:null, lng:null, ts:Date.now()});
   setStatus('Beendet',false);
   mapEl.style.display='none'; bottomPanel.style.display='none'; setupPanel.style.display='flex';
   map=null; driverMarker=null; trackPolyline=null; trackPath=[]; sessionId=null;
