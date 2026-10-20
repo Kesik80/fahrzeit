@@ -1207,6 +1207,7 @@ title="Bearbeitungsmodus" data-svg-icon="editor" data-svg-size="32">
   <div class="fp-opts" data-nocopy="1" title="Links kürzen">
     <label title="Links mit bit.ly kürzen"><input type="checkbox" id="shortenBitly"><span>bit.ly</span></label>
     <label title="Links mit fhr.pp.ua kürzen"><input type="checkbox" id="shortenFhr"><span>fhr.pp.ua</span></label>
+    <label id="liveLinkLabel" title="Live-Link ans Ende der Nachricht · lange drücken = Link ändern"><input type="checkbox" id="showLiveLink"><span>📍 Live</span></label>
   </div>
 </div>
 </div>
@@ -1365,6 +1366,9 @@ this.machineDestinations = [{ name: 'an der Maschine', lat: null, lng: null }]; 
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.showDestName = true;    // «(Ort)» по умолчанию включён
+this.showLiveLink = false;   // «📍 Live»: ссылка для пассажиров в конце сообщения
+this.liveLink = 'https://fhr.pp.ua/live';
+try { this.liveLink = localStorage.getItem('fahrzeitLiveLink') || this.liveLink; } catch (e) {}
 this.shortenLinks = true;
 this.shortenMode = "fhr";
 // Формат ссылки для Google Maps: 'native' (как пишет сам Google) | 'placeid' | 'api'
@@ -1775,6 +1779,7 @@ if (this._serverListsLoaded) {
 }
 localStorage.setItem(k('useSuperscript'), this.useSuperscriptTime);
 localStorage.setItem(k('showDestName'), this.showDestName);
+localStorage.setItem(k('showLiveLink'), this.showLiveLink);
 localStorage.setItem(k('shortenLinks'), this.shortenLinks);
 localStorage.setItem(k('shortenMode'), this.shortenMode || 'bitly');
 } catch (e) {
@@ -1835,6 +1840,7 @@ this.machineStop = { name: (this.machineDestinations[0] || {}).name || "an der M
 this.useUhrBei = false;
 this.useSuperscriptTime = false;
 this.showDestName = true;
+this.showLiveLink = false;
 this.startPointPassengers = [];
 this.farewell = this.defaultFarewellText || 'Tschüss 👋';
 this.saveData();
@@ -1843,7 +1849,7 @@ clearLocalStorage() {
 // Один список ключей для снапшота и для удаления — раньше в снапшоте не было
 // shortenLinks/shortenMode/…Base, и «Rückgängig» их не возвращал
 const KEYS = ['greeting','greetings','participants','machineStop','machineDestinations',
-  'nameToCoordinates','treffpunkt','startPoint','useUhrBei','useSuperscript','showDestName',
+  'nameToCoordinates','treffpunkt','startPoint','useUhrBei','useSuperscript','showDestName','showLiveLink',
   'shortenLinks','shortenMode','startPassengers','farewell','farewells',
   'greetingsBase','farewellsBase','namesBase','treffBase'];
 this._undoSnapshot = { _profileKey: this.startPoint };
@@ -1928,6 +1934,7 @@ startPoint: localStorage.getItem(k('startPoint')),
 useUhrBei: localStorage.getItem(k('useUhrBei')),
 useSuperscript: localStorage.getItem(k('useSuperscript')),
 showDestName: localStorage.getItem(k('showDestName')),
+showLiveLink: localStorage.getItem(k('showLiveLink')),
 shortenLinks: localStorage.getItem(k('shortenLinks')),
 shortenMode: localStorage.getItem(k('shortenMode')),
 startPassengers: localStorage.getItem(k('startPassengers')),
@@ -1962,6 +1969,7 @@ if (saved.farewell) this.farewell = saved.farewell;
 if (saved.farewells) try { this.farewells = JSON.parse(saved.farewells); } catch {}
 if (saved.useSuperscript !== null) this.useSuperscriptTime = saved.useSuperscript === 'true';
 if (saved.showDestName !== null) this.showDestName = saved.showDestName === 'true';
+if (saved.showLiveLink !== null && saved.showLiveLink !== undefined) this.showLiveLink = saved.showLiveLink === 'true';
 if (saved.shortenLinks !== null && saved.shortenLinks !== undefined) this.shortenLinks = saved.shortenLinks !== 'false';
 if (saved.shortenMode) this.shortenMode = saved.shortenMode;
 } catch {
@@ -2014,7 +2022,30 @@ document.getElementById('farewellTrigger').addEventListener('click', () => {
   }, this.farewell);
 });
 document.getElementById('editFarewellBtn').addEventListener('click', () => this.openFarewellModal());
-[['useUhrBei', 'useUhrBei'], ['useSuperscriptTime', 'useSuperscriptTime'], ['showDestName', 'showDestName']].forEach(([id, prop]) => {
+// «📍 Live»: долгое нажатие — поменять саму ссылку (хранится на устройстве, одна на всех водителей)
+{
+  const lbl = document.getElementById('liveLinkLabel');
+  let t = null, longDone = false;
+  const cancel = () => { clearTimeout(t); t = null; };
+  lbl.addEventListener('pointerdown', () => {
+    longDone = false;
+    t = setTimeout(() => {
+      t = null; longDone = true;
+      const v = prompt('Live-Link für die Mitfahrer:', this.liveLink);
+      if (v === null) return;
+      const link = v.trim();
+      if (link && !/^https?:\/\/\S+$/i.test(link)) { this.showToast('Bitte einen Link mit https:// eingeben.'); return; }
+      this.liveLink = link || 'https://fhr.pp.ua/live';
+      try { localStorage.setItem('fahrzeitLiveLink', this.liveLink); } catch (e) {}
+      this.showToast('📍 Live-Link gespeichert');
+      this.calculate();
+    }, 700);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => lbl.addEventListener(ev, cancel));
+  // После долгого нажатия отпускание не должно переключать кнопку
+  lbl.addEventListener('click', e => { if (longDone) { e.preventDefault(); longDone = false; } }, true);
+}
+[['useUhrBei', 'useUhrBei'], ['useSuperscriptTime', 'useSuperscriptTime'], ['showDestName', 'showDestName'], ['showLiveLink', 'showLiveLink']].forEach(([id, prop]) => {
   const cb = document.getElementById(id);
   cb.addEventListener('change', () => { this[prop] = cb.checked; this.saveData(); this.calculate(); });
 });
@@ -2432,6 +2463,7 @@ document.getElementById('farewellLabel').textContent = this.farewell || '';
 document.getElementById('useUhrBei').checked = !!this.useUhrBei;
 document.getElementById('useSuperscriptTime').checked = !!this.useSuperscriptTime;
 document.getElementById('showDestName').checked = !!this.showDestName;
+document.getElementById('showLiveLink').checked = !!this.showLiveLink;
 const timeRemoveBtn = machineDiv.querySelector('.time-remove');
 if (timeRemoveBtn) timeRemoveBtn.addEventListener('click', () => this.clearArrivalTime());
 const timeControl = machineDiv.querySelector('.arrival-time');
@@ -4100,6 +4132,7 @@ out+='\n'+(this.useUhrBei
 ? `um ${this.formatTime(machineTime)} Uhr ${this.machineStop.name}\u0001`
 : `${this.formatTime(machineTime)}  ${this.machineStop.name}\u0001`);
 if (this.farewell) out += '\n' + this.farewell;
+if (this.showLiveLink && this.liveLink) out += '\n📍 Live: ' + this.liveLink;
 // Оборачиваем каждую строку в span для long-press копирования
 const lines = out.split('\n').filter(l => l.trim() !== '');
 // Имена, приветствие и прощание — пользовательский текст: экранируем,
@@ -4880,7 +4913,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 20.10.26 18.00 · Format ' + app.routeFormat);
+console.log('[app] build 21.10.26 00.25 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
