@@ -40,6 +40,7 @@ this.stations = {
   "Köln Kalk Nord": {lat: 50.940035, lng: 7.015802},
   "Köln Kalk Süden": {lat: 50.947590, lng: 7.012243},
   "Köln-Deutzerfeld": {lat: 50.939972, lng: 6.987889},
+  "Köln-Deutzerfeld 2": {lat: 50.944444, lng: 6.992073},
   "Köln-Kalk, Stumpfgleis": {lat: 50.931185, lng: 7.013403},
   "Lage": {lat: 51.991198, lng: 8.800968},
   "Münster (Westf)": {lat: 51.955868, lng: 7.636740},
@@ -291,6 +292,10 @@ const defaultEntryMetaData = {
     "Köln Bonntor": {
       "c": "2026-09-15T02:50:59.677Z",
       "u": "2026-09-15T02:51:34.570Z"
+    },
+    "Köln-Deutzerfeld 2": {
+      "c": "2026-10-24T09:04:46.158Z",
+      "u": "2026-10-24T09:04:46.158Z"
     },
     "Recklinghausen": {
       "c": "2026-09-25T10:22:20.394Z",
