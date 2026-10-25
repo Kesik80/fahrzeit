@@ -16,6 +16,7 @@ const defaultCoords = {
 // реестр станций
 this.stations = {
   "Aachen": {lat: 50.773630, lng: 6.123612},
+  "Bestwig": {lat: 51.363982, lng: 8.404840},
   "Dortmund Obereving": {lat: 51.540635, lng: 7.478439},
   "Dortmund Scharnhorst": {lat: 51.540518, lng: 7.539555},
   "Dortmund-Lütgendortmund": {lat: 51.497711, lng: 7.366530},
@@ -260,6 +261,10 @@ const defaultEntryMetaData = {
     "Aachen": {
       "c": "2026-10-19T12:55:44.371Z",
       "u": "2026-10-19T12:55:44.371Z"
+    },
+    "Bestwig": {
+      "c": "2026-10-25T19:28:40.237Z",
+      "u": "2026-10-25T19:29:00.182Z"
     },
     "Dortmund Scharnhorst": {
       "c": "2026-10-21T12:16:39.122Z",
