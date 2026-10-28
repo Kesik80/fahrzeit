@@ -49,6 +49,7 @@ this.stations = {
   "Recklinghausen": {lat: 51.621831, lng: 7.206602},
   "Recklinghausen Süd": {lat: 51.568298, lng: 7.198117},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
+  "Siedlinghause": {lat: 51.258472, lng: 8.473667},
   "Troisdorf": {lat: 50.820005, lng: 7.129251},
   "Troisdorf SW": {lat: 50.814186, lng: 7.146110},
   "Wanne-Eickel": {lat: 51.536053, lng: 7.184348},
@@ -321,6 +322,10 @@ const defaultEntryMetaData = {
     "Recklinghausen": {
       "c": "2026-09-25T10:22:20.394Z",
       "u": "2026-09-25T10:22:20.394Z"
+    },
+    "Siedlinghause": {
+      "c": "2026-10-28T20:13:05.151Z",
+      "u": "2026-10-28T20:13:05.151Z"
     },
     "Troisdorf": {
       "c": "2026-10-12T20:26:16.442Z",
