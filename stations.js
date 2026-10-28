@@ -10,7 +10,8 @@ const defaultCoords = {
   "René": {lat: 51.476281, lng: 6.861856},
   "Sergii": {lat: 51.530133, lng: 6.850858},
   "Sergio": {lat: 51.519965, lng: 6.887640},
-  "Vasyl": {lat: 51.515352, lng: 6.893390}
+  "Vasyl": {lat: 51.515352, lng: 6.893390},
+  "Friedhelm": {lat: 51.513336, lng: 6.754362}
 };
 
 // реестр станций
@@ -117,7 +118,18 @@ this.travelTimes = {
   "Phil-Dima": 20,
   "Phil-Andrii": 5,
   "Phil-Marvin": 20,
-  "Phil-Maikel": 20
+  "Phil-Maikel": 20,
+  "Friedhelm-Aleks": 1,
+  "Friedhelm-Anatolii": 1,
+  "Friedhelm-Andrii": 1,
+  "Friedhelm-Dima": 1,
+  "Friedhelm-Maikel": 1,
+  "Friedhelm-Marvin": 1,
+  "Friedhelm-Phil": 1,
+  "Friedhelm-René": 1,
+  "Friedhelm-Sergii": 1,
+  "Friedhelm-Sergio": 1,
+  "Friedhelm-Vasyl": 1
 };
 
 // Пункты встречи (Treffpunkt)
@@ -255,6 +267,10 @@ const defaultEntryMetaData = {
     "Vasyl": {
       "c": "2026-09-12T17:44:21.275Z",
       "u": "2026-09-21T00:16:35.852Z"
+    },
+    "Friedhelm": {
+      "c": "2026-10-28T18:36:34.948Z",
+      "u": "2026-10-28T18:36:52.352Z"
     }
   },
   "stations": {
