@@ -121,17 +121,17 @@ this.travelTimes = {
   "Phil-Andrii": 5,
   "Phil-Marvin": 20,
   "Phil-Maikel": 20,
-  "Friedhelm-Aleks": 1,
-  "Friedhelm-Anatolii": 1,
-  "Friedhelm-Andrii": 1,
-  "Friedhelm-Dima": 1,
-  "Friedhelm-Maikel": 1,
-  "Friedhelm-Marvin": 1,
-  "Friedhelm-Phil": 1,
-  "Friedhelm-René": 1,
-  "Friedhelm-Sergii": 1,
-  "Friedhelm-Sergio": 1,
-  "Friedhelm-Vasyl": 1
+  "Friedhelm-Aleks": 20,
+  "Friedhelm-Anatolii": 25,
+  "Friedhelm-Andrii": 20,
+  "Friedhelm-Dima": 35,
+  "Friedhelm-Maikel": 10,
+  "Friedhelm-Marvin": 10,
+  "Friedhelm-Phil": 25,
+  "Friedhelm-René": 20,
+  "Friedhelm-Sergii": 25,
+  "Friedhelm-Sergio": 25,
+  "Friedhelm-Vasyl": 25
 };
 
 // Пункты встречи (Treffpunkt)
@@ -370,6 +370,7 @@ const defaultEntryMetaData = {
   "times": {
     "tt:Maikel-Anatolii": 1,
     "tt:Phil-Anatolii": 1,
+    "tt:Friedhelm-Dima": 1,
     "treff:P&R A42-Phil": 1
   }
 };
