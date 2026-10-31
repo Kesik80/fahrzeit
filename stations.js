@@ -37,6 +37,7 @@ this.stations = {
   "Hagen": {lat: 51.372305, lng: 7.462295},
   "Hagen Hbf": {lat: 51.362268, lng: 7.461884},
   "Hamm": {lat: 51.672751, lng: 7.811458},
+  "Heiger": {lat: 50.741346, lng: 8.220956},
   "Holzwickede": {lat: 51.505033, lng: 7.619762},
   "Köln Bonntor": {lat: 50.917057, lng: 6.949098},
   "Köln Kalk Nord": {lat: 50.940035, lng: 7.015802},
@@ -311,6 +312,10 @@ const defaultEntryMetaData = {
     "Hagen": {
       "c": "2026-09-08T00:37:49.325Z",
       "u": "2026-09-08T00:37:49.325Z"
+    },
+    "Heiger": {
+      "c": "2026-10-31T14:05:45.314Z",
+      "u": "2026-10-31T14:05:45.314Z"
     },
     "Köln Bonntor": {
       "c": "2026-09-15T02:50:59.677Z",
