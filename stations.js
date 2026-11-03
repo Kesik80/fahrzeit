@@ -49,6 +49,7 @@ this.stations = {
   "Münster (Westf)": {lat: 51.955868, lng: 7.636740},
   "Recklinghausen": {lat: 51.621831, lng: 7.206602},
   "Recklinghausen Süd": {lat: 51.568298, lng: 7.198117},
+  "Scharnhorst": {lat: 51.540575, lng: 7.539510},
   "Schwerte": {lat: 51.440231, lng: 7.558396},
   "Siedlinghause": {lat: 51.258472, lng: 8.473667},
   "Siegen": {lat: 50.877763, lng: 8.020839},
@@ -328,6 +329,10 @@ const defaultEntryMetaData = {
     "Recklinghausen": {
       "c": "2026-09-25T10:22:20.394Z",
       "u": "2026-09-25T10:22:20.394Z"
+    },
+    "Scharnhorst": {
+      "c": "2026-11-03T15:07:00.213Z",
+      "u": "2026-11-03T15:07:00.213Z"
     },
     "Siedlinghause": {
       "c": "2026-10-28T20:13:05.151Z",
