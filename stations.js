@@ -228,12 +228,13 @@ this.participantOrders = {
 
 // Прощание
 const defaultFarewellData = {
-  "text": "Bis später 👋",
+  "text": "Bis später! 👋",
   "list": [
-    "Bis später 👋",
-    "Bis morgen früh 👋",
-    "Tschüss 👋",
-    "Bis bald 👋"
+    "Bis später! 👋",
+    "Bis morgen früh! 👋",
+    "Tschüss! 👋",
+    "Bis bald! 👋",
+    "Bis gleich! 👋"
   ]
 };
 
