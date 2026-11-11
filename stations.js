@@ -255,7 +255,8 @@ const defaultMachineDestinationsData = [
   { name: "Opladen Plasser", lat: 51.059318, lng: 7.012283 },
   { name: "Deutsch Kurs", lat: 51.481780, lng: 7.137622 },
   { name: "InnoTrans Messe Berlin", lat: 52.501243, lng: 13.274211 },
-  { name: "Flair Hotel Grüner Baum", lat: 47.940288, lng: 8.500718 }
+  { name: "Flair Hotel Grüner Baum", lat: 47.940288, lng: 8.500718 },
+  { name: "Hotel Restaurant Lindenhof", lat: 47.930007, lng: 8.446988 }
 ];
 
 // Служебный блок редактора: когда запись добавлена (c) и изменена (u).
