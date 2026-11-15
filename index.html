@@ -3338,6 +3338,75 @@ _dropStaleGoogleLegs() {
   }
   return dropped;
 }
+// ---- Километры маршрута ----
+// Расстояние между двумя точками от пробок не зависит, поэтому храним его навсегда
+// в общем кэше по «откуда>куда» (тот же legKey, что и у времён Google).
+_kmCacheGet() {
+  if (!this._kmCache) {
+    try { this._kmCache = JSON.parse(localStorage.getItem('fahrzeitKmCache')) || {}; } catch (e) { this._kmCache = {}; }
+  }
+  return this._kmCache;
+}
+_rememberKm(key, km) {
+  if (!key || typeof km !== 'number' || !isFinite(km)) return;
+  const c = this._kmCacheGet();
+  c[key] = km;
+  const keys = Object.keys(c);
+  if (keys.length > 500) keys.slice(0, keys.length - 500).forEach(k => delete c[k]);   // кэш не растёт бесконечно
+  try { localStorage.setItem('fahrzeitKmCache', JSON.stringify(c)); } catch (e) {}
+}
+// Отрезки текущего маршрута: старт → участники с именем → цель
+_routeLegs() {
+  const legs = [];
+  this.participants.forEach((p, i) => { if (p.name) legs.push(this._legKey(this._legOrigin(i), p)); });
+  legs.push(this._legKey(this._machineOrigin(), this.machineStop));
+  return legs;
+}
+// Сумма км; null — если хоть один отрезок неизвестен (тогда ничего не показываем, а не неполную цифру)
+_tripKm() {
+  const c = this._kmCacheGet();
+  const legs = this._routeLegs();
+  let km = 0;
+  const missing = [];
+  for (const k of legs) {
+    if (!k) return { km: null, missing: [] };            // нет координат — посчитать нельзя
+    if (typeof c[k] === 'number') km += c[k]; else missing.push(k);
+  }
+  return { km: missing.length ? null : km, missing };
+}
+// Недостающие расстояния спрашиваем у Google один раз (каждый отрезок — не чаще раза за сеанс)
+async _fillMissingKm(missing) {
+  this._kmAsked = this._kmAsked || new Set();
+  const todo = missing.filter(k => !this._kmAsked.has(k));
+  if (!todo.length) return;
+  todo.forEach(k => this._kmAsked.add(k));
+  let got = false;
+  for (const k of todo) {
+    const [a, b] = k.split('>').map(x => x.split(',').map(Number));
+    try {
+      const r = await fetch('/api/calculate-time', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originLat: a[0], originLng: a[1], destLat: b[0], destLng: b[1] })
+      });
+      const d = await r.json();
+      if (r.ok && d && d.success && d.distance) { this._rememberKm(k, d.distance.km); got = true; }
+    } catch (e) { /* нет сети — км просто не покажем */ }
+  }
+  if (got) this._updateTripSummary();
+}
+// Строка «⏱️ 1 Std. 25 Min. (100 km)» под сообщением
+_updateTripSummary() {
+  const summary = document.getElementById('tripSummary');
+  if (!summary || this._lastTripTotal == null) return;
+  const total = this._lastTripTotal;
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  const timeStr = h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
+  const { km, missing } = this._tripKm();
+  summary.textContent = `⏱️ ${timeStr}` + (km != null ? ` (${Math.round(km)} km)` : '');
+  if (missing.length) this._fillMissingKm(missing);
+}
 // Запрос к Google: время отрезка from→to с пробками на момент выезда.
 // assumedMinutes — нынешняя оценка самого отрезка, minutesAfter — путь после него
 // до прибытия. Момент выезда зависит от длительности отрезка, а её и спрашиваем,
@@ -3367,6 +3436,7 @@ async _askLeg(from, to, assumedMinutes, minutesAfter) {
   };
   let dep = this._departureFor(minutesAfter + assumedMinutes);
   let data = await ask(dep);
+  if (data.distance) this._rememberKm(this._legKey(from, to), data.distance.km);
   if (Math.abs(data.duration.minutes - assumedMinutes) >= 3) {
     const refinedDep = this._departureFor(minutesAfter + data.duration.minutes);
     if (refinedDep !== dep) {
@@ -4148,10 +4218,8 @@ this._setShareButtons(!!out.trim());
 const summary = document.getElementById('tripSummary');
 const summaryRow = document.getElementById('tripSummaryRow');
 if (summary && out.trim()) {
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  const timeStr = h > 0 ? `${h} Std. ${m} Min.` : `${m} Min.`;
-  summary.textContent = `⏱️ ${timeStr}`;
+  this._lastTripTotal = total;
+  this._updateTripSummary();
   if (summaryRow) summaryRow.style.display = 'flex';
 } else if (summaryRow) {
   summaryRow.style.display = 'none';
@@ -4913,7 +4981,7 @@ document.addEventListener('DOMContentLoaded', () => {
 window.app = new FahrzeitRechner();
 window._appInstance = app;
 // По этой строке в логе видно, какая сборка реально работает на телефоне
-console.log('[app] build 21.10.26 00.25 · Format ' + app.routeFormat);
+console.log('[app] build 15.11.26 10.30 · Format ' + app.routeFormat);
 app.loadStations();
 app._initShareButtons();
 // Строка «Abfahrt … in …» идёт вместе с часами: раз в полминуты и при возврате в приложение
