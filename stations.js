@@ -28,6 +28,7 @@ this.stations = {
   "Essen": {lat: 51.449515, lng: 7.001882},
   "Essen Donao": {lat: 51.452360, lng: 7.021928},
   "Essen West": {lat: 51.453927, lng: 6.979462},
+  "Finnentrop": {lat: 51.173195, lng: 7.963988},
   "Fröndenberg": {lat: 51.470899, lng: 7.764095},
   "Gelsenkirchen Horst Nord": {lat: 51.541535, lng: 7.020281},
   "Gelsenkirchen Horst Nord 2": {lat: 51.539072, lng: 7.009012},
@@ -308,6 +309,10 @@ const defaultEntryMetaData = {
     "Essen Donao": {
       "c": "2026-09-28T12:15:38.980Z",
       "u": "2026-10-15T20:26:21.766Z"
+    },
+    "Finnentrop": {
+      "c": "2026-11-25T12:00:07.025Z",
+      "u": "2026-11-25T12:00:07.025Z"
     },
     "Fröndenberg": {
       "c": "2026-10-07T09:13:19.498Z",
